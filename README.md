@@ -1,10 +1,9 @@
 <div style="display:flex;flex-direction:column;">
-  <a href="https://nfid.one/">
-    <img src="./alfawolf.png" alt="NFID Wallet" role="presentation"/>
+  <a>
+    <img src="./alfawolf.png" alt="AlfaAPY" role="presentation"/>
   </a>
+</div>
 
-<br/>
-<br/>
 
 
 # Alfa APY
