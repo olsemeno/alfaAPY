@@ -1,6 +1,6 @@
 <div style="display:flex;flex-direction:column;">
   <a>
-    <img src="./alfawolf.png" alt="AlfaAPY" role="presentation"/>
+    <img src="./alfaWolf.png" alt="AlfaAPY" role="presentation"/>
   </a>
 </div>
 
