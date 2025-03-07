@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "canisters": {
+    "vault": {
+      "type": "custom",
+      "candid": "src/vault/vault.did",
+      "wasm": "vault.wasm",
+      "build": "src/vault/build.sh",
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ]
+    }
+  },
+  "defaults": {
+    "replica": {
+      "subnet_type": "system"
+    },
+    "build": {
+      "packtool": "",
+      "args": ""
+    }
+  },
+  "networks": {
+    "dev": {
+      "providers": [
+        "https://icp0.io"
+      ],
+      "type": "persistent"
+    },
+    "stage": {
+      "providers": [
+        "https://icp0.io"
+      ],
+      "type": "persistent"
+    },
+    "ic": {
+      "providers": [
+        "https://icp0.io"
+      ],
+      "type": "persistent"
+    },
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  }
+}

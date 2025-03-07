@@ -1,0 +1,5 @@
+type Conf = record {
+    controllers : opt vec principal
+};service : (opt Conf) -> {
+    get_config : () -> (Conf) query;
+}
