@@ -16,3 +16,7 @@ byteorder = "1.4.3"
 ic-stable-structures = "0.6.7"
 serde_bytes = "0.11"
 serde_json = "1.0.82"
+canister_client_macros = { path = "../libraries/canister_client_macros" }
+kong_swap_canister = { path = "../external_canisters/kong_swap/api" }
+kong_swap_c2c_client = { path = "../external_canisters/kong_swap/c2c_client" }
+types = { path = "../libraries/types" }

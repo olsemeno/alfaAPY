@@ -2,5 +2,31 @@
 resolver = "2"
 
 members = [
-    "src/vault"
+    "src/vault",
+    "src/external_canisters/icpswap_swap_pool/c2c_client",
+    "src/external_canisters/icpswap_swap_pool/api",
+    "src/external_canisters/kong_swap/c2c_client",
+    "src/external_canisters/kong_swap/api",
+    "src/external_canisters/icrc_ledger/c2c_client",
+    "src/external_canisters/icrc_ledger/api",
+    "src/libraries/canister_client_macros",
+    "src/libraries/canister_client",
+    "src/libraries/candid_gen",
+    "src/libraries/types",
 ]
+
+
+[workspace.dependencies]
+candid = "0.10.13"
+ic-cdk = "0.17.1"
+ic-cdk-macros = "0.17.1"
+ic-ledger-types = "0.14.0"
+serde = "1"
+byteorder = "1.4.3"
+ic-stable-structures = "0.6.7"
+serde_bytes = "0.11"
+serde_json = "1.0.82"
+icrc-ledger-types = "0.1.6"
+quote = "1.0.36"
+syn = "2.0.65"
+hex = "0.4.3"

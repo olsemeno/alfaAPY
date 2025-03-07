@@ -1,0 +1,13 @@
+[package]
+name = "kong_swap_c2c_client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+candid = { workspace = true }
+canister_client = { path = "../../../libraries/canister_client" }
+types = { path = "../../../libraries/types" }
+ic-cdk = { workspace = true }
+kong_swap_canister = { path = "../api" }

@@ -1,6 +1,15 @@
+mod kong;
+
+use crate::kong::kong::pools;
+use candid::{candid_method, CandidType, Deserialize, Nat};
+use candid::Principal;
+use ic_cdk::api::call::CallResult;
+use ic_cdk::api::management_canister::main::CanisterId;
+use ic_cdk::{call, trap};
+use ic_cdk_macros::{init, query, update};
+use kong_swap_canister::pools::{PoolsReply, Response};
+use serde::Serialize;
 use std::cell::RefCell;
-use candid::{candid_method, CandidType, Deserialize, Principal};
-use ic_cdk_macros::{init, query};
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -30,6 +39,16 @@ fn init(conf: Option<Conf>) {
     };
 }
 
+//TODO remove / test method
+#[update]
+async fn kong_pools() -> PoolsReply {
+    match pools().await {
+        Ok(reply) => reply,
+        Err(err) => {
+            trap(format!("Error: {}", err).as_str());
+        }
+    }
+}
 
 #[query]
 fn get_config() -> Conf {
