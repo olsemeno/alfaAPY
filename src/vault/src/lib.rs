@@ -1,14 +1,12 @@
-mod kong;
+pub mod kong;
+pub mod token_swaps;
 
 use crate::kong::kong::pools;
-use candid::{candid_method, CandidType, Deserialize, Nat};
+use candid::{candid_method, CandidType, Deserialize};
 use candid::Principal;
-use ic_cdk::api::call::CallResult;
-use ic_cdk::api::management_canister::main::CanisterId;
-use ic_cdk::{call, trap};
+use ic_cdk::{ trap};
 use ic_cdk_macros::{init, query, update};
-use kong_swap_canister::pools::{PoolsReply, Response};
-use serde::Serialize;
+pub use kongswap_canister::pools::{PoolsReply, Response};
 use std::cell::RefCell;
 
 thread_local! {

@@ -1,5 +1,5 @@
 [package]
-name = "kong_swap_c2c_client"
+name = "kongswap_canister"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,5 @@ edition = "2021"
 
 [dependencies]
 candid = { workspace = true }
-canister_client = { path = "../../../libraries/canister_client" }
+serde = { workspace = true }
 types = { path = "../../../libraries/types" }
-ic-cdk = { workspace = true }
-kong_swap_canister = { path = "../api" }

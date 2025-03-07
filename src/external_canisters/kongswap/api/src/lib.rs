@@ -1,10 +1,12 @@
-use candid::{CandidType, Nat};
-use serde::{Deserialize, Serialize};
+pub mod queries;
+mod updates;
 
-mod queries;
-
-pub use queries::*;
+use candid::{CandidType, Deserialize, Nat};
+use serde::Serialize;
 use types::ResultLowercase;
+pub use updates::*;
+pub use queries::*;
+
 
 pub type KongSwapResult<T> = ResultLowercase<T, String>;
 

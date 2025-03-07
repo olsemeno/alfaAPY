@@ -5,6 +5,7 @@ mod queries;
 mod updates;
 
 pub use queries::*;
+use types::ResultLowercase;
 pub use updates::*;
 
 pub type ICPSwapResult<T> = ResultLowercase<T, ICPSwapError>;
@@ -15,13 +16,4 @@ pub enum ICPSwapError {
     InternalError(String),
     UnsupportedToken(String),
     InsufficientFunds,
-}
-
-//TODO move to generic folder
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub enum ResultLowercase<T, E> {
-    #[serde(rename = "ok")]
-    Ok(T),
-    #[serde(rename = "err")]
-    Err(E),
 }

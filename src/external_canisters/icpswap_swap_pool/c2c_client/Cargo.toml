@@ -10,3 +10,4 @@ candid = { workspace = true }
 canister_client = { path = "../../../libraries/canister_client" }
 ic-cdk = { workspace = true }
 icpswap_swap_pool_canister = { path = "../api" }
+types = { path = "../../../libraries/types" }

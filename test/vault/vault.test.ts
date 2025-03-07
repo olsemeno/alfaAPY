@@ -12,13 +12,13 @@ export const isLocalENV = true
 describe("VR Test", () => {
     let canister_id
     before(async () => {
-        DFX.INIT();
+        // DFX.INIT();
         console.log(execute(`dfx deploy vault`))
         canister_id = DFX.GET_CANISTER_ID("vault");
     });
 
     after(() => {
-        DFX.STOP();
+        // DFX.STOP();
     });
 
     it("Get config", async function () {
