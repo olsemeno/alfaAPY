@@ -1,5 +1,6 @@
 mod swap;
 mod providers;
+mod liquidity;
 
 use providers::kong::kong::pools;
 use candid::{candid_method, CandidType, Deserialize};
