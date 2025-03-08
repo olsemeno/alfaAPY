@@ -1,5 +1,6 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
+use crate::add_liquidity::TransferIdReply;
 
 #[derive(CandidType, Serialize, Deserialize)]
 pub struct Args {
@@ -35,13 +36,8 @@ pub struct SwapReply {
     pub ts: u64,
 }
 
-#[derive(CandidType, Serialize, Deserialize)]
-pub struct TransferIdReply {
-    pub transfer_id: u64,
-    pub transfer: TransferReply,
-}
 
-#[derive(CandidType, Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct ICTransferReply {
     pub chain: String,
     pub symbol: String,
@@ -49,9 +45,4 @@ pub struct ICTransferReply {
     pub amount: Nat,
     pub canister_id: String,
     pub block_index: Nat,
-}
-
-#[derive(CandidType, Serialize, Deserialize)]
-pub enum TransferReply {
-    IC(ICTransferReply),
 }

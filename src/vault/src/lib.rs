@@ -1,7 +1,7 @@
-pub mod kong;
-pub mod token_swaps;
+mod swap;
+mod providers;
 
-use crate::kong::kong::pools;
+use providers::kong::kong::pools;
 use candid::{candid_method, CandidType, Deserialize};
 use candid::Principal;
 use ic_cdk::{print, trap};
@@ -10,9 +10,8 @@ pub use kongswap_canister::pools::{PoolsReply, Response};
 use std::cell::RefCell;
 use types::CanisterId;
 use types::exchanges::TokenInfo;
-use crate::token_swaps::swap_service::swap_icrc2_kong;
 use types::swap_tokens::{Response as R2, SuccessResult};
-
+use crate::swap::swap_service::swap_icrc2_kong;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());

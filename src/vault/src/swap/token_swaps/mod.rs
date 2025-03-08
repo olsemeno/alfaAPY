@@ -1,7 +1,6 @@
 use std::convert::TryInto;
 use candid::Nat;
 
-pub mod swap_service;
 pub mod kongswap;
 pub mod swap_client;
 

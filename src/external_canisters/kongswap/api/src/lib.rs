@@ -1,5 +1,5 @@
 pub mod queries;
-mod updates;
+pub mod updates;
 
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
