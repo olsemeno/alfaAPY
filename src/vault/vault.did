@@ -1,5 +1,3 @@
-type Conf = record {
-    controllers : opt vec principal
-};service : (opt Conf) -> {
-    get_config : () -> (Conf) query;
-}
+type Conf = record { controllers : opt vec principal };
+type ICPStrategy = record { current_pool : opt PoolReply };
+type PoolReply = record {  tvl : nat;  lp_token_symbol : text;  name : text;  lp_fee_0 : nat;  lp_fee_1 : nat;  balance_0 : nat;  balance_1 : nat;  rolling_24h_volume : nat;  rolling_24h_apy : float64;  address_0 : text;  address_1 : text;  rolling_24h_num_swaps : nat;  symbol_0 : text;  symbol_1 : text;  pool_id : nat32;  price : float64;  chain_0 : text;  chain_1 : text;  is_removed : bool;  symbol : text;  rolling_24h_lp_fee : nat;  lp_fee_bps : nat8;};type PoolsReply = record {  total_24h_lp_fee : nat;  total_tvl : nat;  total_24h_volume : nat;  pools : vec PoolReply;  total_24h_num_swaps : nat;};type StrategyCandid = variant {  ICPStrategyV : ICPStrategy;  ckBTCStrategyV : ICPStrategy;};type SuccessResult = record { amount_out : nat };service : (opt Conf) -> {  get_config : () -> (Conf) query;  get_strategies : () -> (vec StrategyCandid) query;  kong_pools : () -> (PoolsReply);  swap : () -> (SuccessResult);}
