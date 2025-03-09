@@ -1,4 +1,4 @@
-use crate::strategies::strategy::{IStrategy, Pool, StrategyId};
+use crate::strategies::strategy::{IStrategy, Pool, StrategyId, StrategyResponse};
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize};
 use ic_cdk::trap;
@@ -74,5 +74,14 @@ impl IStrategy for ICPStrategy {
 
     fn to_candid(&self) -> StrategyCandid {
         StrategyCandid::ICPStrategyV(self.clone())
+    }
+
+    fn to_response(&self) -> StrategyResponse {
+        StrategyResponse {
+            name: self.get_name(),
+            id: self.get_id(),
+            description: self.get_description(),
+            pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
+        }
     }
 }

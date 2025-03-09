@@ -1,6 +1,6 @@
-use crate::strategies::strategy::{IStrategy, Pool, StrategyId};
+use crate::strategies::strategy::{IStrategy, Pool, StrategyId, StrategyResponse};
 use async_trait::async_trait;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Nat, Principal};
 use ic_cdk::trap;
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
@@ -78,4 +78,22 @@ impl IStrategy for ckBTCStrategy {
     fn to_candid(&self) -> StrategyCandid {
         StrategyCandid::ckBTCStrategyV(self.clone())
     }
+
+    fn to_response(&self) -> StrategyResponse {
+        StrategyResponse {
+            name: self.get_name(),
+            id: self.get_id(),
+            description: self.get_description(),
+            pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
+        }
+    }
+
+
+    //common_amount
+
+    //shares (% - principal)
+
+    // fn invest(investor: Principal, amount: Nat) {
+    //     common_amount + shares
+    // }
 }

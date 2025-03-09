@@ -842,6 +842,7 @@ dependencies = [
  "ic-stable-structures",
  "icpswap_swap_pool_canister",
  "icpswap_swap_pool_canister_c2c_client",
+ "icrc-ledger-types",
  "icrc_ledger_canister",
  "icrc_ledger_canister_c2c_client",
  "kongswap_canister",

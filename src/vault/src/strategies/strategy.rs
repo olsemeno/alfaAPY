@@ -28,6 +28,15 @@ pub trait IStrategy {
     }
     async fn rebalance(&self) -> PoolReply;
     fn to_candid(&self) -> StrategyCandid;
+    fn to_response(&self) -> StrategyResponse;
+}
+
+#[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
+pub struct StrategyResponse {
+    pub name: String,
+    pub id: StrategyId,
+    pub description: String,
+    pub pools: Vec<PoolSymbol>,
 }
 
 pub struct Strategy {

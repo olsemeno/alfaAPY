@@ -47,7 +47,7 @@ pub mod icrc1 {
     use candid::Principal;
     use super::*;
 
-    #[derive(CandidType, Serialize, Deserialize, Clone, Debug, Copy)]
+    #[derive(CandidType, Serialize, Deserialize, Clone, Debug, Copy, PartialEq, Eq)]
     pub struct Account {
         pub owner: Principal,
         pub subaccount: Option<[u8; 32]>,

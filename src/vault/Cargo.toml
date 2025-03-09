@@ -26,3 +26,4 @@ icpswap_swap_pool_canister = { path = "../external_canisters/icpswap_swap_pool/a
 icpswap_swap_pool_canister_c2c_client = { path = "../external_canisters/icpswap_swap_pool/c2c_client" }
 icrc_ledger_canister_c2c_client = { path = "../external_canisters/icrc_ledger/c2c_client" }
 icrc_ledger_canister = { path = "../external_canisters/icrc_ledger/api" }
+icrc-ledger-types = "0.1.8"

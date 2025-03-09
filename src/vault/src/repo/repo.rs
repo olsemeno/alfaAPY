@@ -20,12 +20,6 @@ pub fn get_all_strategies() -> Vec<Box<dyn IStrategy>> {
     })
 }
 
-pub fn add_strategy(strategy: Box<dyn IStrategy>) {
-    STRATEGIES.with(|strategies| {
-        strategies.borrow_mut().push(strategy);
-    });
-}
-
 pub fn add_or_update_strategy(strategy: Box<dyn IStrategy>) {
     STRATEGIES.with(|strategies| {
         let mut strategies = strategies.borrow_mut();

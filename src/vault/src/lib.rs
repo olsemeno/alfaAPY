@@ -3,6 +3,7 @@ mod providers;
 mod strategies;
 mod liquidity;
 mod repo;
+mod user;
 
 use crate::repo::repo::{get_all_strategies, stable_restore, stable_save};
 use crate::strategies::strategy_candid::StrategyCandid;
@@ -19,6 +20,7 @@ use std::cell::RefCell;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::{Response as R2, SuccessResult};
 use types::CanisterId;
+use crate::strategies::strategy::StrategyResponse;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -83,7 +85,7 @@ fn get_config() -> Conf {
 }
 
 #[query]
-fn get_strategies() -> Vec<StrategyCandid> {
+fn get_strategies() -> Vec<StrategyResponse> {
     get_actual_strategies()
 }
 
