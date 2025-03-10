@@ -6,8 +6,10 @@ use ic_cdk::trap;
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
+use kongswap_canister::add_liquidity::Response;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::SuccessResult;
+use crate::liquidity::liquidity_service::get_pools_data;
 use crate::providers::kong::kong::add_liquidity;
 use crate::strategies::calculator::Calculator;
 use crate::strategies::strategy_candid::StrategyCandid;
@@ -108,12 +110,19 @@ impl IStrategy for ICPStrategy {
         self.total_shares += new_shares.clone();
         self.user_shares.insert(investor, new_shares.clone());
 
+      let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
+
+        self.current_pool = pools_data.iter().find(|&x| x.symbol == "ICP_ckUSDT").cloned();
+
         if let Some(ref pool_reply) = self.current_pool {
+
+            let token0 = pool_reply.symbol_0.clone();
+            let token1 =  pool_reply.symbol_1.clone();
 
             // Расчитываем сколько нужно для свапа и для пула
             let response   = Calculator::calculate_pool_liquidity_amounts(amount.clone(), Pool {
-                token0: pool_reply.symbol_0.clone(),
-                token1: pool_reply.symbol_1.clone(),
+                token0,
+                token1,
                 pool_symbol: pool_reply.symbol.clone(),
             }).await;
 
@@ -134,19 +143,38 @@ impl IStrategy for ICPStrategy {
            swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
 
             // Добавляем ликвидность
-             add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
+           let response =  add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
 
+            match response {
+                Ok(r) => {
+                    //TODO save response
+                    self.allocations.insert(pool_reply.symbol.clone(), amount.clone());
 
+                    DepositResponse {
+                        amount: amount.clone(),
+                        shares: new_shares,
+                        tx_id: r.tx_id,
+                        request_id: r.request_id,
+                    }
+                }
+                Err(e) => {
+                    trap(format!("Error: {}", e).as_str());
+                }
+            }
             // Добавляем в allocations
-            self.allocations.insert(pool_reply.symbol.clone(), amount.clone());
         } else {
             // rebalance();
+            //TODO fix
+            DepositResponse {
+                amount: amount,
+                shares: new_shares,
+                tx_id: 0,
+                request_id: 0,
+            }
+
         }
 
-        DepositResponse {
-            amount: amount,
-            shares: new_shares,
-        }
+
     }
 
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {

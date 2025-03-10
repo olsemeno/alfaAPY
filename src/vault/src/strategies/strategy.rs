@@ -56,9 +56,12 @@ pub struct Pool {
     pub token1: String,
 }
 
+#[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct DepositResponse {
     pub amount: Nat,
     pub shares: Nat,
+    pub tx_id: u64,
+    pub request_id: u64,
 }
 
 pub struct WithdrawResponse {

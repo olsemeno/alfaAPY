@@ -1,3 +1,4 @@
+use std::fmt::format;
 use crate::providers::kong::kong::{add_liquidity_amounts, swap_amounts};
 use crate::strategies::strategy::Pool;
 use candid::Nat;
@@ -43,7 +44,7 @@ impl Calculator {
                 x
             }
             Err(e) => {
-                trap(e.as_str())
+                trap( format!("Error for {} and {} and {}", token_1, token_1, amount).as_str())
             }
         };
         let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {

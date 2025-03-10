@@ -103,51 +103,51 @@ impl IStrategy for ckBTCStrategy {
 
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         // accept_deposit(investor, amount, self.get_subaccount());
-
-        let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
-
-        self.total_balance += amount.clone();
-        self.total_shares += new_shares.clone();
-        self.user_shares.insert(investor, new_shares.clone());
-
-        if let Some(ref pool_reply) = self.current_pool {
-
-            // Расчитываем сколько нужно для свапа и для пула
-            let response   = Calculator::calculate_pool_liquidity_amounts(amount.clone(), Pool {
-                token0: pool_reply.symbol_0.clone(),
-                token1: pool_reply.symbol_1.clone(),
-                pool_symbol: pool_reply.symbol.clone(),
-            }).await;
-
-            let token_0_for_swap = response.token_0_for_swap;
-            let token_0_for_pool = response.token_0_for_pool;
-            let  token_1_for_pool = response.token_1_for_pool;
-
-            let token_info_0 = TokenInfo {
-                ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
-                symbol: pool_reply.symbol_0.clone(),
-            };
-
-            let token_info_1 = TokenInfo {
-                ledger: Principal::from_text(pool_reply.address_1.clone()).unwrap(),
-                symbol: pool_reply.symbol_1.clone(),
-            };
-            // Свап
-            swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
-
-            // Добавляем ликвидность
-            add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
-
-            // Добавляем в allocations
-            self.allocations.insert(pool_reply.symbol.clone(), amount.clone());
-        } else {
-            // rebalance();
-        }
-
-        DepositResponse {
-            amount: amount,
-            shares: new_shares,
-        }
+trap("Not implemented yet");
+        // let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
+        //
+        // self.total_balance += amount.clone();
+        // self.total_shares += new_shares.clone();
+        // self.user_shares.insert(investor, new_shares.clone());
+        //
+        // if let Some(ref pool_reply) = self.current_pool {
+        //
+        //     // Расчитываем сколько нужно для свапа и для пула
+        //     let response   = Calculator::calculate_pool_liquidity_amounts(amount.clone(), Pool {
+        //         token0: pool_reply.symbol_0.clone(),
+        //         token1: pool_reply.symbol_1.clone(),
+        //         pool_symbol: pool_reply.symbol.clone(),
+        //     }).await;
+        //
+        //     let token_0_for_swap = response.token_0_for_swap;
+        //     let token_0_for_pool = response.token_0_for_pool;
+        //     let  token_1_for_pool = response.token_1_for_pool;
+        //
+        //     let token_info_0 = TokenInfo {
+        //         ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
+        //         symbol: pool_reply.symbol_0.clone(),
+        //     };
+        //
+        //     let token_info_1 = TokenInfo {
+        //         ledger: Principal::from_text(pool_reply.address_1.clone()).unwrap(),
+        //         symbol: pool_reply.symbol_1.clone(),
+        //     };
+        //     // Свап
+        //     swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
+        //
+        //     // Добавляем ликвидность
+        //     add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
+        //
+        //     // Добавляем в allocations
+        //     self.allocations.insert(pool_reply.symbol.clone(), amount.clone());
+        // } else {
+        //     // rebalance();
+        // }
+        //
+        // DepositResponse {
+        //     amount: amount,
+        //     shares: new_shares,
+        // }
     }
 
 

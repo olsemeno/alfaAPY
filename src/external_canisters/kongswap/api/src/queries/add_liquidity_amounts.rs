@@ -10,7 +10,7 @@ pub struct Args {
 
 pub type Response = Result<AddLiquidityAmountsReply, String>;
 
-#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize)]
 pub struct AddLiquidityAmountsReply {
     pub symbol: String,
     pub chain_0: String,

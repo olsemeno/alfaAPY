@@ -9,6 +9,7 @@ export async function getTypedActor<T>(
     identity: Identity,
     idl: IDL.InterfaceFactory
 ): Promise<Agent.ActorSubclass<T>> {
-    const agent: HttpAgent = await HttpAgent.create({host: localhost, identity: identity, shouldFetchRootKey: isLocalENV});
+    let host = isLocalENV ? localhost : "https://ic0.app";
+    const agent: HttpAgent = await HttpAgent.create({host, identity: identity, shouldFetchRootKey: isLocalENV});
     return Actor.createActor(idl, {agent, canisterId: imCanisterId});
 }
