@@ -23,7 +23,7 @@ pub(crate) async fn swap_icrc2_kong(
         &ApproveArgs {
             from_subaccount: None,
             spender: swap_client.canister_id().into(),
-            amount: Nat::from(99999 as usize),
+            amount: Nat::from(99999999999 as u128), //TODO
             expected_allowance: None,
             expires_at: None,
             fee: None,
