@@ -1,8 +1,9 @@
+use candid::Nat;
 use crate::liquidity::liquidity_service::get_pools_data;
 use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
 use async_trait::async_trait;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Principal};
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
@@ -27,6 +28,8 @@ pub trait IStrategy {
         get_pools_data(self.get_pools()).await
     }
     async fn rebalance(&self) -> PoolReply;
+    fn deposit(&self, investor: Principal, amount: Nat) -> DepositResponse;
+    fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse;
     fn to_candid(&self) -> StrategyCandid;
     fn to_response(&self) -> StrategyResponse;
 }
@@ -51,6 +54,15 @@ pub struct Pool {
     pub pool_symbol: PoolSymbol,
     pub token0: String,
     pub token1: String,
+}
+
+pub struct DepositResponse {
+    pub amount: Nat,
+    pub shares: Nat,
+}
+
+pub struct WithdrawResponse {
+    pub amount: Nat,
 }
 
 impl Clone for Box<dyn IStrategy> {

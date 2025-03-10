@@ -20,7 +20,6 @@ impl ICPStrategy {
     }
 }
 
-
 #[async_trait]
 impl IStrategy for ICPStrategy {
     fn get_name(&self) -> String {
