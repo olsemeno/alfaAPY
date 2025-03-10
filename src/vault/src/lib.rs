@@ -6,12 +6,14 @@ mod repo;
 mod user;
 
 use crate::repo::repo::{get_all_strategies, stable_restore, stable_save};
+use crate::strategies::strategy::{StrategyId, StrategyResponse};
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::swap::swap_service::swap_icrc2_kong;
+use crate::user::user_service::{accept_deposit, withdraw_from_strategy};
+use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use candid::{candid_method, CandidType, Deserialize};
-use ic_cdk::{print, trap};
+use ic_cdk::{caller, print, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use providers::kong::kong::pools;
@@ -20,7 +22,6 @@ use std::cell::RefCell;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::{Response as R2, SuccessResult};
 use types::CanisterId;
-use crate::strategies::strategy::StrategyResponse;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -77,6 +78,32 @@ async fn swap() -> SuccessResult {
     };
 
     swap_icrc2_kong(source, target, 1000).await
+}
+
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct AcceptInvestmentArgs {
+    ledger: CanisterId,
+    amount: Nat,
+    strategy_id: StrategyId,
+}
+
+#[update]
+async fn accept_investment(args: AcceptInvestmentArgs)  {
+    accept_deposit(args.amount, args.ledger, args.strategy_id).await;
+}
+
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct WithdrawArgs {
+    ledger: CanisterId,
+    amount: Nat,
+    strategy_id: StrategyId,
+}
+
+#[update]
+async fn withdraw(args: WithdrawArgs)  -> Result<Nat, String>  {
+    withdraw_from_strategy(args.strategy_id, args.amount, args.ledger).await
 }
 
 #[query]

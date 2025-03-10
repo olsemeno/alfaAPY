@@ -11,6 +11,11 @@
           "name": "candid:service"
         }
       ]
+    },
+    "ledger": {
+      "type": "custom",
+      "candid": "ledger.did",
+      "wasm": "ledger.wasm"
     }
   },
   "defaults": {
@@ -42,7 +47,7 @@
       "type": "persistent"
     },
     "local": {
-      "bind": "localhost:4943",
+      "bind": "127.0.0.1:8000",
       "type": "ephemeral",
       "replica": {
         "subnet_type": "system"
