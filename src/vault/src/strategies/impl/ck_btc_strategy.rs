@@ -135,19 +135,38 @@ impl IStrategy for ckBTCStrategy {
 
 
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
-        // Проверяем, есть ли у пользователя достаточное количество долей
-        let user_account = self.user_accounts.get_mut(&user).ok_or("Пользователь не найден")?;
-        if shares > user_account.shares {
-            return Err("У пользователя недостаточно долей для вывода".into());
+        // Check if user has enough shares
+        if shares > self.user_shares[&investor] {
+            return Err("Not sufficient shares".into());
         }
 
-        // Получаем колличество токенов после remove_liquidity - remove_liquidity_amounts()
-        // Достаем ликвидность remove_liquidity()
-        // Высчитываем сколько токенов нужно для свапа
-        // Свапаем на токены из пула в базовый токен swap_icrc2_kong()
-        // Переводим токены на адрес пользователя
-        // обновляем current_pool
-        
+        // Fetch LP tokens amount in pool
+        let (lp_tokens_in_pool) = user_balances(investor.to_string()).await.unwrap();
+
+        // Calculate LP tokens to withdraw
+        let lp_tokens_to_withdraw = lp_tokens_in_pool * shares / self.total_shares;
+
+        // Remove liquidity from pool
+        let (amount_0, amount_1) = remove_liquidity(pool_id.token0, pool_id.token1, lp_tokens_to_withdraw).await.unwrap();
+
+        // Update user shares
+        self.user_shares.insert(investor.clone(), self.user_shares[&investor] - shares);
+
+        // Update total shares
+        self.total_shares -= shares;
+
+        // Swap token_1 to token_0 (base token)
+        let(after_swap_amount_0) = swap_icrc2_kong(pool_id.token1, pool_id.token0, amount_1).await.unwrap();
+
+        // Calculate total token_0 to send after swap
+        let amount_to_withdraw = amount_0 + after_swap_amount_0;
+
+        // Send token_0 to user
+        send_token_0_to_user(investor, amount_to_withdraw);
+
+        Ok(WithdrawResponse {
+            amount: amount_to_withdraw
+        })
     }
 
     fn remove_liquidity(&self, investor: Principal, shares: Nat) -> RemoveLiquidityResponse {
