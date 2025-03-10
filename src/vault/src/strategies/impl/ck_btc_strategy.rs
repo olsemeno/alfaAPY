@@ -1,14 +1,16 @@
-use candid::{CandidType, Deserialize, Nat, Principal};
-use std::collections::HashMap;
+use crate::providers::kong::kong::add_liquidity;
 use crate::strategies::calculator::Calculator;
-use crate::strategies::strategy::{IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, DepositResponse};
-use crate::user::user_service::{accept_deposit};
+use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::swap::swap_service::swap_icrc2_kong;
 use async_trait::async_trait;
+use candid::{CandidType, Deserialize, Nat, Principal};
 use ic_cdk::trap;
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
-use crate::strategies::strategy_candid::StrategyCandid;
+use std::collections::HashMap;
+use types::exchanges::TokenInfo;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct ckBTCStrategy {
@@ -99,39 +101,54 @@ impl IStrategy for ckBTCStrategy {
         }
     }
 
-    fn deposit(&self, investor: Principal, amount: Nat) -> DepositResponse {
+    async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         // accept_deposit(investor, amount, self.get_subaccount());
-
-        let new_shares = Calculator::calculate_shares(amount, self.total_balance, self.total_shares);
-
-        self.total_balance += amount;
-        self.total_shares += new_shares;
-        self.user_shares.insert(investor, new_shares);
-
-        if let Some(ref pool_id) = self.current_pool {
-
-            // Расчитываем сколько нужно для свапа и для пула
-            let(token_0_for_swap, token_0_for_pool, token_1_for_pool) = Calculator::calculate_pool_liquidity_amounts(amount, pool_id);
-
-            // Свап
-            swap_icrc2_kong(pool_id.token0, pool_id.token1, token_0_for_swap);
-
-            // Добавляем ликвидность
-            add_liquidity(pool_id.token0, token_0_for_pool, pool_id.token1, token_1_for_pool);
-
-            // Добавляем в allocations
-            self.allocations.insert(pool_id.pool_symbol.clone(), amount);
-
-        } else {
-            // rebalance();
-        }
-
-        DepositResponse {
-            amount: amount,
-            shares: new_shares,
-        }
+trap("Not implemented yet");
+        // let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
+        //
+        // self.total_balance += amount.clone();
+        // self.total_shares += new_shares.clone();
+        // self.user_shares.insert(investor, new_shares.clone());
+        //
+        // if let Some(ref pool_reply) = self.current_pool {
+        //
+        //     // Расчитываем сколько нужно для свапа и для пула
+        //     let response   = Calculator::calculate_pool_liquidity_amounts(amount.clone(), Pool {
+        //         token0: pool_reply.symbol_0.clone(),
+        //         token1: pool_reply.symbol_1.clone(),
+        //         pool_symbol: pool_reply.symbol.clone(),
+        //     }).await;
+        //
+        //     let token_0_for_swap = response.token_0_for_swap;
+        //     let token_0_for_pool = response.token_0_for_pool;
+        //     let  token_1_for_pool = response.token_1_for_pool;
+        //
+        //     let token_info_0 = TokenInfo {
+        //         ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
+        //         symbol: pool_reply.symbol_0.clone(),
+        //     };
+        //
+        //     let token_info_1 = TokenInfo {
+        //         ledger: Principal::from_text(pool_reply.address_1.clone()).unwrap(),
+        //         symbol: pool_reply.symbol_1.clone(),
+        //     };
+        //     // Свап
+        //     swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
+        //
+        //     // Добавляем ликвидность
+        //     add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
+        //
+        //     // Добавляем в allocations
+        //     self.allocations.insert(pool_reply.symbol.clone(), amount.clone());
+        // } else {
+        //     // rebalance();
+        // }
+        //
+        // DepositResponse {
+        //     amount: amount,
+        //     shares: new_shares,
+        // }
     }
-
 
 
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
@@ -169,23 +186,22 @@ impl IStrategy for ckBTCStrategy {
         })
     }
 
-    fn remove_liquidity(&self, investor: Principal, shares: Nat) -> RemoveLiquidityResponse {
-        // Находим пул, с наибольшим APY
-        // Получаем колличество токенов после remove_liquidity - remove_liquidity_amounts()
-        // Достаем ликвидность remove_liquidity()
-        // Высчитываем сколько токенов нужно для свапа и для нового пула Calculator::calculate_pool_liquidity_amounts()
-        // Свапаем на токены из пула в базовый токен swap_icrc2_kong()
-        // Добавляем ликвидность в новый add_liquidity()
-        // обновляем current_pool
-    }
-    }
-
-
-    //common_amount
-
-    //shares (% - principal)
-
-    // fn invest(investor: Principal, amount: Nat) {
-    //     common_amount + shares
+    // fn rebalance(&self) -> PoolReply {
+    //     // Находим пул, с наибольшим APY
+    //     // Получаем колличество токенов после remove_liquidity - remove_liquidity_amounts()
+    //     // Достаем ликвидность remove_liquidity()
+    //     // Высчитываем сколько токенов нужно для свапа и для нового пула Calculator::calculate_pool_liquidity_amounts()
+    //     // Свапаем на токены из пула в базовый токен swap_icrc2_kong()
+    //     // Добавляем ликвидность в новый add_liquidity()
+    //     // обновляем current_pool
+    //     trap("Not implemented yet");
     // }
 }
+
+//common_amount
+
+//shares (% - principal)
+
+// fn invest(investor: Principal, amount: Nat) {
+//     common_amount + shares
+// }

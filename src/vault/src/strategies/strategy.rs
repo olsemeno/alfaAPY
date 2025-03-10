@@ -28,7 +28,7 @@ pub trait IStrategy {
         get_pools_data(self.get_pools()).await
     }
     async fn rebalance(&self) -> PoolReply;
-    fn deposit(&self, investor: Principal, amount: Nat) -> DepositResponse;
+    async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse;
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse;
     fn to_candid(&self) -> StrategyCandid;
     fn to_response(&self) -> StrategyResponse;
@@ -56,9 +56,12 @@ pub struct Pool {
     pub token1: String,
 }
 
+#[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct DepositResponse {
     pub amount: Nat,
     pub shares: Nat,
+    pub tx_id: u64,
+    pub request_id: u64,
 }
 
 pub struct WithdrawResponse {

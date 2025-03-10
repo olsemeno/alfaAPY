@@ -8,6 +8,12 @@ export interface AcceptInvestmentArgs {
     'amount' : bigint,
 }
 export interface Conf { 'controllers' : [] | [Array<Principal>] }
+export interface DepositResponse {
+    'request_id' : bigint,
+    'tx_id' : bigint,
+    'shares' : bigint,
+    'amount' : bigint,
+}
 export interface PoolReply {
     'tvl' : bigint,
     'lp_token_symbol' : string,
@@ -54,7 +60,7 @@ export interface WithdrawArgs {
     'amount' : bigint,
 }
 export interface _SERVICE {
-    'accept_investment' : ActorMethod<[AcceptInvestmentArgs], undefined>,
+    'accept_investment' : ActorMethod<[AcceptInvestmentArgs], DepositResponse>,
     'get_config' : ActorMethod<[], Conf>,
     'get_strategies' : ActorMethod<[], Array<StrategyResponse>>,
     'kong_pools' : ActorMethod<[], PoolsReply>,
