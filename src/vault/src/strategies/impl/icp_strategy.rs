@@ -104,12 +104,12 @@ impl IStrategy for ICPStrategy {
         // accept_deposit(investor, amount, self.get_subaccount());
 
         // Calculate new shares for investor's deposit
-        let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
+        let new_shares = Calculator::calculate_shares(nat_to_f64(&amount), nat_to_f64(&self.total_balance), nat_to_f64(&self.total_shares.clone()));
 
         // Update total balance and total shares
         self.total_balance += amount.clone();
-        self.total_shares += new_shares.clone();
-        self.user_shares.insert(investor, new_shares.clone());
+        self.total_shares +=  f64_to_nat(&new_shares);
+        self.user_shares.insert(investor, f64_to_nat(&new_shares));
 
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
         self.current_pool = pools_data.iter().find(|&x| x.symbol == "ICP_ckUSDT").cloned();
@@ -123,25 +123,43 @@ impl IStrategy for ICPStrategy {
                 (Ok(x),) => x,
                 (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
+//  AddLiquidityAmountsReply { symbol: "ICP_ckUSDT", chain_0: "IC", address_0: "ryjl3-tyaaa-aaaaa-aaaba-cai", symbol_0: "ICP",
+            // amount_0: Nat(10000), fee_0: Nat(10000), chain_1: "IC", address_1: "cngnf-vqaaa-aaaar-qag4q-cai",
+            // symbol_1: "ckUSDT", amount_1: Nat(537), fee_1: Nat(10000), add_lp_token_amount: Nat(22038) }
             // Get amounts of token_0 and token1 to swap
+
             let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
                 (Ok(x),) => x,
                 (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
 
-            let pool_ratio = add_liq_amounts_resp.amount_1 / add_liq_amounts_resp.amount_0;
-            let swap_price = swap_amounts_resp.price;
+            //  SwapAmountsReply { pay_chain: "IC", pay_symbol: "ICP", pay_address: "ryjl3-tyaaa-aaaaa-aaaba-cai",
+            // pay_amount: Nat(1000000), receive_chain: "IC", receive_symbol: "ckUSDT", receive_address: "cngnf-vqaaa-aaaar-qag4q-cai",
+            // receive_amount: Nat(43557), price: 4.3557, mid_price: 5.37189568, slippage: 18.92,
+            // txs: [SwapAmountsTxReply { pool_symbol: "ICP_ckUSDT", pay_chain: "IC", pay_symbol: "ICP", pay_amount: Nat(1000000),
+            // pay_address: "ryjl3-tyaaa-aaaaa-aaaba-cai", receive_chain: "IC", receive_symbol: "ckUSDT",
+            // receive_address: "cngnf-vqaaa-aaaar-qag4q-cai", receive_amount: Nat(43557), price: 4.3557, lp_fee: Nat(161), gas_fee: Nat(10000) }]
 
+            // trap(format!("swap_amounts_resp: {:?}", swap_amounts_resp).as_str());
+
+
+            let pool_ratio = nat_to_f64(&add_liq_amounts_resp.amount_1) / nat_to_f64(&add_liq_amounts_resp.amount_0);
+            let swap_price = nat_to_f64(&swap_amounts_resp.receive_amount) / nat_to_f64(&swap_amounts_resp.pay_amount);
+           //  100 ,0 ,0
+
+            // trap(format!("pool_ratio: {}, swap_price: {}, ampunt: {}", pool_ratio, swap_price, nat_to_f64(&amount)).as_str());
             // Calculate how much token_0 and token_1 to swap and add to pool
-            let response = Calculator::calculate_pool_liquidity_amounts(
-                amount.clone(),
+            let calculator_response = Calculator::calculate_pool_liquidity_amounts(
+                nat_to_f64(&amount),
                 pool_ratio.clone(),
                 swap_price.clone(),
             );
 
-            let token_0_for_swap = response.token_0_for_swap;
-            let token_0_for_pool = response.token_0_for_pool;
-            let token_1_for_pool = response.token_1_for_pool;
+            let token_0_for_swap = calculator_response.token_0_for_swap;
+            let token_0_for_pool = calculator_response.token_0_for_pool;
+            let token_1_for_pool = calculator_response.token_1_for_pool;
+
+            // trap(format!("token_0_for_swap: {}, token_0_for_pool: {}, token_1_for_pool: {}, amount: {}", token_0_for_swap, token_0_for_pool, token_1_for_pool, amount).as_str());
 
             let token_info_0 = TokenInfo {
                 ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
@@ -154,14 +172,16 @@ impl IStrategy for ICPStrategy {
             };
 
             // Swap token0 for token1 to get token1 for pool
-            swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
+           // let res =  swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap as u128, swap_amounts_resp2.receive_amount).await;
 
             // Add liquidity to pool with token0 and token1
             let response = add_liquidity(
                 pool_reply.symbol_0.clone(),
-                token_0_for_pool,
+                Nat::from(token_0_for_pool as u128),
                 pool_reply.symbol_1.clone(),
-                token_1_for_pool,
+                Nat::from(token_1_for_pool as u128),
+                Principal::from_text(pool_reply.address_0.clone()).unwrap(),
+                Principal::from_text(pool_reply.address_1.clone()).unwrap()
             ).await;
 
             match response {
@@ -171,7 +191,7 @@ impl IStrategy for ICPStrategy {
 
                     DepositResponse {
                         amount: amount.clone(),
-                        shares: new_shares,
+                        shares: f64_to_nat(&new_shares),
                         tx_id: r.tx_id,
                         request_id: r.request_id,
                     }
@@ -185,7 +205,7 @@ impl IStrategy for ICPStrategy {
             //TODO fix
             DepositResponse {
                 amount: amount,
-                shares: new_shares,
+                shares: f64_to_nat(&new_shares),
                 tx_id: 0,
                 request_id: 0,
             }
@@ -195,4 +215,15 @@ impl IStrategy for ICPStrategy {
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
         trap("Not implemented yet");
     }
+
+
+}
+
+pub fn nat_to_f64(n: &Nat) -> f64 {
+    let nat_str = n.0.to_str_radix(10); // Convert to string
+    nat_str.parse::<f64>().unwrap_or(0.0) // Parse as f64
+}
+
+pub fn f64_to_nat(f: &f64) -> Nat {
+    Nat::from(f.to_bits())
 }

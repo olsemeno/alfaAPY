@@ -13,7 +13,7 @@ use crate::swap::swap_service::{swap_icrc2_kong, KONG_BE_CANISTER};
 use crate::user::user_service::{accept_deposit, withdraw_from_strategy};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{call, caller, print, trap};
+use ic_cdk::{call, caller, id, print, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use providers::kong::kong::pools;
@@ -24,7 +24,7 @@ use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::{Response as R2, SuccessResult};
 use types::CanisterId;
-use crate::providers::kong::kong::add_liquidity_amounts;
+use crate::providers::kong::kong::{add_liquidity_amounts, user_balances};
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -67,21 +67,21 @@ async fn kong_pools() -> PoolsReply {
 }
 
 
-//dummy test method
-#[update]
-async fn swap() -> SuccessResult {
-    let source = TokenInfo {
-        ledger: CanisterId::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai".to_string()).unwrap(),
-        symbol: "ICP".to_string(),
-    };
-
-    let target = TokenInfo {
-        ledger: CanisterId::from_text("xevnm-gaaaa-aaaar-qafnq-cai".to_string()).unwrap(),
-        symbol: "ICP".to_string(),
-    };
-
-    swap_icrc2_kong(source, target, 1000).await
-}
+// //dummy test method
+// #[update]
+// async fn swap() -> SuccessResult {
+//     let source = TokenInfo {
+//         ledger: CanisterId::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai".to_string()).unwrap(),
+//         symbol: "ICP".to_string(),
+//     };
+//
+//     let target = TokenInfo {
+//         ledger: CanisterId::from_text("xevnm-gaaaa-aaaar-qafnq-cai".to_string()).unwrap(),
+//         symbol: "ICP".to_string(),
+//     };
+//
+//     swap_icrc2_kong(source, target, 1000, 1).await
+// }
 
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
@@ -94,7 +94,7 @@ pub struct AcceptInvestmentArgs {
 #[update]
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
-    accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
+    // accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
 
 
     let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
@@ -104,24 +104,10 @@ use kongswap_canister::queries::add_liquidity_amounts::{Args as AddLiquidityAmou
 
 
 #[update]
-async fn accept_investment2 () -> Result<AddLiquidityAmountsReply, String>  {
+async fn user_balance_all () -> Result<AddLiquidityAmountsReply, String>  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
 
-    let a: CallResult<(Result<AddLiquidityAmountsReply, String>,)> = call(
-        KONG_BE_CANISTER,
-        "add_liquidity_amounts",
-        ( String::from("ICP"), Nat::from(100 as usize), String::from("ckUSDT"),
-        )
-    ).await;
-
-    match a {
-        Ok(x) => {
-            x.0
-        }
-        Err(l) => {
-           trap(format!("Error: {}", l.1).as_str());
-        }
-    }
+    user_balances(id()).await
 }
 
 

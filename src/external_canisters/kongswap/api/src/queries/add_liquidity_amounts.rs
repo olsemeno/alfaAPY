@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub type  Args =  (String, Nat, String);
 pub type Response = (Result<AddLiquidityAmountsReply, String>,);
 
-#[derive(CandidType, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
 pub struct AddLiquidityAmountsReply {
     pub symbol: String,
     pub chain_0: String,

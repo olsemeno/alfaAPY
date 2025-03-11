@@ -54,7 +54,7 @@ describe("VR Test PROD" , () => {
         let actorVault = await getTypedActor<VaultType>(canister_id, member_identity, idlFactory);
 
         try {
-            let deposit = await  actorVault.accept_investment({amount: BigInt(100), strategy_id: 2,  ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")})
+            let deposit = await  actorVault.accept_investment({amount: BigInt(1000000), strategy_id: 2,  ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")})
             console.log("Deposit success" + deposit)
         }catch (e) {
             console.log(e)

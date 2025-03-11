@@ -1,7 +1,8 @@
 use crate::swap::swap_service::KONG_BE_CANISTER;
-use candid::Nat;
+use candid::{Nat, Principal};
 use ic_cdk::api::call::CallResult;
 use ic_cdk::{call, trap};
+use icrc_ledger_types::icrc2::approve::ApproveArgs;
 use kongswap_canister::add_liquidity::{Args, Response as AddLiquidityResponse};
 use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
 use kongswap_canister::pools::Response as PoolsResponse;
@@ -38,7 +39,65 @@ pub async fn add_liquidity_amounts(token_0: String, amount: Nat, token_1: String
     })
 }
 
-pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amount_1: Nat) -> AddLiquidityResponse {
+pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amount_1: Nat, ledger1: Principal,ledger2: Principal) -> AddLiquidityResponse {
+// "ICP" Nat(4691453851855749120) "ckUSDT" Nat(4672478016327122944)'.
+//     trap(format!("AddLiquidityArgs: {:?} {:?} {:?} {:?}", token_0, amount_0, token_1, amount_1).as_str());
+
+
+    let x = match icrc_ledger_canister_c2c_client::icrc2_approve(
+        ledger1,
+        &ApproveArgs {
+            from_subaccount: None,
+            spender: KONG_BE_CANISTER.into(),
+            amount: Nat::from(99999999999999 as u128), //TODO
+            expected_allowance: None,
+            expires_at: None,
+            fee: None,
+            memo: None,
+            created_at_time: None,
+        },
+    )
+        .await
+    {
+        Ok(Ok(index)) => Ok(index),
+        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
+    };
+
+    match x {
+        Ok(_) => {}
+        Err(a) => {
+            trap(format!("ICRC2 approve  {a:?}").as_str());
+        }
+    }
+
+    let x2 = match icrc_ledger_canister_c2c_client::icrc2_approve(
+        ledger2,
+        &ApproveArgs {
+            from_subaccount: None,
+            spender: KONG_BE_CANISTER.into(),
+            amount: Nat::from(99999999999999 as u128), //TODO
+            expected_allowance: None,
+            expires_at: None,
+            fee: None,
+            memo: None,
+            created_at_time: None,
+        },
+    )
+        .await
+    {
+        Ok(Ok(index)) => Ok(index),
+        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
+    };
+
+    match x2 {
+        Ok(_) => {}
+        Err(a) => {
+            trap(format!("ICRC2 approve  {a:?}").as_str());
+        }
+    }
+
     kongswap_canister_c2c_client::add_liquidity(KONG_BE_CANISTER, &Args {
         token_0,
         amount_0,

@@ -38,7 +38,7 @@ pub struct AddLiquidityReply {
     pub claim_ids: Vec<u64>,
     pub ts: u64,
 }
-#[derive(CandidType, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
 pub struct TransferIdReply {
     pub transfer_id: u64,
     pub transfer: TransferReply,
@@ -46,7 +46,7 @@ pub struct TransferIdReply {
 
 
 
-#[derive(CandidType, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
 pub enum TransferReply {
     IC(ICTransferReply),
 }
