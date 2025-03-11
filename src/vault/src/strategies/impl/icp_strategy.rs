@@ -1,20 +1,18 @@
-use std::collections::HashMap;
-use candid::{CandidType, Deserialize, Nat, Principal};
-use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::liquidity::liquidity_service::get_pools_data;
+use crate::providers::kong::kong::add_liquidity;
 use crate::providers::kong::kong::{add_liquidity_amounts, swap_amounts};
+use crate::strategies::calculator::Calculator;
+use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::swap::swap_service::swap_icrc2_kong;
 use async_trait::async_trait;
+use candid::{CandidType, Deserialize, Nat, Principal};
 use ic_cdk::trap;
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
-use kongswap_canister::add_liquidity::Response;
+use std::collections::HashMap;
 use types::exchanges::TokenInfo;
-use types::swap_tokens::SuccessResult;
-use crate::liquidity::liquidity_service::get_pools_data;
-use crate::providers::kong::kong::add_liquidity;
-use crate::strategies::calculator::Calculator;
-use crate::strategies::strategy_candid::StrategyCandid;
-use crate::swap::swap_service::swap_icrc2_kong;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct ICPStrategy {
@@ -118,26 +116,17 @@ impl IStrategy for ICPStrategy {
 
         if let Some(ref pool_reply) = self.current_pool {
             let token_0 = pool_reply.symbol_0.clone();
-            let token_1 =  pool_reply.symbol_1.clone();
+            let token_1 = pool_reply.symbol_1.clone();
 
             // Get amounts of token_0 and token1 to add to pool
             let add_liq_amounts_resp = match add_liquidity_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-                Ok(x) => {
-                    x
-                }
-                Err(e) => {
-                    trap( format!("Error for {} and {} and {}", token_1, token_1, amount).as_str())
-                }
+                (Ok(x),) => x,
+                (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
-
             // Get amounts of token_0 and token1 to swap
             let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-                Ok(x) => {
-                    x
-                }
-                Err(e) => {
-                    trap(e.as_str())
-                }
+                (Ok(x),) => x,
+                (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
 
             let pool_ratio = add_liq_amounts_resp.amount_1 / add_liq_amounts_resp.amount_0;
@@ -147,7 +136,7 @@ impl IStrategy for ICPStrategy {
             let response = Calculator::calculate_pool_liquidity_amounts(
                 amount.clone(),
                 pool_ratio.clone(),
-                swap_price.clone()
+                swap_price.clone(),
             );
 
             let token_0_for_swap = response.token_0_for_swap;
@@ -172,7 +161,7 @@ impl IStrategy for ICPStrategy {
                 pool_reply.symbol_0.clone(),
                 token_0_for_pool,
                 pool_reply.symbol_1.clone(),
-                token_1_for_pool
+                token_1_for_pool,
             ).await;
 
             match response {
@@ -200,10 +189,7 @@ impl IStrategy for ICPStrategy {
                 tx_id: 0,
                 request_id: 0,
             }
-
         }
-
-
     }
 
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
