@@ -1,6 +1,6 @@
 use candid::Nat;
 use crate::liquidity::liquidity_service::get_pools_data;
-use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
+use crate::strategies::r#impl::ck_btc_strategy::{ckBTCStrategy, WithdrawFromPoolResponse};
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Principal};
@@ -9,6 +9,7 @@ use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::cell::RefMut;
 use std::cmp::Ordering;
+use crate::providers::kong::kong::{remove_liquidity, user_balances};
 use crate::strategies::strategy_candid::StrategyCandid;
 
 pub type PoolSymbol = String;
@@ -29,9 +30,10 @@ pub trait IStrategy {
     }
     async fn rebalance(&self) -> PoolReply;
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse;
-    fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse;
+    async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse;
     fn to_candid(&self) -> StrategyCandid;
     fn to_response(&self) -> StrategyResponse;
+    async fn withdraw_from_pool(&mut self, investor: Principal, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
 }
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]

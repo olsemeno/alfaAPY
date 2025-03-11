@@ -104,10 +104,10 @@ use kongswap_canister::queries::add_liquidity_amounts::{Args as AddLiquidityAmou
 
 
 #[update]
-async fn user_balance_all () -> Result<AddLiquidityAmountsReply, String>  {
+async fn user_balance_all ()  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
 
-    user_balances(id()).await
+   let ub =  user_balances(id().to_text()).await;
 }
 
 
@@ -120,7 +120,9 @@ pub struct WithdrawArgs {
 
 #[update]
 async fn withdraw(args: WithdrawArgs)  -> Result<Nat, String>  {
-    withdraw_from_strategy(args.strategy_id, args.amount, args.ledger).await
+    let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
+   let resp =  str.withdraw(caller(), Nat::from(1u8)).await;
+    Ok(resp.amount)
 }
 
 #[query]

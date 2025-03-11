@@ -1,5 +1,4 @@
-use crate::providers::kong::kong::add_liquidity;
-use crate::strategies::calculator::Calculator;
+use crate::providers::kong::kong::{remove_liquidity, user_balances};
 use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::swap::swap_service::swap_icrc2_kong;
@@ -10,7 +9,6 @@ use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::collections::HashMap;
-use types::exchanges::TokenInfo;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct ckBTCStrategy {
@@ -19,6 +17,12 @@ pub struct ckBTCStrategy {
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
     allocations: HashMap<PoolSymbol, Nat>,
+}
+
+
+pub struct WithdrawFromPoolResponse {
+    pub token_0_amount: Nat,
+    pub token_1_amount: Nat,
 }
 
 impl ckBTCStrategy {
@@ -153,40 +157,52 @@ impl IStrategy for ckBTCStrategy {
     }
 
 
-    fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
+    async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse {
         trap("Not implemented yet");
         // // Check if user has enough shares
         // if shares > self.user_shares[&investor] {
-        //     return Err("Not sufficient shares".into());
+        //     return trap("Not sufficient shares".into());
         // }
-
-        // // Fetch LP tokens amount in pool
-        // let (lp_tokens_in_pool) = user_balances(investor.to_string()).await.unwrap();
-
-        // // Calculate LP tokens to withdraw
-        // let lp_tokens_to_withdraw = lp_tokens_in_pool * shares / self.total_shares;
-
+        //
         // // Remove liquidity from pool
-        // let (amount_0, amount_1) = remove_liquidity(pool_id.token0, pool_id.token1, lp_tokens_to_withdraw).await.unwrap();
-
-        // // Update user shares
-        // self.user_shares.insert(investor.clone(), self.user_shares[&investor] - shares);
-
-        // // Update total shares
-        // self.total_shares -= shares;
-
+        // let res  = self.withdraw_from_pool(investor, shares, self.get_current_pool()).await;
+        //
         // // Swap token_1 to token_0 (base token)
-        // let(after_swap_amount_0) = swap_icrc2_kong(pool_id.token1, pool_id.token0, amount_1).await.unwrap();
-
+        // let (after_swap_amount_0) = swap_icrc2_kong(pool_id.token_1, pool_id.token_0, amount_1).await.unwrap();
+        //
         // // Calculate total token_0 to send after swap
         // let amount_to_withdraw = amount_0 + after_swap_amount_0;
-
+        //
         // // Send token_0 to user
         // send_token_0_to_user(investor, amount_to_withdraw);
-
+        //
+        // // Update user shares
+        // self.user_shares.insert(investor.clone(), &self.user_shares[&investor] - &shares);
+        //
+        // // Update total shares
+        // self.total_shares -= &shares;
         // Ok(WithdrawResponse {
         //     amount: amount_to_withdraw
         // })
+    }
+
+
+
+    async fn withdraw_from_pool(&mut self, investor: Principal, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse {
+        trap("Not implemented yet");
+
+        // //  Fetch LP tokens amount in pool
+        // let (lp_tokens_in_pool) = user_balances(investor.to_string()).find_one(pool.symbol.clone()).await.unwrap(
+        // );
+        // // Calculate LP tokens to withdraw
+        // let lp_tokens_to_withdraw = lp_tokens_in_pool * shares / &self.total_shares;
+        // // Remove liquidity from pool
+        // let (amount_0, amount_1) = remove_liquidity(pool.symbol_0.clone(), pool.symbol_1.clone(), lp_tokens_to_withdraw).await.unwrap();
+        //
+        // WithdrawFromPoolResponse {
+        //     token_0_amount: amount_0,
+        //     token_1_amount: amount_1,
+        // }
     }
 
     // fn rebalance(&self) -> PoolReply {

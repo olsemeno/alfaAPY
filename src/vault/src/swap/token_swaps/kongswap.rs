@@ -48,7 +48,7 @@ impl SwapClient for KongSwapClient {
         self.canister_id
     }
 
-    async fn swap(&self, amount: u128, min_amount_out: Nat) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
+    async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
 
         // trap(format!("SwapArgs: {:?} {:?} {:?}", amount, min_amount_out, self.token_in.ledger).as_str());
        //

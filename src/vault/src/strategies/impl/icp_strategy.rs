@@ -1,17 +1,23 @@
 use crate::liquidity::liquidity_service::get_pools_data;
-use crate::providers::kong::kong::add_liquidity;
+use crate::providers::kong::kong::{add_liquidity, remove_liquidity, user_balances};
 use crate::providers::kong::kong::{add_liquidity_amounts, swap_amounts};
 use crate::strategies::calculator::Calculator;
+use crate::strategies::r#impl::ck_btc_strategy::WithdrawFromPoolResponse;
 use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::swap::swap_service::swap_icrc2_kong;
+use crate::swap::token_swaps::nat_to_u128;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Nat, Principal};
-use ic_cdk::trap;
+use ic_cdk::{caller, trap};
 use ic_ledger_types::Subaccount;
+use icrc_ledger_canister_c2c_client::icrc1_transfer;
+use icrc_ledger_types::icrc1::account::Account;
+use kongswap_canister::user_balances::UserBalancesReply;
 use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::ops::{Div, Mul};
 use types::exchanges::TokenInfo;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
@@ -108,7 +114,7 @@ impl IStrategy for ICPStrategy {
 
         // Update total balance and total shares
         self.total_balance += amount.clone();
-        self.total_shares +=  f64_to_nat(&new_shares);
+        self.total_shares += f64_to_nat(&new_shares);
         self.user_shares.insert(investor, f64_to_nat(&new_shares));
 
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
@@ -120,17 +126,17 @@ impl IStrategy for ICPStrategy {
 
             // Get amounts of token_0 and token1 to add to pool
             let add_liq_amounts_resp = match add_liquidity_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-                (Ok(x),) => x,
-                (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
+                (Ok(x), ) => x,
+                (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
-//  AddLiquidityAmountsReply { symbol: "ICP_ckUSDT", chain_0: "IC", address_0: "ryjl3-tyaaa-aaaaa-aaaba-cai", symbol_0: "ICP",
+            //  AddLiquidityAmountsReply { symbol: "ICP_ckUSDT", chain_0: "IC", address_0: "ryjl3-tyaaa-aaaaa-aaaba-cai", symbol_0: "ICP",
             // amount_0: Nat(10000), fee_0: Nat(10000), chain_1: "IC", address_1: "cngnf-vqaaa-aaaar-qag4q-cai",
             // symbol_1: "ckUSDT", amount_1: Nat(537), fee_1: Nat(10000), add_lp_token_amount: Nat(22038) }
             // Get amounts of token_0 and token1 to swap
 
             let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-                (Ok(x),) => x,
-                (Err(e),) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
+                (Ok(x), ) => x,
+                (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
             };
 
             //  SwapAmountsReply { pay_chain: "IC", pay_symbol: "ICP", pay_address: "ryjl3-tyaaa-aaaaa-aaaba-cai",
@@ -142,10 +148,9 @@ impl IStrategy for ICPStrategy {
 
             // trap(format!("swap_amounts_resp: {:?}", swap_amounts_resp).as_str());
 
-
             let pool_ratio = nat_to_f64(&add_liq_amounts_resp.amount_1) / nat_to_f64(&add_liq_amounts_resp.amount_0);
             let swap_price = nat_to_f64(&swap_amounts_resp.receive_amount) / nat_to_f64(&swap_amounts_resp.pay_amount);
-           //  100 ,0 ,0
+            //  100 ,0 ,0
 
             // trap(format!("pool_ratio: {}, swap_price: {}, ampunt: {}", pool_ratio, swap_price, nat_to_f64(&amount)).as_str());
             // Calculate how much token_0 and token_1 to swap and add to pool
@@ -161,18 +166,8 @@ impl IStrategy for ICPStrategy {
 
             // trap(format!("token_0_for_swap: {}, token_0_for_pool: {}, token_1_for_pool: {}, amount: {}", token_0_for_swap, token_0_for_pool, token_1_for_pool, amount).as_str());
 
-            let token_info_0 = TokenInfo {
-                ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
-                symbol: pool_reply.symbol_0.clone(),
-            };
-
-            let token_info_1 = TokenInfo {
-                ledger: Principal::from_text(pool_reply.address_1.clone()).unwrap(),
-                symbol: pool_reply.symbol_1.clone(),
-            };
-
             // Swap token0 for token1 to get token1 for pool
-           // let res =  swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap as u128, swap_amounts_resp2.receive_amount).await;
+            // let res =  swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap as u128, swap_amounts_resp2.receive_amount).await;
 
             // Add liquidity to pool with token0 and token1
             let response = add_liquidity(
@@ -181,7 +176,7 @@ impl IStrategy for ICPStrategy {
                 pool_reply.symbol_1.clone(),
                 Nat::from(token_1_for_pool as u128),
                 Principal::from_text(pool_reply.address_0.clone()).unwrap(),
-                Principal::from_text(pool_reply.address_1.clone()).unwrap()
+                Principal::from_text(pool_reply.address_1.clone()).unwrap(),
             ).await;
 
             match response {
@@ -212,11 +207,100 @@ impl IStrategy for ICPStrategy {
         }
     }
 
-    fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
-        trap("Not implemented yet");
+
+    async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse {
+        // Check if user has enough shares
+        if shares > self.user_shares[&investor] {
+            trap("Not sufficient shares".into());
+        }
+
+        // Remove liquidity from pool
+        let res = self.withdraw_from_pool(investor, shares.clone(), self.get_current_pool()).await;
+
+        let ppol = self.get_current_pool();
+        let token_info_0 = TokenInfo {
+            ledger: Principal::from_text(&ppol.address_0).unwrap(),
+            symbol: ppol.symbol_0.clone(),
+        };
+
+        let token_info_1 = TokenInfo {
+            ledger: Principal::from_text(ppol.address_1.clone()).unwrap(),
+            symbol: ppol.symbol_1.clone(),
+        };
+
+        // Swap token_1 to token_0 (base token)
+        let (after_swap_amount_0) = swap_icrc2_kong(token_info_0, token_info_1, nat_to_u128(res.token_1_amount))
+            .await;
+
+        // Calculate total token_0 to send after swap
+        let amount_to_withdraw = res.token_0_amount + after_swap_amount_0.amount_out;
+
+        // Send token_0 to user //TODO
+        let tr_result = icrc1_transfer(caller(), &icrc1_transfer::Args {
+            from_subaccount: None,
+            to: Account {
+                owner: caller(),
+                subaccount: None,
+            },
+            fee: None,
+            created_at_time: None,
+            memo: None,
+            amount: amount_to_withdraw.clone(),
+        }).await;
+
+        let tr_id = match tr_result {
+            Ok(Ok(x)) => {
+                x
+            }
+            Err(x) => {
+                trap(format!("Error: {:?}", x.1).as_str());
+            }
+            Ok(Err(x)) => {
+                trap(format!("Error: {:?}", x).as_str());
+            }
+        };
+
+        // Update user shares
+        self.user_shares.insert(investor.clone(), self.user_shares.get_mut(&investor).unwrap().clone().min(shares.clone()));
+        // Update total shares
+        self.total_shares = self.total_shares.clone().min(shares);
+        WithdrawResponse {
+            amount: amount_to_withdraw
+        }
     }
 
 
+    async fn withdraw_from_pool(&mut self, investor: Principal, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse {
+        // trap("Not implemented yet");
+
+        //  Fetch LP tokens amount in pool
+        let user_balances_response = user_balances(investor.to_string()).await.unwrap();
+        //TODO fixme last one
+        let user_reply_b = user_balances_response.into_iter()
+            .map(|x| match x {
+                Ok(s) => match s {
+                    UserBalancesReply::LP(x) => x,
+                    _ => trap("Expected LP balance"),
+                },
+                Err(e) => {
+                   trap(format!("Error: {:?}", e).as_str())
+                },
+            })
+            .find(|&balance| balance.symbol == pool.symbol).unwrap().clone();
+        let balance = match user_reply_b {
+            UserBalancesReply::LP(x) => x.balance,
+            _ => trap("Expected LP balance"),
+        };
+
+        let lp_tokens_to_withdraw = f64_to_nat(&balance).mul(shares).div(self.total_shares.clone());
+        // Remove liquidity from pool
+        let x = remove_liquidity(pool.symbol_0.clone(), pool.symbol_1.clone(), lp_tokens_to_withdraw).await.unwrap();
+
+        WithdrawFromPoolResponse {
+            token_0_amount: x.amount_0,
+            token_1_amount: x.amount_1,
+        }
+    }
 }
 
 pub fn nat_to_f64(n: &Nat) -> f64 {

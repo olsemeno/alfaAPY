@@ -62,6 +62,28 @@ describe("VR Test PROD" , () => {
 
 
 
+    });it("Withdraw balance", async function () {
+        let member_identity = getIdentity("87654321876543218765432187654399")
+
+        console.log(member_identity.getPrincipal().toText())
+        let actor = await getTypedActor<ledgerService>("ryjl3-tyaaa-aaaaa-aaaba-cai", member_identity, ledger_idl);
+        let balance = await actor.icrc1_balance_of(
+            {subaccount: [], owner: member_identity.getPrincipal()})
+        console.log(balance)
+
+
+
+        let actorVault = await getTypedActor<VaultType>(canister_id, member_identity, idlFactory);
+
+        try {
+            let deposit = await  actorVault.withdraw({amount: BigInt(1000000), strategy_id: 2,  ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")})
+            console.log("Deposit success" + deposit)
+        }catch (e) {
+            console.log(e)
+        }
+
+
+
     });
 
 
