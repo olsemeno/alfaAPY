@@ -8,7 +8,7 @@ import {idlFactory as ledger_idl} from "../idl/ledger_idl";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {Principal} from "@dfinity/principal";
 
-export const isLocalENV = true
+export const isLocalENV = false
 
 
 describe("VR Test", () => {

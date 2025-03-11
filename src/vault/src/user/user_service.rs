@@ -34,7 +34,7 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
     let transfer_args: Icrc2TransferFromArgs = Icrc2TransferFromArgs {
         spender_subaccount: None,
         from: Account { owner: caller(), subaccount: None },
-        to:  {
+        to: {
             Account { owner: id(), subaccount: None }
         },
         amount: amount.clone(),
@@ -43,12 +43,12 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
         created_at_time: None,
     };
 
-    let  bi= match icrc2_transfer_from(ledger, &transfer_args).await {
+    let bi = match icrc2_transfer_from(ledger, &transfer_args).await {
         Ok(mut block_index) => {
             block_index
         }
         Err(message) => {
-           trap(format!("Error transferring deposit: {message}").as_str());
+            trap(format!("Error transferring deposit: {message}").as_str());
         }
     };
 

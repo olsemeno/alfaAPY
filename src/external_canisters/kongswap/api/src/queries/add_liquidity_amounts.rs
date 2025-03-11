@@ -1,16 +1,11 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
-#[derive(CandidType, Serialize, Deserialize)]
-pub struct Args {
-    pub token_0: String,
-    pub amount: Nat,
-    pub token_1: String,
-}
 
-pub type Response = Result<AddLiquidityAmountsReply, String>;
+pub type  Args =  (String, Nat, String);
+pub type Response = (Result<AddLiquidityAmountsReply, String>,);
 
-#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
 pub struct AddLiquidityAmountsReply {
     pub symbol: String,
     pub chain_0: String,

@@ -13,8 +13,11 @@ pub const SNS_GOVERNANCE_CANISTER_ID: CanisterId = Principal::from_slice(&[0, 0,
 pub(crate) async fn swap_icrc2_kong(
     input_token: TokenInfo,
     output_token: TokenInfo,
-    amount: u128
+    amount: u128,
+    min_amount_out: Nat,
 ) -> SuccessResult {
+
+    // trap(format!("SwapArgs: {:?} output {:?} input {:?} tokan {:?}", amount, output_token.ledger.to_text(), input_token.ledger.to_text(), min_amount_out.0.count_ones()).as_str());
 
     let swap_client =  Box::new(KongSwapClient::new(KONG_BE_CANISTER, input_token.clone(), output_token));
 
@@ -23,7 +26,7 @@ pub(crate) async fn swap_icrc2_kong(
         &ApproveArgs {
             from_subaccount: None,
             spender: swap_client.canister_id().into(),
-            amount: Nat::from(99999 as usize),
+            amount: Nat::from(99999999999999 as u128), //TODO
             expected_allowance: None,
             expires_at: None,
             fee: None,
@@ -34,26 +37,26 @@ pub(crate) async fn swap_icrc2_kong(
         .await
     {
         Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("{error:?}")),
-        Err(error) => Err(format!("{error:?}")),
+        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
     };
 
     match x {
         Ok(_) => {}
         Err(a) => {
-            trap(a.as_str());
+            trap(format!("ICRC2 approve  {a:?}").as_str());
         }
     }
 
     let swap_result = match swap_client
-        .swap(amount, 0)
+        .swap(amount, min_amount_out)
         .await
     {
         Ok(r) => {
             r
         }
         Err(error) => {
-            let msg = format!("{error:?}");
+            let msg = format!("Swap error 1 : {error:?}");
             trap(msg.as_str());
         }
     };
@@ -63,7 +66,8 @@ pub(crate) async fn swap_icrc2_kong(
             SuccessResult { amount_out: x.amount_out }
         }
         Err(e) => {
-            trap(e.as_str())
+            let msg = format!("Swap error 2 : {e:?} arguments: {}", amount);
+            trap(msg.as_str());
         }
     }
 }

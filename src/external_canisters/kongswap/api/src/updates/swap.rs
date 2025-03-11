@@ -8,15 +8,15 @@ pub struct Args {
     pub pay_amount: Nat,
     // pub pay_tx_id: Option<Nat>,
     pub receive_token: String,
-    pub receive_amount: Option<Nat>,
+    // pub receive_amount: Option<Nat>,
     // pub receive_address: Option<String>,
-    // pub max_slippage: Option<f32>,
-    pub referred_by: Option<String>,
+    pub max_slippage: Option<f64>,
+    // pub referred_by: Option<String>,
 }
 
 pub type Response = Result<SwapReply, String>;
 
-#[derive(CandidType, Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Debug)]
 pub struct SwapReply {
     pub tx_id: u64,
     pub request_id: u64,
@@ -37,7 +37,7 @@ pub struct SwapReply {
 }
 
 
-#[derive(CandidType, Serialize, Deserialize, Clone)]
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct ICTransferReply {
     pub chain: String,
     pub symbol: String,

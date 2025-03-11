@@ -5,6 +5,12 @@ export const idlFactory = ({ IDL }) => {
         'ledger' : IDL.Principal,
         'amount' : IDL.Nat,
     });
+    const DepositResponse = IDL.Record({
+        'request_id' : IDL.Nat64,
+        'tx_id' : IDL.Nat64,
+        'shares' : IDL.Nat,
+        'amount' : IDL.Nat,
+    });
     const StrategyResponse = IDL.Record({
         'id' : IDL.Nat16,
         'name' : IDL.Text,
@@ -50,7 +56,11 @@ export const idlFactory = ({ IDL }) => {
     });
     const Result = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
     return IDL.Service({
-        'accept_investment' : IDL.Func([AcceptInvestmentArgs], [], []),
+        'accept_investment' : IDL.Func(
+            [AcceptInvestmentArgs],
+            [DepositResponse],
+            [],
+        ),
         'get_config' : IDL.Func([], [Conf], ['query']),
         'get_strategies' : IDL.Func([], [IDL.Vec(StrategyResponse)], ['query']),
         'kong_pools' : IDL.Func([], [PoolsReply], []),

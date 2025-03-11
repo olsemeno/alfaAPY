@@ -2,15 +2,9 @@ use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 pub use crate::PoolsReply;
 
-pub type Response = Result<SwapAmountsReply, String>;
 
-#[derive(CandidType, Serialize, Deserialize)]
-pub struct Args {
-    pub pay_token: String,
-    pub pay_amount: Nat,
-    pub receive_token: String
-}
-
+pub type  Args =  (String, Nat, String);
+pub type Response = (Result<SwapAmountsReply, String>,);
 
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
 pub struct SwapAmountsTxReply {
