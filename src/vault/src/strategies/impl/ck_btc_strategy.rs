@@ -103,7 +103,9 @@ impl IStrategy for ckBTCStrategy {
 
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         // accept_deposit(investor, amount, self.get_subaccount());
-trap("Not implemented yet");
+
+        trap("Not implemented yet");
+
         // let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
         //
         // self.total_balance += amount.clone();
@@ -152,38 +154,39 @@ trap("Not implemented yet");
 
 
     fn withdraw(&self, investor: Principal, shares: Nat) -> WithdrawResponse {
-        // Check if user has enough shares
-        if shares > self.user_shares[&investor] {
-            return Err("Not sufficient shares".into());
-        }
+        trap("Not implemented yet");
+        // // Check if user has enough shares
+        // if shares > self.user_shares[&investor] {
+        //     return Err("Not sufficient shares".into());
+        // }
 
-        // Fetch LP tokens amount in pool
-        let (lp_tokens_in_pool) = user_balances(investor.to_string()).await.unwrap();
+        // // Fetch LP tokens amount in pool
+        // let (lp_tokens_in_pool) = user_balances(investor.to_string()).await.unwrap();
 
-        // Calculate LP tokens to withdraw
-        let lp_tokens_to_withdraw = lp_tokens_in_pool * shares / self.total_shares;
+        // // Calculate LP tokens to withdraw
+        // let lp_tokens_to_withdraw = lp_tokens_in_pool * shares / self.total_shares;
 
-        // Remove liquidity from pool
-        let (amount_0, amount_1) = remove_liquidity(pool_id.token0, pool_id.token1, lp_tokens_to_withdraw).await.unwrap();
+        // // Remove liquidity from pool
+        // let (amount_0, amount_1) = remove_liquidity(pool_id.token0, pool_id.token1, lp_tokens_to_withdraw).await.unwrap();
 
-        // Update user shares
-        self.user_shares.insert(investor.clone(), self.user_shares[&investor] - shares);
+        // // Update user shares
+        // self.user_shares.insert(investor.clone(), self.user_shares[&investor] - shares);
 
-        // Update total shares
-        self.total_shares -= shares;
+        // // Update total shares
+        // self.total_shares -= shares;
 
-        // Swap token_1 to token_0 (base token)
-        let(after_swap_amount_0) = swap_icrc2_kong(pool_id.token1, pool_id.token0, amount_1).await.unwrap();
+        // // Swap token_1 to token_0 (base token)
+        // let(after_swap_amount_0) = swap_icrc2_kong(pool_id.token1, pool_id.token0, amount_1).await.unwrap();
 
-        // Calculate total token_0 to send after swap
-        let amount_to_withdraw = amount_0 + after_swap_amount_0;
+        // // Calculate total token_0 to send after swap
+        // let amount_to_withdraw = amount_0 + after_swap_amount_0;
 
-        // Send token_0 to user
-        send_token_0_to_user(investor, amount_to_withdraw);
+        // // Send token_0 to user
+        // send_token_0_to_user(investor, amount_to_withdraw);
 
-        Ok(WithdrawResponse {
-            amount: amount_to_withdraw
-        })
+        // Ok(WithdrawResponse {
+        //     amount: amount_to_withdraw
+        // })
     }
 
     // fn rebalance(&self) -> PoolReply {

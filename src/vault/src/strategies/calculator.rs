@@ -1,6 +1,4 @@
 use std::fmt::format;
-use crate::providers::kong::kong::{add_liquidity_amounts, swap_amounts};
-use crate::strategies::strategy::Pool;
 use candid::Nat;
 use ic_cdk::trap;
 use std::ops::{Add, Div, Mul};
@@ -33,46 +31,23 @@ impl Calculator {
     }
 
 
-    pub async fn calculate_pool_liquidity_amounts(amount: Nat, pool: Pool) -> CalculatePoolLiquidityAmountsResponse {
-        let token_0 = pool.token0;
-        let token_1 = pool.token1;
+    pub fn calculate_pool_liquidity_amounts(
+        amount: Nat,
+        pool_ratio: Nat,
+        swap_price: f64,
+    ) -> CalculatePoolLiquidityAmountsResponse {
+        // Calculate token_0 amount for swap
+        let token_0_for_swap: Nat = amount.clone().mul(pool_ratio.clone()).div(Nat::from(swap_price as u128 ).add(pool_ratio.clone()));
+        let token_0_for_pool = amount.clone() - token_0_for_swap.clone();
 
-        // KongSwap
-        // response ?
-        let add_liq_amounts_resp = match add_liquidity_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-            Ok(x) => {
-                x
-            }
-            Err(e) => {
-                trap( format!("Error for {} and {} and {}", token_1, token_1, amount).as_str())
-            }
-        };
-        let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-            Ok(x) => {
-                x
-            }
-            Err(e) => {
-                trap(e.as_str())
-            }
-        };
+        // token1 amount from swap
+        let token_1_from_swap:Nat = token_0_for_swap.clone().mul(Nat::from(swap_price as u128) );
 
-        let pool_ratio = (add_liq_amounts_resp.amount_1).div(add_liq_amounts_resp.amount_0);
-
-        // Фактическая цена свапа (price)
-        let price = swap_amounts_resp.price;
-
-
-
-        let token_0_for_swap: Nat = amount.clone().mul(pool_ratio.clone()).div(Nat::from(price as u128 ).add(pool_ratio.clone()));
-        let token_0_for_pool: Nat = amount.clone().min(token_0_for_swap.clone());
-
-        // Token1, полученных при свапе
-        let token_1_from_swap:Nat = token_0_for_swap.clone().mul(Nat::from(price as u128) );
-        // Требуемое количество token1 для депозита оставшихся token0 через функцию add_liquidity_amounts
+        // Calculate required token1 amount for deposit remaining token0
         let required_token_1 = token_0_for_pool.clone().mul(pool_ratio.clone());
 
-        // Если token1, полученных при свапе, меньше требуемого количества token1 для депозита,
-        // то корректируем количество token0 для депозита так, чтобы стоимость совпадала.
+        // If token1 amount from swap is less than required token1 amount for deposit,
+        // adjust token0 amount for deposit so that the cost matches.
         let (final_token_0_for_pool, final_token_1_for_pool) = if token_1_from_swap.clone() < required_token_1 {
             let adjusted_token_0_for_pool = token_1_from_swap.clone() / pool_ratio;
             (adjusted_token_0_for_pool, token_1_from_swap.clone())
@@ -88,11 +63,98 @@ impl Calculator {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    mod calculate_shares {
+        use super::super::*;
+        use candid::Nat;
 
+        #[test]
+        fn test_with_zero_total() {
+            let amount = Nat::from(100u64);
+            let total_balance = Nat::from(0u64);
+            let total_shares = Nat::from(0u64);
 
+            let shares = Calculator::calculate_shares(amount.clone(), total_balance, total_shares);
+            assert_eq!(shares, amount);
+        }
 
-#[test]
-fn sub_account_test() {
+        #[test]
+        fn test_with_existing_total() {
+            let amount = Nat::from(100u64);
+            let total_balance = Nat::from(1000u64);
+            let total_shares = Nat::from(500u64);
 
-    print!("sub_account_test");
+            let shares = Calculator::calculate_shares(amount, total_balance, total_shares);
+            assert_eq!(shares, Nat::from(50u64));
+        }
+    }
+
+    mod calculate_pool_liquidity_amounts {
+        use super::super::*;
+        use candid::Nat;
+
+        #[test]
+        fn test_with_equal_pool_ratio_and_swap_price_1_to_1() {
+            let amount = Nat::from(1000u64);
+            let pool_ratio = Nat::from(1u64); // 1:1 ratio
+            let swap_price = 1.0f64; // 1:1 ratio
+
+            let result = Calculator::calculate_pool_liquidity_amounts(
+                amount.clone(),
+                pool_ratio.clone(),
+                swap_price
+            );
+
+            assert_eq!(result.token_0_for_swap, Nat::from(500u64));
+            assert_eq!(result.token_0_for_pool, Nat::from(500u64));
+            assert_eq!(result.token_1_for_pool, Nat::from(500u64));
+
+            // Verify total token0 used equals original amount
+            let total_token_0 = result.token_0_for_swap + result.token_0_for_pool;
+            assert!(total_token_0 <= amount);
+        }
+
+        #[test]
+        fn test_with_different_pool_ratio_and_swap_price_2_to_1() {
+            let amount = Nat::from(1000u64);
+            let pool_ratio = Nat::from(2u64); // 2:1 ratio
+            let swap_price = 2.0f64; // 2:1 ratio
+
+            let result = Calculator::calculate_pool_liquidity_amounts(
+                amount.clone(),
+                pool_ratio.clone(),
+                swap_price
+            );
+
+            assert_eq!(result.token_0_for_swap, Nat::from(500u64));
+            assert_eq!(result.token_0_for_pool, Nat::from(500u64));
+            assert_eq!(result.token_1_for_pool, Nat::from(1000u64));
+
+            // Verify total token0 used equals original amount
+            let total_token_0 = result.token_0_for_swap + result.token_0_for_pool;
+            assert!(total_token_0 <= amount);
+        }
+
+        #[test]
+        fn test_with_different_pool_ratio_and_swap_price() {
+            let amount = Nat::from(1000u64);
+            let pool_ratio = Nat::from(3u64); // 3:1 ratio
+            let swap_price = 2.0f64; // 2:1 ratio
+
+            let result = Calculator::calculate_pool_liquidity_amounts(
+                amount.clone(),
+                pool_ratio.clone(),
+                swap_price
+            );
+
+            assert_eq!(result.token_0_for_swap, Nat::from(600u64));
+            assert_eq!(result.token_0_for_pool, Nat::from(400u64));
+            assert_eq!(result.token_1_for_pool, Nat::from(1200u64));
+
+            // Verify total token0 used equals original amount
+            let total_token_0 = result.token_0_for_swap + result.token_0_for_pool;
+            assert!(total_token_0 <= amount);
+        }
+    }
 }

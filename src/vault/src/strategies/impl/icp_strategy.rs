@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
-use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Nat, Principal};
+use crate::strategies::strategy::{DepositResponse, IStrategy, Pool, PoolSymbol, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::providers::kong::kong::{add_liquidity_amounts, swap_amounts};
+use async_trait::async_trait;
 use ic_cdk::trap;
 use ic_ledger_types::Subaccount;
 use kongswap_canister::PoolReply;
@@ -104,31 +105,54 @@ impl IStrategy for ICPStrategy {
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         // accept_deposit(investor, amount, self.get_subaccount());
 
+        // Calculate new shares for investor's deposit
         let new_shares = Calculator::calculate_shares(amount.clone(), self.total_balance.clone(), self.total_shares.clone());
 
+        // Update total balance and total shares
         self.total_balance += amount.clone();
         self.total_shares += new_shares.clone();
         self.user_shares.insert(investor, new_shares.clone());
 
-      let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
-
+        let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
         self.current_pool = pools_data.iter().find(|&x| x.symbol == "ICP_ckUSDT").cloned();
 
         if let Some(ref pool_reply) = self.current_pool {
+            let token_0 = pool_reply.symbol_0.clone();
+            let token_1 =  pool_reply.symbol_1.clone();
 
-            let token0 = pool_reply.symbol_0.clone();
-            let token1 =  pool_reply.symbol_1.clone();
+            // Get amounts of token_0 and token1 to add to pool
+            let add_liq_amounts_resp = match add_liquidity_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
+                Ok(x) => {
+                    x
+                }
+                Err(e) => {
+                    trap( format!("Error for {} and {} and {}", token_1, token_1, amount).as_str())
+                }
+            };
 
-            // Расчитываем сколько нужно для свапа и для пула
-            let response   = Calculator::calculate_pool_liquidity_amounts(amount.clone(), Pool {
-                token0,
-                token1,
-                pool_symbol: pool_reply.symbol.clone(),
-            }).await;
+            // Get amounts of token_0 and token1 to swap
+            let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
+                Ok(x) => {
+                    x
+                }
+                Err(e) => {
+                    trap(e.as_str())
+                }
+            };
+
+            let pool_ratio = add_liq_amounts_resp.amount_1 / add_liq_amounts_resp.amount_0;
+            let swap_price = swap_amounts_resp.price;
+
+            // Calculate how much token_0 and token_1 to swap and add to pool
+            let response = Calculator::calculate_pool_liquidity_amounts(
+                amount.clone(),
+                pool_ratio.clone(),
+                swap_price.clone()
+            );
 
             let token_0_for_swap = response.token_0_for_swap;
             let token_0_for_pool = response.token_0_for_pool;
-            let  token_1_for_pool = response.token_1_for_pool;
+            let token_1_for_pool = response.token_1_for_pool;
 
             let token_info_0 = TokenInfo {
                 ledger: Principal::from_text(pool_reply.address_0.clone()).unwrap(),
@@ -139,11 +163,17 @@ impl IStrategy for ICPStrategy {
                 ledger: Principal::from_text(pool_reply.address_1.clone()).unwrap(),
                 symbol: pool_reply.symbol_1.clone(),
             };
-            // Свап
-           swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
 
-            // Добавляем ликвидность
-           let response =  add_liquidity(pool_reply.symbol_0.clone(), token_0_for_pool, pool_reply.symbol_1.clone(), token_1_for_pool).await;
+            // Swap token0 for token1 to get token1 for pool
+            swap_icrc2_kong(token_info_0, token_info_1, token_0_for_swap.0.trailing_ones() as u128).await;
+
+            // Add liquidity to pool with token0 and token1
+            let response = add_liquidity(
+                pool_reply.symbol_0.clone(),
+                token_0_for_pool,
+                pool_reply.symbol_1.clone(),
+                token_1_for_pool
+            ).await;
 
             match response {
                 Ok(r) => {
@@ -161,7 +191,6 @@ impl IStrategy for ICPStrategy {
                     trap(format!("Error: {}", e).as_str());
                 }
             }
-            // Добавляем в allocations
         } else {
             // rebalance();
             //TODO fix
