@@ -14,7 +14,7 @@ use crate::user::user_service::{accept_deposit, withdraw_from_strategy};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
 use ic_cdk::{call, caller, id, print, trap};
-use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
+use ic_cdk_macros::{heartbeat, init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use providers::kong::kong::pools;
 use serde::Serialize;
@@ -30,6 +30,7 @@ use crate::providers::kong::kong::{add_liquidity_amounts, user_balances};
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
+    pub static HEARTBEAT: RefCell<u64> = RefCell::new(0);
 }
 
 #[derive(CandidType, Deserialize, Clone, Debug, Hash, PartialEq, Serialize)]
@@ -84,6 +85,22 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
 
     let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
     str.deposit(caller(), args.amount).await
+}
+
+
+
+#[heartbeat]
+fn heartbeat() {
+    let n = 5 as u64;
+    HEARTBEAT.with(|store| {
+        let mut count = store.borrow_mut().clone();
+        if (count % n == 0) {
+           // rebalance_all
+        }
+        store.replace(count + 1)
+    });
+
+    print("heartbeat");
 }
 
 
