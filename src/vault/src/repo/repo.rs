@@ -41,7 +41,7 @@ pub fn add_or_update_strategy(strategy: Box<dyn IStrategy>) {
     });
 }
 
-pub fn update_strategy(strategy: Box<dyn IStrategy>) {
+pub fn save_strategy(strategy: Box<dyn IStrategy>) {
     STRATEGIES.with(|strategies| {
         let mut strategies = strategies.borrow_mut();
         let index = strategies.iter().position(|s| s.get_id() == strategy.get_id());

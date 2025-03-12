@@ -89,10 +89,9 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
 
 
 #[query]
-async fn user_balance_all(user: String) -> Vec<UserBalancesReply>  {
-    //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
-
-   match user_balances(user).await.0 {
+async fn user_balance_all(user: Principal) -> Vec<UserBalancesReply>  {
+    let canisterId = id();
+   match user_balances(canisterId.to_text()).await.0 {
          Ok(reply) => reply,
          Err(err) => {
               trap(format!("Error: {}", err).as_str());

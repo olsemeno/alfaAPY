@@ -9,6 +9,7 @@ import {ActorSubclass} from "@dfinity/agent";
 
 export const isLocalENV = true;
 
+//2ammq-nltzb-zsfkk-35abp-eprrz-eawlg-f36u7-arsde-gdhv5-flu25-iqe
 describe("VR Test PROD", () => {
     let canister_id = "hx54w-raaaa-aaaaa-qafla-cai";
     let identity = "87654321876543218765432187654399";

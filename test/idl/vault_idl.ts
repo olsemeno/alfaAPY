@@ -93,7 +93,7 @@ export const idlFactory = ({ IDL }) => {
         'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
         'kong_pools' : IDL.Func([], [PoolsReply], []),
         'user_balance_all' : IDL.Func(
-            [IDL.Text],
+            [IDL.Principal],
             [IDL.Vec(UserBalancesReply)],
             ['query'],
         ),

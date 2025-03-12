@@ -88,7 +88,7 @@ export interface _SERVICE {
     'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
     'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
     'kong_pools' : ActorMethod<[], PoolsReply>,
-    'user_balance_all' : ActorMethod<[string], Array<UserBalancesReply>>,
+    'user_balance_all' : ActorMethod<[Principal], Array<UserBalancesReply>>,
     'withdraw' : ActorMethod<[WithdrawArgs], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

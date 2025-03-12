@@ -32,7 +32,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::ops::{Div, Mul};
 use types::exchanges::TokenInfo;
-use crate::repo::repo::update_strategy;
+use crate::repo::repo::save_strategy;
 use crate::user::user_service::accept_deposit;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
@@ -209,7 +209,7 @@ impl IStrategy for ICPStrategy {
         if let Some(ref pool_reply) = self.current_pool {
             let resp = self.add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
 
-            update_strategy(self.clone_self());
+            save_strategy(self.clone_self());
             DepositResponse {
                 amount: amount,
                 shares: Nat::from(new_shares as u128),
@@ -283,7 +283,7 @@ impl IStrategy for ICPStrategy {
 
         // Update total shares
         self.total_shares = self.total_shares.clone().min(shares);
-        update_strategy(self.clone_self());
+        save_strategy(self.clone_self());
         WithdrawResponse {
             amount: amount_to_withdraw
         }
