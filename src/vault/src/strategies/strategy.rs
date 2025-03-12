@@ -66,12 +66,14 @@ pub struct DepositResponse {
     pub amount: Nat,
     pub shares: Nat,
     pub tx_id: u64,
+    pub request_id: u64,
 }
 
 pub struct WithdrawResponse {
     pub amount: Nat,
 }
 
+#[derive(CandidType, Deserialize, Clone,Debug, Serialize)]
 pub struct WithdrawFromPoolResponse {
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
@@ -80,6 +82,7 @@ pub struct WithdrawFromPoolResponse {
 pub struct AddLiquidityResponse {
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
+    pub request_id: u64,
 }
 
 pub struct RebalanceResponse {

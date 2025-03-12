@@ -4,7 +4,7 @@ pub use kongswap_canister::*; //TODO visibility
 // Queries
 generate_candid_c2c_call_no_args!(pools);
 generate_candid_c2c_call_tuple_args!(swap_amounts);
-generate_candid_c2c_call!(user_balances);
+generate_candid_c2c_call_tuple_args!(user_balances);
 generate_candid_c2c_call!(requests);
 generate_candid_c2c_call!(remove_liquidity_amounts);
 generate_candid_c2c_call_tuple_args!(add_liquidity_amounts);

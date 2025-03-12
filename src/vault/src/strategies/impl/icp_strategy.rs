@@ -25,12 +25,15 @@ use ic_ledger_types::Subaccount;
 use icrc_ledger_canister_c2c_client::icrc1_transfer;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use icrc_ledger_types::icrc1::account::Account;
-use kongswap_canister::user_balances::UserBalancesReply;
+use kongswap_canister::user_balances::{Response, UserBalancesReply};
 use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::future::Future;
 use std::ops::{Div, Mul};
 use types::exchanges::TokenInfo;
+use crate::repo::repo::update_strategy;
+use crate::user::user_service::accept_deposit;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct ICPStrategy {
@@ -208,24 +211,28 @@ impl IStrategy for ICPStrategy {
 
         // Update total balance and total shares
         self.total_balance += amount.clone();
-        self.total_shares += f64_to_nat(&new_shares);
-        self.user_shares.insert(investor, f64_to_nat(&new_shares));
+        self.total_shares += Nat::from(new_shares as u128);
+        self.user_shares.insert(investor,  Nat::from(new_shares as u128));
 
         if let Some(ref pool_reply) = self.current_pool {
-            self.add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
+            let resp = self.add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
 
+            update_strategy(self.clone_self());
             DepositResponse {
                 amount: amount,
-                shares: f64_to_nat(&new_shares),
+                shares: Nat::from(new_shares as u128),
                 tx_id: 0,
+                request_id: resp.request_id,
             }
         } else {
+            trap("Rebalance");
             // rebalance();
             //TODO fix
             DepositResponse {
                 amount: amount,
-                shares: f64_to_nat(&new_shares),
+                shares:  Nat::from((new_shares as u128)),
                 tx_id: 0,
+                request_id: 0,
             }
         }
     }
@@ -244,16 +251,16 @@ impl IStrategy for ICPStrategy {
 
         // Swap token_1 to token_0 (to base token)
         let swap_response = swap_icrc2_kong(
-            tokens_info.token_0,
             tokens_info.token_1,
-            nat_to_u128(withdraw_response.token_1_amount)
+            tokens_info.token_0.clone(),
+            nat_to_f64(&withdraw_response.token_1_amount) as u128
         ).await;
 
         // Calculate total token_0 to send after swap
         let amount_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
 
         let transfer_result = icrc1_transfer(
-            caller(),
+            tokens_info.token_0.ledger,
             &TransferArg {
                 from_subaccount: None,
                 to: Account {
@@ -270,10 +277,10 @@ impl IStrategy for ICPStrategy {
         let tr_id = match transfer_result {
             Ok(Ok(x)) => x,
             Err(x) => {
-                trap(format!("Error: {:?}", x.1).as_str());
+                trap(format!("Transfer error 1: {:?}", x.1).as_str());
             }
             Ok(Err(x)) => {
-                trap(format!("Error: {:?}", x).as_str());
+                trap(format!("Transfer error 2: {:?}", x).as_str());
             }
         };
 
@@ -284,7 +291,7 @@ impl IStrategy for ICPStrategy {
 
         // Update total shares
         self.total_shares = self.total_shares.clone().min(shares);
-
+        update_strategy(self.clone_self());
         WithdrawResponse {
             amount: amount_to_withdraw
         }
@@ -295,7 +302,12 @@ impl IStrategy for ICPStrategy {
         let canister_id = ic_cdk::id();
 
         // Fetch LP tokens amount in pool
-        let user_balances_response = user_balances(canister_id.to_string()).await.unwrap();
+        let user_balances_response = match user_balances(canister_id.to_string()).await.0 {
+            Ok(reply) => reply,
+            Err(err) => {
+                trap(format!("Error user_balances_response: {}", err).as_str());
+            }
+        };
 
         let user_balance_reply = user_balances_response.into_iter()
             .filter_map(|reply| match reply {
@@ -305,17 +317,31 @@ impl IStrategy for ICPStrategy {
             .find(|balance| balance.symbol == pool.symbol)
             .unwrap_or_else(|| trap("Expected LP balance"));
 
+//LPReply { symbol: \"ICP_ckUSDT\", name: \"ICP_ckUSDT LP Token\", balance: 0.06884369, usd_balance: 0.336404,
+        // chain_0: \"IC\", symbol_0: \"ICP\", address_0: \"ryjl3-tyaaa-aaaaa-aaaba-cai\", amount_0: 0.03121415, usd_amount_0: 0.168202, chain_1: \"IC\", symbol_1: \"ckUSDT\", address_1: \"cngnf-vqaaa-aaaar-qag4q-cai\",
+        // amount_1: 0.168202, usd_amount_1: 0.168202, ts: 1741767423329139829 }
         let balance = user_balance_reply.balance;
 
         // Calculate how much LP tokens to withdraw
-        let lp_tokens_to_withdraw = f64_to_nat(&balance).mul(shares).div(self.total_shares.clone());
 
+         let lp_tokens_to_withdraw: f64 =balance.mul(nat_to_f64(&shares)).div(nat_to_f64(&self.total_shares.clone())).mul( 100000000.0 );
+
+        // trap(format!("balance: {}, shares: {}, total_shares: {}, lp_tokens_to_withdraw: {}", balance, shares, self.total_shares, lp_tokens_to_withdraw).as_str());
+
+        // trap(format!("lp_tokens_to_withdraw: {}", lp_tokens_to_withdraw).as_str());
         // Remove liquidity from pool
-        let remove_liquidity_response = remove_liquidity(
+        let remove_liquidity_response = match remove_liquidity(
             pool.symbol_0.clone(),
             pool.symbol_1.clone(),
-            lp_tokens_to_withdraw
-        ).await.unwrap();
+            Nat::from(lp_tokens_to_withdraw.round() as u128),
+        ).await {
+            Ok(r) => {r}
+            Err(e) => {
+                trap(format!("Error: {} with balance {} and lp_tokens_to_withdraw {}", e, balance, Nat::from(lp_tokens_to_withdraw.round() as u128) ).as_str());
+            }
+        };
+
+        // trap(format!("remove_liquidity_response: {:?}, {}", remove_liquidity_response,  Nat::from(lp_tokens_to_withdraw.round() as u128)).as_str(), );
 
         WithdrawFromPoolResponse {
             token_0_amount: remove_liquidity_response.amount_0,
@@ -402,6 +428,8 @@ impl IStrategy for ICPStrategy {
                 AddLiquidityResponse {
                     token_0_amount: Nat::from(token_0_for_pool as u128),
                     token_1_amount: Nat::from(token_1_for_pool as u128),
+                    request_id: r.request_id,
+
                 }
             }
             Err(e) => {
@@ -414,8 +442,4 @@ impl IStrategy for ICPStrategy {
 pub fn nat_to_f64(n: &Nat) -> f64 {
     let nat_str = n.0.to_str_radix(10); // Convert to string
     nat_str.parse::<f64>().unwrap_or(0.0) // Parse as f64
-}
-
-pub fn f64_to_nat(f: &f64) -> Nat {
-    Nat::from(f.to_bits())
 }

@@ -12,7 +12,7 @@ pub struct Args {
 pub type Response = Result<RemoveLiquidityReply, String>;
 
 
-#[derive(CandidType, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize,Debug, Deserialize)]
 pub struct RemoveLiquidityReply {
     pub tx_id: u64,
     pub request_id: u64,
