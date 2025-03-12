@@ -11,12 +11,6 @@ export const idlFactory = ({ IDL }) => {
         'shares' : IDL.Nat,
         'amount' : IDL.Nat,
     });
-    const StrategyResponse = IDL.Record({
-        'id' : IDL.Nat16,
-        'name' : IDL.Text,
-        'description' : IDL.Text,
-        'pools' : IDL.Vec(IDL.Text),
-    });
     const PoolReply = IDL.Record({
         'tvl' : IDL.Nat,
         'lp_token_symbol' : IDL.Text,
@@ -41,6 +35,17 @@ export const idlFactory = ({ IDL }) => {
         'rolling_24h_lp_fee' : IDL.Nat,
         'lp_fee_bps' : IDL.Nat8,
     });
+    const StrategyResponse = IDL.Record({
+        'id' : IDL.Nat16,
+        'name' : IDL.Text,
+        'description' : IDL.Text,
+        'current_pool' : PoolReply,
+        'pools' : IDL.Vec(IDL.Text),
+    });
+    const SupportedStandard = IDL.Record({ 'url' : IDL.Text, 'name' : IDL.Text });
+    const Icrc28TrustedOriginsResponse = IDL.Record({
+        'trusted_origins' : IDL.Vec(IDL.Text),
+    });
     const PoolsReply = IDL.Record({
         'total_24h_lp_fee' : IDL.Nat,
         'total_tvl' : IDL.Nat,
@@ -48,7 +53,24 @@ export const idlFactory = ({ IDL }) => {
         'pools' : IDL.Vec(PoolReply),
         'total_24h_num_swaps' : IDL.Nat,
     });
-    const SuccessResult = IDL.Record({ 'amount_out' : IDL.Nat });
+    const LPReply = IDL.Record({
+        'ts' : IDL.Nat64,
+        'usd_balance' : IDL.Float64,
+        'balance' : IDL.Float64,
+        'name' : IDL.Text,
+        'amount_0' : IDL.Float64,
+        'amount_1' : IDL.Float64,
+        'address_0' : IDL.Text,
+        'address_1' : IDL.Text,
+        'symbol_0' : IDL.Text,
+        'symbol_1' : IDL.Text,
+        'usd_amount_0' : IDL.Float64,
+        'usd_amount_1' : IDL.Float64,
+        'chain_0' : IDL.Text,
+        'chain_1' : IDL.Text,
+        'symbol' : IDL.Text,
+    });
+    const UserBalancesReply = IDL.Variant({ 'LP' : LPReply });
     const WithdrawArgs = IDL.Record({
         'strategy_id' : IDL.Nat16,
         'ledger' : IDL.Principal,
@@ -63,8 +85,18 @@ export const idlFactory = ({ IDL }) => {
         ),
         'get_config' : IDL.Func([], [Conf], ['query']),
         'get_strategies' : IDL.Func([], [IDL.Vec(StrategyResponse)], ['query']),
+        'icrc10_supported_standards' : IDL.Func(
+            [],
+            [IDL.Vec(SupportedStandard)],
+            ['query'],
+        ),
+        'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
         'kong_pools' : IDL.Func([], [PoolsReply], []),
-        'swap' : IDL.Func([], [SuccessResult], []),
+        'user_balance_all' : IDL.Func(
+            [IDL.Text],
+            [IDL.Vec(UserBalancesReply)],
+            ['query'],
+        ),
         'withdraw' : IDL.Func([WithdrawArgs], [Result], []),
     });
 };

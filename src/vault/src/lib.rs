@@ -69,23 +69,6 @@ async fn kong_pools() -> PoolsReply {
 }
 
 
-// //dummy test method
-// #[update]
-// async fn swap() -> SuccessResult {
-//     let source = TokenInfo {
-//         ledger: CanisterId::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai".to_string()).unwrap(),
-//         symbol: "ICP".to_string(),
-//     };
-//
-//     let target = TokenInfo {
-//         ledger: CanisterId::from_text("xevnm-gaaaa-aaaar-qafnq-cai".to_string()).unwrap(),
-//         symbol: "ICP".to_string(),
-//     };
-//
-//     swap_icrc2_kong(source, target, 1000, 1).await
-// }
-
-
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct AcceptInvestmentArgs {
     ledger: CanisterId,

@@ -14,6 +14,26 @@ export interface DepositResponse {
     'shares' : bigint,
     'amount' : bigint,
 }
+export interface Icrc28TrustedOriginsResponse {
+    'trusted_origins' : Array<string>,
+}
+export interface LPReply {
+    'ts' : bigint,
+    'usd_balance' : number,
+    'balance' : number,
+    'name' : string,
+    'amount_0' : number,
+    'amount_1' : number,
+    'address_0' : string,
+    'address_1' : string,
+    'symbol_0' : string,
+    'symbol_1' : string,
+    'usd_amount_0' : number,
+    'usd_amount_1' : number,
+    'chain_0' : string,
+    'chain_1' : string,
+    'symbol' : string,
+}
 export interface PoolReply {
     'tvl' : bigint,
     'lp_token_symbol' : string,
@@ -51,9 +71,11 @@ export interface StrategyResponse {
     'id' : number,
     'name' : string,
     'description' : string,
+    'current_pool' : PoolReply,
     'pools' : Array<string>,
 }
-export interface SuccessResult { 'amount_out' : bigint }
+export interface SupportedStandard { 'url' : string, 'name' : string }
+export type UserBalancesReply = { 'LP' : LPReply };
 export interface WithdrawArgs {
     'strategy_id' : number,
     'ledger' : Principal,
@@ -63,8 +85,10 @@ export interface _SERVICE {
     'accept_investment' : ActorMethod<[AcceptInvestmentArgs], DepositResponse>,
     'get_config' : ActorMethod<[], Conf>,
     'get_strategies' : ActorMethod<[], Array<StrategyResponse>>,
+    'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
+    'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
     'kong_pools' : ActorMethod<[], PoolsReply>,
-    'swap' : ActorMethod<[], SuccessResult>,
+    'user_balance_all' : ActorMethod<[string], Array<UserBalancesReply>>,
     'withdraw' : ActorMethod<[WithdrawArgs], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

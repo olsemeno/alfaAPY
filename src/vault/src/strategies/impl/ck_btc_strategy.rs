@@ -105,14 +105,7 @@ impl IStrategy for ckBTCStrategy {
         StrategyCandid::ckBTCStrategyV(self.clone())
     }
 
-    fn to_response(&self) -> StrategyResponse {
-        StrategyResponse {
-            name: self.get_name(),
-            id: self.get_id(),
-            description: self.get_description(),
-            pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
-        }
-    }
+
 
     async fn rebalance(&mut self) -> RebalanceResponse {
         trap("Not implemented yet");

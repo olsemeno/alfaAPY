@@ -33,7 +33,15 @@ pub trait IStrategy {
     async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse;
     async fn rebalance(&mut self) -> RebalanceResponse;
     fn to_candid(&self) -> StrategyCandid;
-    fn to_response(&self) -> StrategyResponse;
+    fn to_response(&self) -> StrategyResponse {
+        StrategyResponse {
+            name: self.get_name(),
+            id: self.get_id(),
+            description: self.get_description(),
+            pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
+            current_pool: self.get_current_pool(),
+        }
+    }
     async fn withdraw_from_pool(&mut self, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
     async fn add_liquidity_to_pool(&mut self, amount: Nat, pool: PoolReply) -> AddLiquidityResponse;
 }
@@ -44,6 +52,7 @@ pub struct StrategyResponse {
     pub id: StrategyId,
     pub description: String,
     pub pools: Vec<PoolSymbol>,
+    pub current_pool: PoolReply,
 }
 
 pub struct Strategy {

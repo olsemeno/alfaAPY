@@ -126,14 +126,6 @@ impl IStrategy for ICPStrategy {
         StrategyCandid::ICPStrategyV(self.clone())
     }
 
-    fn to_response(&self) -> StrategyResponse {
-        StrategyResponse {
-            name: self.get_name(),
-            id: self.get_id(),
-            description: self.get_description(),
-            pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
-        }
-    }
 
     async fn rebalance(&mut self) -> RebalanceResponse {
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
