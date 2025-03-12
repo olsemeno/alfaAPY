@@ -1,6 +1,5 @@
 use candid::Nat;
 use crate::liquidity::liquidity_service::get_pools_data;
-use crate::strategies::r#impl::ck_btc_strategy::{ckBTCStrategy, WithdrawFromPoolResponse};
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Principal};
@@ -11,6 +10,7 @@ use std::cell::RefMut;
 use std::cmp::Ordering;
 use crate::providers::kong::kong::{remove_liquidity, user_balances};
 use crate::strategies::strategy_candid::StrategyCandid;
+use types::exchanges::TokenInfo;
 
 pub type PoolSymbol = String;
 pub type StrategyId = u16;
@@ -23,17 +23,19 @@ pub trait IStrategy {
     fn get_pools(&self) -> Vec<Pool>;
     fn get_subaccount(&self) -> Subaccount;
     fn get_current_pool(&self) -> PoolReply;
+    fn get_pool_tokens_info(&self, pool: PoolReply) -> TokensInfo;
     fn clone_self(&self) -> Box<dyn IStrategy>;
     //TODO make generic kongswap/icpswap
     async fn get_pools_data(&self) -> Vec<PoolReply> {
         get_pools_data(self.get_pools()).await
     }
-    async fn rebalance(&self) -> PoolReply;
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse;
     async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse;
+    async fn rebalance(&mut self) -> RebalanceResponse;
     fn to_candid(&self) -> StrategyCandid;
     fn to_response(&self) -> StrategyResponse;
-    async fn withdraw_from_pool(&mut self, investor: Principal, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
+    async fn withdraw_from_pool(&mut self, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
+    async fn add_liquidity_to_pool(&mut self, amount: Nat, pool: PoolReply) -> AddLiquidityResponse;
 }
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
@@ -56,6 +58,7 @@ pub struct Pool {
     pub pool_symbol: PoolSymbol,
     pub token0: String,
     pub token1: String,
+    pub rolling_24h_apy: f64,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
@@ -63,11 +66,29 @@ pub struct DepositResponse {
     pub amount: Nat,
     pub shares: Nat,
     pub tx_id: u64,
-    pub request_id: u64,
 }
 
 pub struct WithdrawResponse {
     pub amount: Nat,
+}
+
+pub struct WithdrawFromPoolResponse {
+    pub token_0_amount: Nat,
+    pub token_1_amount: Nat,
+}
+
+pub struct AddLiquidityResponse {
+    pub token_0_amount: Nat,
+    pub token_1_amount: Nat,
+}
+
+pub struct RebalanceResponse {
+    pub pool: PoolReply,
+}
+
+pub struct TokensInfo {
+    pub token_0: TokenInfo,
+    pub token_1: TokenInfo,
 }
 
 impl Clone for Box<dyn IStrategy> {
@@ -125,4 +146,3 @@ impl PartialOrd for dyn IStrategy {
         Some(other.get_id().cmp(&self.get_id()))
     }
 }
-
