@@ -48,7 +48,7 @@ impl SwapClient for KongSwapClient {
         self.canister_id
     }
 
-    async fn swap(&self, amount: u128, min_amount_out: Nat) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
+    async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
 
         // trap(format!("SwapArgs: {:?} {:?} {:?}", amount, min_amount_out, self.token_in.ledger).as_str());
        //
@@ -81,17 +81,17 @@ impl SwapClient for KongSwapClient {
        //  };
 
 
-
+let args = &kongswap_canister::swap::Args {
+    pay_amount: amount.into(),
+    pay_token: format!("IC.{}", self.token_in.ledger),
+    receive_token: format!("IC.{}", self.token_out.ledger),
+    max_slippage: Some(50.0),
+};
 
 
         match kongswap_canister_c2c_client::swap(
             self.canister_id,
-            &kongswap_canister::swap::Args {
-                pay_amount: amount.into(),
-                pay_token: format!("IC.{}", self.token_in.ledger),
-                receive_token: format!("IC.{}", self.token_out.ledger),
-                max_slippage: Some(50.0),
-            },
+            args,
         )
         .await
         {
@@ -104,10 +104,14 @@ impl SwapClient for KongSwapClient {
                             withdrawal_success: Some(response.claim_ids.is_empty()),
                         }))
                     }
-                    Err(error) => Ok(Err(error))
+                    Err(error) => {
+                        trap(format!("Swap error 3 : {:?} arguments {:?}", error, args).as_str());
+                    }
                 }
             }
-            Err(error) => Ok(Err(format!("{:?}", error))),
+            Err(error) => {
+                trap(format!("Swap error 4 : {:?} arguments {:?}", error, args).as_str());
+            },
         }
     }
 }

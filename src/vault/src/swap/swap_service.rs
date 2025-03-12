@@ -14,7 +14,6 @@ pub(crate) async fn swap_icrc2_kong(
     input_token: TokenInfo,
     output_token: TokenInfo,
     amount: u128,
-    min_amount_out: Nat,
 ) -> SuccessResult {
 
     // trap(format!("SwapArgs: {:?} output {:?} input {:?} tokan {:?}", amount, output_token.ledger.to_text(), input_token.ledger.to_text(), min_amount_out.0.count_ones()).as_str());
@@ -49,7 +48,7 @@ pub(crate) async fn swap_icrc2_kong(
     }
 
     let swap_result = match swap_client
-        .swap(amount, min_amount_out)
+        .swap(amount)
         .await
     {
         Ok(r) => {

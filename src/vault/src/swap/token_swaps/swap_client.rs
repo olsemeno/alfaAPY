@@ -7,7 +7,7 @@ use types::CanisterId;
 #[async_trait]
 pub trait SwapClient {
     fn canister_id(&self) -> CanisterId;
-    async fn swap(&self, amount: u128, min_amount_out: Nat) -> Result<Result<SwapSuccess, String>, (RejectCode, String)>;
+    async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)>;
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

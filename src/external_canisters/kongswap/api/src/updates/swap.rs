@@ -2,7 +2,7 @@ use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 use crate::add_liquidity::TransferIdReply;
 
-#[derive(CandidType, Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Debug)]
 pub struct Args {
     pub pay_token: String,
     pub pay_amount: Nat,

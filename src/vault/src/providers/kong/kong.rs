@@ -8,7 +8,7 @@ use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
 use kongswap_canister::pools::Response as PoolsResponse;
 use kongswap_canister::queries::add_liquidity_amounts::Response as AddLiquidityAmountsResponse;
 use kongswap_canister::swap_amounts::Response as SwapAmountsResponse;
-use kongswap_canister::user_balances::Args as UserBalancesArgs;
+use kongswap_canister::user_balances::{Args as UserBalancesArgs, UserBalancesReply};
 use kongswap_canister::user_balances::Response as UserBalancesResponse;
 
 pub async fn pools() -> PoolsResponse {
@@ -113,10 +113,8 @@ pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amou
     }
     )
 }
-pub async fn user_balances(principal_id: String) -> UserBalancesResponse {
-    kongswap_canister_c2c_client::user_balances(KONG_BE_CANISTER, &UserBalancesArgs {
-        principal_id
-    }).await.unwrap_or_else(|(code, msg)| {
+pub async fn user_balances(principal_id: String) -> (Result<Vec<UserBalancesReply>, String>,) {
+    kongswap_canister_c2c_client::user_balances(KONG_BE_CANISTER, (principal_id,)).await.unwrap_or_else(|(code, msg)| {
         trap(format!(
             "An error happened during the user_balances call: {}: {}",
             code as u8, msg

@@ -19,8 +19,10 @@ pub use kongswap_canister::pools::{PoolsReply, Response};
 use providers::kong::kong::pools;
 use serde::Serialize;
 use std::cell::RefCell;
+use std::env::args;
 use ic_cdk::api::call::CallResult;
 use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
+use kongswap_canister::user_balances::UserBalancesReply;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::{Response as R2, SuccessResult};
 use types::CanisterId;
@@ -94,20 +96,25 @@ pub struct AcceptInvestmentArgs {
 #[update]
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
-    // accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
+    accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
 
 
     let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
     str.deposit(caller(), args.amount).await
 }
-use kongswap_canister::queries::add_liquidity_amounts::{Args as AddLiquidityAmountsArgs, Response as AddLiquidityAmountsResponse};
 
 
-#[update]
-async fn user_balance_all () -> Result<AddLiquidityAmountsReply, String>  {
+
+#[query]
+async fn user_balance_all(user: String) -> Vec<UserBalancesReply>  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
 
-    user_balances(id()).await
+   match user_balances(user).await.0 {
+         Ok(reply) => reply,
+         Err(err) => {
+              trap(format!("Error: {}", err).as_str());
+         }
+   }
 }
 
 
@@ -120,7 +127,9 @@ pub struct WithdrawArgs {
 
 #[update]
 async fn withdraw(args: WithdrawArgs)  -> Result<Nat, String>  {
-    withdraw_from_strategy(args.strategy_id, args.amount, args.ledger).await
+    let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
+   let resp =  str.withdraw(caller(), args.amount).await;
+    Ok(resp.amount)
 }
 
 #[query]

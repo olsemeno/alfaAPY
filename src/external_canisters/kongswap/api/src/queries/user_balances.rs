@@ -1,18 +1,14 @@
 pub use crate::PoolsReply;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
-
-#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct Args {
-    pub principal_id: String,
-}
-
-pub type Response = Result<Vec<UserBalancesReply>, String>;
-
+use crate::add_liquidity_amounts::AddLiquidityAmountsReply;
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
 pub enum UserBalancesReply {
     LP(LPReply),
 }
+
+pub type  Args =  (String,);
+pub type Response = (Result<Vec<UserBalancesReply>, String>,);
 
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
 pub struct LPReply {
