@@ -11,6 +11,10 @@ export const idlFactory = ({ IDL }) => {
         'shares' : IDL.Nat,
         'amount' : IDL.Nat,
     });
+    const WithdrawResponse = IDL.Record({
+        'amount' : IDL.Nat,
+        'current_shares' : IDL.Nat,
+    });
     const PoolReply = IDL.Record({
         'tvl' : IDL.Nat,
         'lp_token_symbol' : IDL.Text,
@@ -95,9 +99,13 @@ export const idlFactory = ({ IDL }) => {
         'user_balance_all' : IDL.Func(
             [IDL.Principal],
             [IDL.Vec(UserBalancesReply)],
-            ['query'],
+            [],
         ),
-        'withdraw' : IDL.Func([WithdrawArgs], [Result], []),
+        'withdraw' : IDL.Func(
+            [WithdrawArgs],
+            [WithdrawResponse],
+            []
+        ),
     });
 };
 export const init = ({ IDL }) => {

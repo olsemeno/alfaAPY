@@ -1,4 +1,4 @@
-import {_SERVICE as VaultType, DepositResponse, StrategyResponse} from "../idl/vault";
+import {_SERVICE as VaultType, DepositResponse, WithdrawResponse, StrategyResponse} from "../idl/vault";
 import {_SERVICE as Kong, PoolsReply, PoolsResult} from "../idl/kong_backend";
 import {Actor, ActorSubclass, AnonymousIdentity, HttpAgent, Identity} from "@dfinity/agent";
 import {idlFactory} from "../idl/vault_idl";
@@ -30,7 +30,7 @@ export class StrategyWrapper {
     }
 
     //todo accept identity-kit actor
-    public async withdraw(strategy_id: number, ledger: string, amount: bigint): Promise<{ 'Ok' : bigint } | { 'Err' : string }> {
+    public async withdraw(strategy_id: number, ledger: string, amount: bigint): Promise<WithdrawResponse> {
         return this.actor.withdraw({strategy_id, ledger: Principal.fromText(ledger), amount})
     }
 
@@ -40,7 +40,6 @@ export class StrategyWrapper {
     }
 
     public async get_user_data() {
-
     }
 
     public async get_pool_data(pools_symbols:Array<String>): Promise<any> {
@@ -51,9 +50,6 @@ export class StrategyWrapper {
                 return pools.pools.filter((pool) => pools_symbols.includes(pool.symbol))
             })
     }
-
-
-
 }
 
 export async function getTypedActor<T>(

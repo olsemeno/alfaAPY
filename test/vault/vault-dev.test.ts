@@ -2,7 +2,7 @@ import {Ed25519KeyIdentity} from "@dfinity/identity";
 import {getTypedActor} from "../util/util";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {idlFactory as ledger_idl} from "../idl/ledger_idl";
-import {_SERVICE as VaultType, DepositResponse, Result} from "../idl/vault";
+import {_SERVICE as VaultType, DepositResponse, WithdrawResponse} from "../idl/vault";
 import {idlFactory} from "../idl/vault_idl";
 import {Principal} from "@dfinity/principal";
 import {ActorSubclass} from "@dfinity/agent";
@@ -11,90 +11,148 @@ export const isLocalENV = true;
 
 //2ammq-nltzb-zsfkk-35abp-eprrz-eawlg-f36u7-arsde-gdhv5-flu25-iqe
 describe("VR Test PROD", () => {
-    let canister_id = "hx54w-raaaa-aaaaa-qafla-cai";
-    let identity = "87654321876543218765432187654399";
-    let ledger_canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-    let member_identity: Ed25519KeyIdentity;
-    let ledgerActor : ActorSubclass<ledgerService>
-    let actorVault : ActorSubclass<VaultType>
+    const canisterId = "hx54w-raaaa-aaaaa-qafla-cai";
+    const identity = "87654321876543218765432187654399";
+    const ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    let memberIdentity: Ed25519KeyIdentity;
+    let ledgerActor: ActorSubclass<ledgerService>
+    let actorVault: ActorSubclass<VaultType>
     let balance;
 
-    beforeEach(async function () {
-        member_identity  = getIdentity(identity)
-        console.log(member_identity.getPrincipal().toText());
+    beforeEach(async () => {
+        memberIdentity  = getIdentity(identity);
 
-        ledgerActor = await getTypedActor<ledgerService>(ledger_canister_id, member_identity, ledger_idl);
-        balance = await ledgerActor.icrc1_balance_of({subaccount: [], owner: member_identity.getPrincipal()});
+        console.log("Member identity:", memberIdentity.getPrincipal().toText());
 
-        console.log(balance)
+        ledgerActor = await getTypedActor<ledgerService>(ledgerCanisterId, memberIdentity, ledger_idl);
+        balance = await ledgerActor.icrc1_balance_of({subaccount: [], owner: memberIdentity.getPrincipal()});
 
-        actorVault = await getTypedActor<VaultType>(canister_id, member_identity, idlFactory);
+        console.log("Balance:", balance);
+
+        actorVault = await getTypedActor<VaultType>(canisterId, memberIdentity, idlFactory);
     });
 
-    it("Deposit balance", async function () {
-        console.log("START DEPOSIT TEST");
+    describe(".accept_investment", () => {
+        const strategyId = 2;
+        const approveAmount = BigInt(30000000);
+        const depositAmount = BigInt(1000000);
 
-        let approveargs: ApproveArgs = {
-            amount: BigInt(30000000),
-            spender: {
-                owner: Principal.fromText(canister_id),
-                subaccount: []
-            },
-            fee: [],
-            memo: [],
-            from_subaccount: [],
-            created_at_time: [],
-            expected_allowance: [],
-            expires_at: []
-        }
+        it("Deposits to strategy without any liquidity", async () => {
+            console.log("== START Deposits to strategy without any liquidity TEST==");
 
-        let icrc2approve = await ledgerActor.icrc2_approve(approveargs);
+            // Approve tokens
+            await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 
-        console.log(icrc2approve);
+            try {
+                console.log("Deposit starting...");
 
-        let allowance = await ledgerActor.icrc2_allowance({
-            account: {
-                owner: member_identity.getPrincipal(),
-                subaccount: []
-            },
-            spender: {
-                owner: Principal.fromText(canister_id),
-                subaccount: []
+                let depositResp: DepositResponse = await actorVault.accept_investment({
+                    amount: depositAmount,
+                    strategy_id: strategyId,
+                    ledger: Principal.fromText(ledgerCanisterId)
+                });
+
+                console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id)
+
+                expect(depositResp.amount).toBe(depositAmount);
+                expect(depositResp.shares).toBe(depositAmount);
+            } catch (e) {
+                console.log("Deposit error:", e);
+                throw new Error("Deposit failed with error: " + e); 
             }
         });
 
-        console.log(allowance);
-
-        try {
-            let deposit: DepositResponse = await actorVault.accept_investment({
-                amount: BigInt(1000000),
-                strategy_id: 2,
-                ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")
-            });
-            console.log("Deposit success:", deposit.amount, deposit.shares, deposit.tx_id, deposit.request_id)
-        } catch (e) {
-            console.log(e)
-        }
+        // it("Deposits to strategy with liquidity", async () => {
+        // });
     });
 
-    it("Withdraw balance", async function () {
-        console.log("START WITHDRAW TEST");
+    describe(".withdraw", () => {
+        const strategyId = 2;
+        const approveAmount = BigInt(30000000);
+        const depositAmount = BigInt(1000000);
+        let shares: bigint;
+        let sharesToWithdraw: bigint;
+        let remainingShares: bigint;
 
-        try {
-            let withdraw: Result = await actorVault.withdraw({
-                amount: BigInt(500000),
-                strategy_id: 2,
-                ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")
-            });
-            // @ts-ignore
-            console.log("Withdraw success :", withdraw.Ok)
-        } catch (e) {
-            console.log(e)
-        }
+        beforeEach(async () => {
+            // Approve tokens
+            await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
+
+            try {
+                console.log("Deposit starting...");
+
+                // Deposit tokens
+                let depositResp: DepositResponse = await actorVault.accept_investment({
+                    amount: depositAmount,
+                    strategy_id: strategyId,
+                    ledger: Principal.fromText(ledgerCanisterId)
+                });
+
+                console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
+
+                shares = depositResp.shares;
+            } catch (e) {
+                console.log("Deposit error:", e);
+            }
+        });
+
+        it("Withdraws full balance", async () => {
+            console.log("== START Withdraws full balance TEST==");
+
+            sharesToWithdraw = shares; // All shares
+            remainingShares = 0n; // No shares left
+
+            try {
+                console.log("Withdraw starting...");
+                let withdrawResp: WithdrawResponse = await actorVault.withdraw({
+                    amount: sharesToWithdraw,
+                    strategy_id: strategyId,
+                    ledger: Principal.fromText(ledgerCanisterId)
+                });
+                // @ts-ignore
+                console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
+
+                expect(withdrawResp.current_shares).toBe(0n);
+            } catch (e) {
+                console.log("Withdraw error: ", e);
+                throw new Error("Withdraw failed with error: " + e);
+            }
+        });
+
+        it("Withdraws part of balance", async () => {
+            console.log("== START Withdraws half balance TEST ==");
+
+            let sharesToWithdraw = shares / BigInt(2); // 50% of shares
+            let remainingShares = shares - sharesToWithdraw;
+
+            try {
+                console.log("Withdraw starting...");
+                let withdrawResp: WithdrawResponse = await actorVault.withdraw({
+                    amount: sharesToWithdraw,
+                    strategy_id: strategyId,
+                    ledger: Principal.fromText(ledgerCanisterId)
+                });
+                // @ts-ignore
+                console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
+
+                expect(withdrawResp.current_shares).toBe(remainingShares);
+            } catch (e) {
+                console.log("Withdraw error: ", e);
+                throw new Error("Withdraw failed with error: " + e);
+            }
+        });
     });
 
+    describe(".user_balance_all", () => {
+        it("Returns user balance", async () => {
+            const userBalance = await actorVault.user_balance_all(memberIdentity.getPrincipal());
+            console.log("User balance:", userBalance);
+        });
+    });
+
+    describe(".rebalance", () => {
     // it("Rebalance", async function () {
-    //     console.log("START REBALANCE TEST");
+    //     console.log("== START REBALANCE TEST ==");
     //
     //     try {
     //         let rebalance = await actorVault.rebalance();
@@ -103,11 +161,56 @@ describe("VR Test PROD", () => {
     //         console.log(e)
     //     }
     // });
+    });
 });
-
 
 export const getIdentity = (seed: string): Ed25519KeyIdentity => {
     let seedEncoded = new TextEncoder().encode(seed);
 
     return Ed25519KeyIdentity.generate(seedEncoded);
 };
+
+export const checkAndApproveTokens = async (
+    amount: bigint, 
+    canisterId: string, 
+    memberIdentity: Ed25519KeyIdentity, 
+    ledgerActor: ActorSubclass<ledgerService>
+) => {
+    let approveArgs: ApproveArgs = {
+        amount: amount,
+        spender: {
+            owner: Principal.fromText(canisterId),
+            subaccount: []
+        },
+        fee: [],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+        expected_allowance: [],
+        expires_at: []
+    };
+
+    console.log("Approve tokens starting...");
+
+    // Approve tokens
+    const approveResponse = await ledgerActor.icrc2_approve(approveArgs);
+    console.log("IRC2 approve:", approveResponse);
+
+    // Check allowance
+    const allowanceResponse = await ledgerActor.icrc2_allowance({
+        account: {
+            owner: memberIdentity.getPrincipal(),
+            subaccount: []
+        },
+        spender: {
+            owner: Principal.fromText(canisterId),
+            subaccount: []
+        }
+    });
+
+    console.log("Allowance:", allowanceResponse);
+
+    if (allowanceResponse.allowance < amount) {
+        throw new Error("Insufficient allowance");
+    }
+}

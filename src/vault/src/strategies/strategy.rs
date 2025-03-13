@@ -78,8 +78,10 @@ pub struct DepositResponse {
     pub request_id: u64,
 }
 
+#[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct WithdrawResponse {
     pub amount: Nat,
+    pub current_shares: Nat,
 }
 
 #[derive(CandidType, Deserialize, Clone,Debug, Serialize)]

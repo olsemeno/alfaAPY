@@ -14,6 +14,10 @@ export interface DepositResponse {
     'shares' : bigint,
     'amount' : bigint,
 }
+export interface WithdrawResponse {
+    'amount' : bigint,
+    'current_shares' : bigint,
+}
 export interface Icrc28TrustedOriginsResponse {
     'trusted_origins' : Array<string>,
 }
@@ -89,7 +93,7 @@ export interface _SERVICE {
     'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
     'kong_pools' : ActorMethod<[], PoolsReply>,
     'user_balance_all' : ActorMethod<[Principal], Array<UserBalancesReply>>,
-    'withdraw' : ActorMethod<[WithdrawArgs], Result>,
+    'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

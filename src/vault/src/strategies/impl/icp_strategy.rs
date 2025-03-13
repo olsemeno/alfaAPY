@@ -164,8 +164,8 @@ impl IStrategy for ICPStrategy {
 
             // Swap withdrawed token_1 to token_0 (to base token)
             let swap_response = swap_icrc2_kong(
-                tokens_info.token_0,
                 tokens_info.token_1,
+                tokens_info.token_0,
                 nat_to_u128(token_1_amount)
             ).await;
 
@@ -231,8 +231,12 @@ impl IStrategy for ICPStrategy {
 
     async fn withdraw(&mut self, investor: Principal, shares: Nat) -> WithdrawResponse {
         // Check if user has enough shares
-        if shares > self.user_shares[&investor] {
-            trap("Not sufficient shares".into());
+        if let Some(user_shares) = self.user_shares.get(&investor) {
+            if shares > *user_shares {
+                trap("Not sufficient shares".into());
+            }
+        } else {
+            trap("No shares found for this investor".into());
         }
 
         // Remove liquidity from pool
@@ -279,13 +283,14 @@ impl IStrategy for ICPStrategy {
         // Update user shares
         let current_shares = self.user_shares.get(&investor).cloned().unwrap_or(Nat::from(0u64));
         let new_shares = current_shares.min(shares.clone());
-        self.user_shares.insert(investor.clone(), new_shares);
+        self.user_shares.insert(investor.clone(), new_shares.clone());
 
         // Update total shares
         self.total_shares = self.total_shares.clone().min(shares);
         save_strategy(self.clone_self());
         WithdrawResponse {
-            amount: amount_to_withdraw
+            amount: amount_to_withdraw,
+            current_shares: new_shares,
         }
     }
 
@@ -301,6 +306,7 @@ impl IStrategy for ICPStrategy {
             }
         };
 
+        // Get user balance in pool
         let user_balance_reply = user_balances_response.into_iter()
             .filter_map(|reply| match reply {
                 UserBalancesReply::LP(lp) => Some(lp),
@@ -309,14 +315,14 @@ impl IStrategy for ICPStrategy {
             .find(|balance| balance.symbol == pool.symbol)
             .unwrap_or_else(|| trap("Expected LP balance"));
 
-//LPReply { symbol: \"ICP_ckUSDT\", name: \"ICP_ckUSDT LP Token\", balance: 0.06884369, usd_balance: 0.336404,
+        //LPReply { symbol: \"ICP_ckUSDT\", name: \"ICP_ckUSDT LP Token\", balance: 0.06884369, usd_balance: 0.336404,
         // chain_0: \"IC\", symbol_0: \"ICP\", address_0: \"ryjl3-tyaaa-aaaaa-aaaba-cai\", amount_0: 0.03121415, usd_amount_0: 0.168202, chain_1: \"IC\", symbol_1: \"ckUSDT\", address_1: \"cngnf-vqaaa-aaaar-qag4q-cai\",
         // amount_1: 0.168202, usd_amount_1: 0.168202, ts: 1741767423329139829 }
         let balance = user_balance_reply.balance;
 
         // Calculate how much LP tokens to withdraw
-
-         let lp_tokens_to_withdraw: f64 =balance.mul(nat_to_f64(&shares)).div(nat_to_f64(&self.total_shares.clone())).mul( 100000000.0 );
+        // balance * shares / total_shares * 100000000
+        let lp_tokens_to_withdraw: f64 = balance.mul(nat_to_f64(&shares)).div(nat_to_f64(&self.total_shares.clone())).mul( 100000000.0 );
 
         // trap(format!("balance: {}, shares: {}, total_shares: {}, lp_tokens_to_withdraw: {}", balance, shares, self.total_shares, lp_tokens_to_withdraw).as_str());
 

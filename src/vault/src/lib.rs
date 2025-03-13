@@ -6,7 +6,7 @@ mod repo;
 mod user;
 
 use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save};
-use crate::strategies::strategy::{DepositResponse, StrategyId, StrategyResponse};
+use crate::strategies::strategy::{DepositResponse, WithdrawResponse, StrategyId, StrategyResponse};
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::swap::swap_service::{swap_icrc2_kong, KONG_BE_CANISTER};
@@ -69,7 +69,6 @@ async fn kong_pools() -> PoolsReply {
     }
 }
 
-
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct AcceptInvestmentArgs {
     ledger: CanisterId,
@@ -82,19 +81,16 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
     //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
     accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
 
-
-    let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
+    let  mut str = get_strategy_by_id(args.strategy_id).unwrap();
     str.deposit(caller(), args.amount).await
 }
-
-
 
 #[heartbeat]
 fn heartbeat() {
     let n = 5 as u64;
     HEARTBEAT.with(|store| {
         let mut count = store.borrow_mut().clone();
-        if (count % n == 0) {
+        if count % n == 0 {
            // rebalance_all
         }
         store.replace(count + 1)
@@ -103,32 +99,106 @@ fn heartbeat() {
     print("heartbeat");
 }
 
-
-
-#[query]
-async fn user_balance_all(user: Principal) -> Vec<UserBalancesReply>  {
-    let canisterId = id();
-   match user_balances(canisterId.to_text()).await.0 {
-         Ok(reply) => reply,
-         Err(err) => {
-              trap(format!("Error: {}", err).as_str());
-         }
-   }
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct UserStrategyBalanceResponse {
+    pub strategy: StrategyResponse,
+    pub usd_balance: Nat,
+    pub shares: Nat,
+    pub pool_symbol: String,
 }
 
+#[update]
+async fn user_balance_all(user: Principal) -> Vec<UserBalancesReply>  {
+    let canisterId = id();
+
+    let strategies = get_all_strategies();
+
+    /*
+        [
+            {
+                LP: {
+                ts: 1741835757606250231n,
+                usd_balance: 0.70489,
+                balance: 0.14288274,
+                name: 'ICP_ckUSDT LP Token',
+                amount_0: 0.06419148,
+                amount_1: 0.352445,
+                address_0: 'ryjl3-tyaaa-aaaaa-aaaba-cai',
+                address_1: 'cngnf-vqaaa-aaaar-qag4q-cai',
+                symbol_0: 'ICP',
+                symbol_1: 'ckUSDT',
+                usd_amount_0: 0.352445,
+                usd_amount_1: 0.352445,
+                chain_0: 'IC',
+                chain_1: 'IC',
+                symbol: 'ICP_ckUSDT'
+                }
+            }
+        ]
+    */
+    let user_balances = match user_balances(canisterId.to_text()).await.0 {
+            Ok(reply) => reply,
+            Err(err) => {
+                trap(format!("Error: {}", err).as_str());
+            }
+    };
+
+    // 
+    let mut user_strategy_balances = Vec::new();
+
+
+    // WIP
+    // For each strategy find the corresponding balance
+    // for strategy in strategies {
+    //     let strategy_response = strategy.get_response();
+        
+    //     // Get LP token symbol from current strategy pool
+    //     if let Some(current_pool) = &strategy_response.current_pool {
+    //         let pool_symbol = &current_pool.symbol;
+            
+    //         // Find balance with LP token symbol
+    //         for balance in &user_balances {
+    //             // Check if balance has LP token with the same symbol
+    //             if let Some(lp_positions) = &balance.LP {
+    //                 for lp_position in lp_positions {
+    //                     if lp_position.symbol == *pool_symbol {
+    //                         let usd_balance = Nat::from(lp_position.usd_balance as u64);
+    //                         let shares = Nat::from(lp_position.balance as u64);
+
+    //                         user_strategy_balances.push(UserStrategyBalanceResponse {
+    //                             strategy: strategy_response.clone(),
+    //                             usd_balance,
+    //                             shares,
+    //                             pool_symbol: pool_symbol.clone(),
+    //                         });
+
+    //                         break;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    user_strategy_balances
+}
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct WithdrawArgs {
     ledger: CanisterId,
-    amount: Nat,
+    amount: Nat, // TODO: rename to shares
     strategy_id: StrategyId,
 }
 
 #[update]
-async fn withdraw(args: WithdrawArgs)  -> Result<Nat, String>  {
+async fn withdraw(args: WithdrawArgs)  -> WithdrawResponse  {
     let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
-   let resp =  str.withdraw(caller(), args.amount).await;
-    Ok(resp.amount)
+    let response =  str.withdraw(caller(), args.amount).await;
+    
+    WithdrawResponse {
+        amount: response.amount,
+        current_shares: response.current_shares,
+    }
 }
 
 #[query]
@@ -145,7 +215,6 @@ fn get_strategies() -> Vec<StrategyResponse> {
 fn pre_upgrade() {
     stable_save();
 }
-
 
 #[derive(CandidType, Deserialize, Eq, PartialEq, Debug)]
 pub struct SupportedStandard {
