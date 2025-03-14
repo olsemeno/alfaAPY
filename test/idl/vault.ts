@@ -80,6 +80,13 @@ export interface StrategyResponse {
 }
 export interface SupportedStandard { 'url' : string, 'name' : string }
 export type UserBalancesReply = { 'LP' : LPReply };
+export interface UserStrategyResponse {
+    'strategy_id' : number,
+    'strategy_name' : string,
+    'strategy_current_pool' : string,
+    'total_shares' : bigint,
+    'user_shares' : bigint,
+}
 export interface WithdrawArgs {
     'strategy_id' : number,
     'ledger' : Principal,
@@ -93,6 +100,7 @@ export interface _SERVICE {
     'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
     'kong_pools' : ActorMethod<[], PoolsReply>,
     'user_balance_all' : ActorMethod<[Principal], Array<UserBalancesReply>>,
+    'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
     'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

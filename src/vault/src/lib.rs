@@ -99,88 +99,48 @@ fn heartbeat() {
     print("heartbeat");
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct UserStrategyBalanceResponse {
-    pub strategy: StrategyResponse,
-    pub usd_balance: Nat,
-    pub shares: Nat,
-    pub pool_symbol: String,
-}
-
 #[update]
 async fn user_balance_all(user: Principal) -> Vec<UserBalancesReply>  {
     let canisterId = id();
-
-    let strategies = get_all_strategies();
-
-    /*
-        [
-            {
-                LP: {
-                ts: 1741835757606250231n,
-                usd_balance: 0.70489,
-                balance: 0.14288274,
-                name: 'ICP_ckUSDT LP Token',
-                amount_0: 0.06419148,
-                amount_1: 0.352445,
-                address_0: 'ryjl3-tyaaa-aaaaa-aaaba-cai',
-                address_1: 'cngnf-vqaaa-aaaar-qag4q-cai',
-                symbol_0: 'ICP',
-                symbol_1: 'ckUSDT',
-                usd_amount_0: 0.352445,
-                usd_amount_1: 0.352445,
-                chain_0: 'IC',
-                chain_1: 'IC',
-                symbol: 'ICP_ckUSDT'
-                }
-            }
-        ]
-    */
-    let user_balances = match user_balances(canisterId.to_text()).await.0 {
+    match user_balances(canisterId.to_text()).await.0 {
             Ok(reply) => reply,
             Err(err) => {
                 trap(format!("Error: {}", err).as_str());
             }
-    };
+    }
+}
 
-    // 
-    let mut user_strategy_balances = Vec::new();
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct UserStrategyResponse {
+    pub strategy_id: StrategyId,
+    pub strategy_name: String,
+    pub strategy_current_pool: String,
+    pub total_shares: Nat,
+    pub user_shares: Nat,
+}
 
+#[update]
+async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
+    let strategies = get_all_strategies();
+    let mut user_strategies = Vec::new();
 
-    // WIP
-    // For each strategy find the corresponding balance
-    // for strategy in strategies {
-    //     let strategy_response = strategy.get_response();
+    for strategy in strategies {
+        let user_shares = strategy.get_user_shares().get(&user).cloned().unwrap_or(Nat::from(0u64));
+        let current_pool = strategy.get_current_pool();
         
-    //     // Get LP token symbol from current strategy pool
-    //     if let Some(current_pool) = &strategy_response.current_pool {
-    //         let pool_symbol = &current_pool.symbol;
-            
-    //         // Find balance with LP token symbol
-    //         for balance in &user_balances {
-    //             // Check if balance has LP token with the same symbol
-    //             if let Some(lp_positions) = &balance.LP {
-    //                 for lp_position in lp_positions {
-    //                     if lp_position.symbol == *pool_symbol {
-    //                         let usd_balance = Nat::from(lp_position.usd_balance as u64);
-    //                         let shares = Nat::from(lp_position.balance as u64);
+        // Add only if current pool is set and user has shares
+        if !current_pool.symbol.is_empty() && user_shares > Nat::from(0u64) {
+            user_strategies.push(UserStrategyResponse {
+                strategy_id: strategy.get_id(),
+                strategy_name: strategy.get_name(),
+                strategy_current_pool: current_pool.symbol,
+                total_shares: strategy.get_total_shares(),
+                user_shares: user_shares
+            });
+        }
+    }
 
-    //                         user_strategy_balances.push(UserStrategyBalanceResponse {
-    //                             strategy: strategy_response.clone(),
-    //                             usd_balance,
-    //                             shares,
-    //                             pool_symbol: pool_symbol.clone(),
-    //                         });
-
-    //                         break;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    user_strategy_balances
+    user_strategies
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]

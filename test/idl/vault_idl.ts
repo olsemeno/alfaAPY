@@ -75,6 +75,13 @@ export const idlFactory = ({ IDL }) => {
         'symbol' : IDL.Text,
     });
     const UserBalancesReply = IDL.Variant({ 'LP' : LPReply });
+    const UserStrategyResponse = IDL.Record({
+        'strategy_id' : IDL.Nat16,
+        'strategy_name' : IDL.Text,
+        'strategy_current_pool' : IDL.Text,
+        'total_shares' : IDL.Nat,
+        'user_shares' : IDL.Nat,
+    });UserStrategyResponse
     const WithdrawArgs = IDL.Record({
         'strategy_id' : IDL.Nat16,
         'ledger' : IDL.Principal,
@@ -96,15 +103,20 @@ export const idlFactory = ({ IDL }) => {
         ),
         'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
         'kong_pools' : IDL.Func([], [PoolsReply], []),
+        'withdraw' : IDL.Func(
+            [WithdrawArgs],
+            [WithdrawResponse],
+            []
+        ),
         'user_balance_all' : IDL.Func(
             [IDL.Principal],
             [IDL.Vec(UserBalancesReply)],
             [],
         ),
-        'withdraw' : IDL.Func(
-            [WithdrawArgs],
-            [WithdrawResponse],
-            []
+        'user_strategies' : IDL.Func(
+            [IDL.Principal],
+            [IDL.Vec(UserStrategyResponse)],
+            [],
         ),
     });
 };

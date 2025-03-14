@@ -11,6 +11,7 @@ use std::cmp::Ordering;
 use crate::providers::kong::kong::{remove_liquidity, user_balances};
 use crate::strategies::strategy_candid::StrategyCandid;
 use types::exchanges::TokenInfo;
+use std::collections::HashMap;
 
 pub type PoolSymbol = String;
 pub type StrategyId = u16;
@@ -24,7 +25,10 @@ pub trait IStrategy {
     fn get_subaccount(&self) -> Subaccount;
     fn get_current_pool(&self) -> PoolReply;
     fn get_pool_tokens_info(&self, pool: PoolReply) -> TokensInfo;
+    fn get_user_shares(&self) -> HashMap<Principal, Nat>;
+    fn get_total_shares(&self) -> Nat;
     fn clone_self(&self) -> Box<dyn IStrategy>;
+
     //TODO make generic kongswap/icpswap
     async fn get_pools_data(&self) -> Vec<PoolReply> {
         get_pools_data(self.get_pools()).await
@@ -40,6 +44,8 @@ pub trait IStrategy {
             description: self.get_description(),
             pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
             current_pool: self.get_current_pool(),
+            total_shares: self.get_total_shares(),
+            user_shares: self.get_user_shares(),
         }
     }
     async fn withdraw_from_pool(&mut self, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
@@ -53,6 +59,8 @@ pub struct StrategyResponse {
     pub description: String,
     pub pools: Vec<PoolSymbol>,
     pub current_pool: PoolReply,
+    pub total_shares: Nat,
+    pub user_shares: HashMap<Principal, Nat>
 }
 
 pub struct Strategy {
@@ -60,6 +68,8 @@ pub struct Strategy {
     pub id: StrategyId,
     pub description: String,
     pub pools: Vec<PoolSymbol>,
+    pub total_shares: Nat,
+    pub user_shares: Nat,
     pub subaccount: Subaccount,
 }
 

@@ -39,9 +39,6 @@ export class StrategyWrapper {
         return this.actor.accept_investment({strategy_id, ledger: Principal.fromText(ledger), amount})
     }
 
-    public async get_user_data() {
-    }
-
     public async get_pool_data(pools_symbols:Array<String>): Promise<any> {
         return this.kongActor.pools([])
             .then((result: PoolsResult) => {

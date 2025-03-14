@@ -41,7 +41,7 @@ pub struct ICPStrategy {
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
-    allocations: HashMap<PoolSymbol, Nat>,
+
 }
 
 impl ICPStrategy {
@@ -51,7 +51,6 @@ impl ICPStrategy {
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
-            allocations: HashMap::new(),
         }
     }
 }
@@ -126,6 +125,13 @@ impl IStrategy for ICPStrategy {
         StrategyCandid::ICPStrategyV(self.clone())
     }
 
+    fn get_user_shares(&self) -> HashMap<Principal, Nat> {
+        self.user_shares.clone()
+    }
+
+    fn get_total_shares(&self) -> Nat {
+        self.total_shares.clone()
+    }
 
     async fn rebalance(&mut self) -> RebalanceResponse {
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
@@ -420,9 +426,6 @@ impl IStrategy for ICPStrategy {
 
         match response {
             Ok(r) => {
-                //TODO save response
-                self.allocations.insert(pool_symbol, amount.clone());
-
                 AddLiquidityResponse {
                     token_0_amount: Nat::from(token_0_for_pool as u128),
                     token_1_amount: Nat::from(token_1_for_pool as u128),
