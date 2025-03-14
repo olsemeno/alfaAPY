@@ -23,7 +23,7 @@ pub trait IStrategy {
     fn get_description(&self) -> String;
     fn get_pools(&self) -> Vec<Pool>;
     fn get_subaccount(&self) -> Subaccount;
-    fn get_current_pool(&self) -> PoolReply;
+    fn get_current_pool(&self) -> Option<PoolReply>;
     fn get_pool_tokens_info(&self, pool: PoolReply) -> TokensInfo;
     fn get_user_shares(&self) -> HashMap<Principal, Nat>;
     fn get_total_shares(&self) -> Nat;
@@ -58,7 +58,7 @@ pub struct StrategyResponse {
     pub id: StrategyId,
     pub description: String,
     pub pools: Vec<PoolSymbol>,
-    pub current_pool: PoolReply,
+    pub current_pool: Option<PoolReply>,
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>
 }

@@ -73,11 +73,8 @@ impl IStrategy for ICPStrategy {
         Subaccount([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2])
     }
 
-    fn get_current_pool(&self) -> PoolReply {
-        match self.current_pool.clone() {
-            Some(pool) => pool,
-            None => trap("No current pool"),
-        }
+    fn get_current_pool(&self) -> Option<PoolReply> {
+        self.current_pool.clone()
     }
 
     fn clone_self(&self) -> Box<dyn IStrategy> {
@@ -137,7 +134,9 @@ impl IStrategy for ICPStrategy {
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
 
         // TODO: remove this (added to setting current pool)
-        self.current_pool = pools_data.iter().find(|&x| x.symbol == "ckUSDC_ICP").cloned();
+        if self.current_pool.is_none() {
+            self.current_pool = pools_data.iter().find(|&x| x.symbol == "ckUSDC_ICP").cloned();
+        }
 
         let mut max_apy = 0.0;
         let mut max_apy_pool = None;
@@ -150,45 +149,49 @@ impl IStrategy for ICPStrategy {
             }
         }
 
+        let current_pool = self.get_current_pool();
+
         if let Some(max_pool) = max_apy_pool.clone() {
             // If current pool is the same as max APY pool, return
-            if let Some(current_pool) = &self.current_pool {
+            if let Some(current_pool) = &current_pool {
                 if current_pool.symbol == max_pool.symbol {
                     return RebalanceResponse {
                         pool: current_pool.clone(),
                     };
                 }
-            }
 
-            // Remove liquidity from current pool
-            let withdraw_response = self.withdraw_from_pool(self.total_shares.clone(), self.get_current_pool()).await;
+                // Remove liquidity from current pool
+                let withdraw_response = self.withdraw_from_pool(self.total_shares.clone(), current_pool.clone()).await;
 
-            let token_0_amount = withdraw_response.token_0_amount;
-            let token_1_amount = withdraw_response.token_1_amount;
+                let token_0_amount = withdraw_response.token_0_amount;
+                let token_1_amount = withdraw_response.token_1_amount;
 
-            let tokens_info = self.get_pool_tokens_info(self.get_current_pool());
+                let tokens_info = self.get_pool_tokens_info(current_pool.clone());
 
-            // Swap withdrawed token_1 to token_0 (to base token)
-            let swap_response = swap_icrc2_kong(
-                tokens_info.token_1,
-                tokens_info.token_0,
-                nat_to_u128(token_1_amount)
-            ).await;
+                // Swap withdrawed token_1 to token_0 (to base token)
+                let swap_response = swap_icrc2_kong(
+                    tokens_info.token_1,
+                    tokens_info.token_0,
+                    nat_to_u128(token_1_amount)
+                ).await;
 
-            // Calculate total token_0 to send in new pool after swap
-            let token_0_to_pool_amount = token_0_amount + swap_response.amount_out;
+                // Calculate total token_0 to send in new pool after swap
+                let token_0_to_pool_amount = token_0_amount + swap_response.amount_out;
 
-            // Add liquidity to new pool
-            let add_liquidity_response = self.add_liquidity_to_pool(
-                token_0_to_pool_amount,
-                max_apy_pool.clone().unwrap()
-            ).await;
+                // Add liquidity to new pool
+                let add_liquidity_response = self.add_liquidity_to_pool(
+                    token_0_to_pool_amount,
+                    max_apy_pool.clone().unwrap()
+                ).await;
 
-            // Update current pool
-            self.current_pool = Some(max_apy_pool.clone().unwrap());
+                // Update current pool
+                self.current_pool = Some(max_apy_pool.clone().unwrap());
 
-            RebalanceResponse {
-                pool: self.current_pool.clone().unwrap(),
+                RebalanceResponse {
+                    pool: self.current_pool.clone().unwrap(),
+                }
+            } else {
+                trap("No current pool");
             }
         } else {
             RebalanceResponse {
@@ -202,7 +205,10 @@ impl IStrategy for ICPStrategy {
 
         // TODO: remove this (added to setting current pool)
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
-        self.current_pool = pools_data.iter().find(|&x| x.symbol == "ICP_ckUSDT").cloned();
+
+        if self.current_pool.is_none() {
+            self.current_pool = pools_data.iter().find(|&x| x.symbol == "ckUSDC_ICP").cloned();
+        }
 
         // Calculate new shares for investor's deposit
         let new_shares = Calculator::calculate_shares(nat_to_f64(&amount), nat_to_f64(&self.total_balance), nat_to_f64(&self.total_shares.clone()));
@@ -216,6 +222,7 @@ impl IStrategy for ICPStrategy {
             let resp = self.add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
 
             save_strategy(self.clone_self());
+
             DepositResponse {
                 amount: amount,
                 shares: Nat::from(new_shares as u128),
@@ -245,58 +252,65 @@ impl IStrategy for ICPStrategy {
             trap("No shares found for this investor".into());
         }
 
-        // Remove liquidity from pool
-        let withdraw_response = self.withdraw_from_pool(shares.clone(), self.get_current_pool()).await;
-
         let pool = self.get_current_pool();
-        let tokens_info = self.get_pool_tokens_info(pool);
 
-        // Swap token_1 to token_0 (to base token)
-        let swap_response = swap_icrc2_kong(
-            tokens_info.token_1,
-            tokens_info.token_0.clone(),
-            nat_to_f64(&withdraw_response.token_1_amount) as u128
-        ).await;
+        if let Some(pool) = pool {
+            let tokens_info = self.get_pool_tokens_info(pool.clone());
 
-        // Calculate total token_0 to send after swap
-        let amount_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
+            // Remove liquidity from pool
+            let withdraw_response = self.withdraw_from_pool(shares.clone(), pool).await;
 
-        let transfer_result = icrc1_transfer(
-            tokens_info.token_0.ledger,
-            &TransferArg {
-                from_subaccount: None,
-                to: Account {
-                    owner: caller(),
-                    subaccount: None,
-                },
-                fee: None,
-                created_at_time: None,
-                memo: None,
-                amount: amount_to_withdraw.clone(),
+            // Swap token_1 to token_0 (to base token)
+            let swap_response = swap_icrc2_kong(
+                tokens_info.token_1,
+                tokens_info.token_0.clone(),
+                nat_to_f64(&withdraw_response.token_1_amount) as u128
+            ).await;
+
+            // Calculate total token_0 to send after swap
+            let amount_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
+
+            let transfer_result = icrc1_transfer(
+                tokens_info.token_0.ledger,
+                &TransferArg {
+                    from_subaccount: None,
+                    to: Account {
+                        owner: caller(),
+                        subaccount: None,
+                    },
+                    fee: None,
+                    created_at_time: None,
+                    memo: None,
+                    amount: amount_to_withdraw.clone(),
+                }
+            ).await;
+
+            let tr_id = match transfer_result {
+                Ok(Ok(x)) => x,
+                Err(x) => {
+                    trap(format!("Transfer error 1: {:?}", x.1).as_str());
+                }
+                Ok(Err(x)) => {
+                    trap(format!("Transfer error 2: {:?}", x).as_str());
+                }
+            };
+
+            // Update user shares
+            let current_shares = self.user_shares.get(&investor).cloned().unwrap_or(Nat::from(0u64));
+            let new_shares = current_shares.min(shares.clone());
+            self.user_shares.insert(investor.clone(), new_shares.clone());
+
+            // Update total shares
+            self.total_shares = self.total_shares.clone().min(shares);
+
+            save_strategy(self.clone_self());
+
+            WithdrawResponse {
+                amount: amount_to_withdraw,
+                current_shares: new_shares,
             }
-        ).await;
-
-        let tr_id = match transfer_result {
-            Ok(Ok(x)) => x,
-            Err(x) => {
-                trap(format!("Transfer error 1: {:?}", x.1).as_str());
-            }
-            Ok(Err(x)) => {
-                trap(format!("Transfer error 2: {:?}", x).as_str());
-            }
-        };
-
-        // Update user shares
-        let current_shares = self.user_shares.get(&investor).cloned().unwrap_or(Nat::from(0u64));
-        let new_shares = current_shares.min(shares.clone());
-        self.user_shares.insert(investor.clone(), new_shares.clone());
-
-        // Update total shares
-        self.total_shares = self.total_shares.clone().min(shares);
-        save_strategy(self.clone_self());
-        WithdrawResponse {
-            amount: amount_to_withdraw,
-            current_shares: new_shares,
+        } else {
+            trap("No current pool");
         }
     }
 

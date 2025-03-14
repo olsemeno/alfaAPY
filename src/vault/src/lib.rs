@@ -127,16 +127,18 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
     for strategy in strategies {
         let user_shares = strategy.get_user_shares().get(&user).cloned().unwrap_or(Nat::from(0u64));
         let current_pool = strategy.get_current_pool();
-        
-        // Add only if current pool is set and user has shares
-        if !current_pool.symbol.is_empty() && user_shares > Nat::from(0u64) {
-            user_strategies.push(UserStrategyResponse {
-                strategy_id: strategy.get_id(),
-                strategy_name: strategy.get_name(),
-                strategy_current_pool: current_pool.symbol,
-                total_shares: strategy.get_total_shares(),
-                user_shares: user_shares
-            });
+
+        if let Some(pool) = current_pool {
+            // Add only if current pool is set and user has shares
+            if user_shares > Nat::from(0u64) {
+                user_strategies.push(UserStrategyResponse {
+                    strategy_id: strategy.get_id(),
+                    strategy_name: strategy.get_name(),
+                    strategy_current_pool: pool.symbol,
+                    total_shares: strategy.get_total_shares(),
+                    user_shares: user_shares
+                });
+            }
         }
     }
 

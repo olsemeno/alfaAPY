@@ -80,15 +80,8 @@ impl IStrategy for ckBTCStrategy {
         Subaccount([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
     }
 
-    fn get_current_pool(&self) -> PoolReply {
-        match self.current_pool.clone() {
-            None => {
-                trap("No current pool set");
-            }
-            Some(x) => {
-                x.clone()
-            }
-        }
+    fn get_current_pool(&self) -> Option<PoolReply> {
+        self.current_pool.clone()
     }
 
     fn clone_self(&self) -> Box<dyn IStrategy> {
