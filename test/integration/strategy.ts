@@ -47,6 +47,53 @@ export class StrategyWrapper {
                 return pools.pools.filter((pool) => pools_symbols.includes(pool.symbol))
             })
     }
+
+    public async get_user_strategies(user: Principal): Promise<Array<any>> {
+        // Get user strategies and balances
+        return Promise.all([
+            this.actor.user_strategies(user),
+            this.actor.user_balance_all(user)
+        ])
+        .then(([userStrategies, userBalances]) => {
+            console.log("User strategies:", userStrategies);
+            console.log("User balances:", userBalances);
+
+            const selectedUserBalances = [];
+
+            userBalances.forEach(balance => {
+                userStrategies.forEach(strategy => {
+                    const lpPosition = balance.LP;
+                    // Select balances that match user's strategy and have non-zero total shares
+                    if (strategy.strategy_current_pool === lpPosition.symbol && strategy.total_shares > 0n) {
+                        // Calculate user's share in the strategy
+                        const userShare = Number(strategy.user_shares) / Number(strategy.total_shares);
+                        const userUsdBalance = lpPosition.usd_balance * userShare;
+
+                        selectedUserBalances.push({
+                            name: strategy.strategy_name,
+                            strategy_id: strategy.strategy_id,
+                            symbol: lpPosition.symbol,
+                            user_shares: strategy.user_shares,
+                            total_shares: strategy.total_shares,
+                            share_percentage: userShare * 100,
+                            symbol_0: lpPosition.symbol_0,
+                            symbol_1: lpPosition.symbol_1,
+                            amount_0: lpPosition.amount_0,
+                            amount_1: lpPosition.amount_1,
+                            usd_balance: userUsdBalance,
+                        });
+                    }
+                });
+            });
+
+            console.log("Selected user balances:", selectedUserBalances);
+            return selectedUserBalances;
+        })
+        .catch(error => {
+            console.error("Error getting user strategies:", error);
+            throw error;
+        });
+    }
 }
 
 export async function getTypedActor<T>(
