@@ -41,7 +41,7 @@ pub struct ICPStrategy {
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
-
+    initial_deposit: HashMap<Principal, Nat>,
 }
 
 impl ICPStrategy {
@@ -51,6 +51,7 @@ impl ICPStrategy {
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
+            initial_deposit: HashMap::new(),
         }
     }
 }
@@ -128,6 +129,10 @@ impl IStrategy for ICPStrategy {
 
     fn get_total_shares(&self) -> Nat {
         self.total_shares.clone()
+    }
+
+    fn get_initial_deposit(&self) -> HashMap<Principal, Nat> {
+        self.initial_deposit.clone()
     }
 
     async fn rebalance(&mut self) -> RebalanceResponse {
@@ -218,6 +223,9 @@ impl IStrategy for ICPStrategy {
         self.total_shares += Nat::from(new_shares as u128);
         self.user_shares.insert(investor,  Nat::from(new_shares as u128));
 
+        // Update initial deposit
+        self.initial_deposit.insert(investor, amount.clone());
+
         if let Some(ref pool_reply) = self.current_pool {
             let resp = self.add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
 
@@ -297,11 +305,17 @@ impl IStrategy for ICPStrategy {
 
             // Update user shares
             let current_shares = self.user_shares.get(&investor).cloned().unwrap_or(Nat::from(0u64));
-            let new_shares = current_shares.min(shares.clone());
+            let new_shares = current_shares.clone().min(shares.clone());
             self.user_shares.insert(investor.clone(), new_shares.clone());
 
             // Update total shares
             self.total_shares = self.total_shares.clone().min(shares);
+
+            // Update initial deposit
+            let initial_deposit = self.initial_deposit.get(&investor).cloned().unwrap_or(Nat::from(0u64));
+            // Remaining initial deposit proportional to the new shares
+            let new_initial_deposit = initial_deposit * new_shares.clone() / current_shares;
+            self.initial_deposit.insert(investor.clone(), new_initial_deposit.clone());
 
             save_strategy(self.clone_self());
 

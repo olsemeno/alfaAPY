@@ -117,6 +117,7 @@ pub struct UserStrategyResponse {
     pub strategy_current_pool: String,
     pub total_shares: Nat,
     pub user_shares: Nat,
+    pub initial_deposit: Nat,
 }
 
 #[update]
@@ -126,6 +127,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
 
     for strategy in strategies {
         let user_shares = strategy.get_user_shares().get(&user).cloned().unwrap_or(Nat::from(0u64));
+        let initial_deposit = strategy.get_initial_deposit().get(&user).cloned().unwrap_or(Nat::from(0u64));
         let current_pool = strategy.get_current_pool();
 
         if let Some(pool) = current_pool {
@@ -136,7 +138,8 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                     strategy_name: strategy.get_name(),
                     strategy_current_pool: pool.symbol,
                     total_shares: strategy.get_total_shares(),
-                    user_shares: user_shares
+                    user_shares: user_shares,
+                    initial_deposit: initial_deposit,
                 });
             }
         }

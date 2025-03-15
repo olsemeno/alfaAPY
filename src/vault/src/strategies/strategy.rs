@@ -27,6 +27,7 @@ pub trait IStrategy {
     fn get_pool_tokens_info(&self, pool: PoolReply) -> TokensInfo;
     fn get_user_shares(&self) -> HashMap<Principal, Nat>;
     fn get_total_shares(&self) -> Nat;
+    fn get_initial_deposit(&self) -> HashMap<Principal, Nat>;
     fn clone_self(&self) -> Box<dyn IStrategy>;
 
     //TODO make generic kongswap/icpswap
@@ -46,6 +47,7 @@ pub trait IStrategy {
             current_pool: self.get_current_pool(),
             total_shares: self.get_total_shares(),
             user_shares: self.get_user_shares(),
+            initial_deposit: self.get_initial_deposit(),
         }
     }
     async fn withdraw_from_pool(&mut self, shares: Nat, pool: PoolReply) -> WithdrawFromPoolResponse;
@@ -60,7 +62,8 @@ pub struct StrategyResponse {
     pub pools: Vec<PoolSymbol>,
     pub current_pool: Option<PoolReply>,
     pub total_shares: Nat,
-    pub user_shares: HashMap<Principal, Nat>
+    pub user_shares: HashMap<Principal, Nat>,
+    pub initial_deposit: HashMap<Principal, Nat>,
 }
 
 pub struct Strategy {
@@ -70,6 +73,7 @@ pub struct Strategy {
     pub pools: Vec<PoolSymbol>,
     pub total_shares: Nat,
     pub user_shares: Nat,
+    pub initial_deposit: HashMap<Principal, Nat>,
     pub subaccount: Subaccount,
 }
 

@@ -43,6 +43,7 @@ export const idlFactory = ({ IDL }) => {
         'user_shares' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Nat)),
         'current_pool' : IDL.Opt(PoolReply),
         'pools' : IDL.Vec(IDL.Text),
+        'initial_deposit' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Nat)),
     });
     const SupportedStandard = IDL.Record({ 'url' : IDL.Text, 'name' : IDL.Text });
     const Icrc28TrustedOriginsResponse = IDL.Record({
@@ -79,6 +80,7 @@ export const idlFactory = ({ IDL }) => {
         'strategy_id' : IDL.Nat16,
         'user_shares' : IDL.Nat,
         'strategy_name' : IDL.Text,
+        'initial_deposit' : IDL.Nat,
     });
     const WithdrawArgs = IDL.Record({
         'strategy_id' : IDL.Nat16,

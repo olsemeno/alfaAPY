@@ -73,6 +73,7 @@ export interface StrategyResponse {
     'user_shares' : Array<[Principal, bigint]>,
     'current_pool' : [] | [PoolReply],
     'pools' : Array<string>,
+    'initial_deposit' : Array<[Principal, bigint]>,
 }
 export interface SupportedStandard { 'url' : string, 'name' : string }
 export type UserBalancesReply = { 'LP' : LPReply };
@@ -82,6 +83,7 @@ export interface UserStrategyResponse {
     'strategy_id' : number,
     'user_shares' : bigint,
     'strategy_name' : string,
+    'initial_deposit' : bigint,
 }
 export interface WithdrawArgs {
     'strategy_id' : number,

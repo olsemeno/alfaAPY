@@ -29,6 +29,7 @@ pub struct ckBTCStrategy {
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
+    initial_deposit: HashMap<Principal, Nat>,
 }
 
 impl ckBTCStrategy {
@@ -38,6 +39,7 @@ impl ckBTCStrategy {
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
+            initial_deposit: HashMap::new(),
         }
     }
 }
@@ -102,6 +104,10 @@ impl IStrategy for ckBTCStrategy {
 
     fn get_total_shares(&self) -> Nat {
         self.total_shares.clone()
+    }
+
+    fn get_initial_deposit(&self) -> HashMap<Principal, Nat> {
+        self.initial_deposit.clone()
     }
 
     async fn rebalance(&mut self) -> RebalanceResponse {
