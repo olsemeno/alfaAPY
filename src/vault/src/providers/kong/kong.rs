@@ -60,8 +60,8 @@ pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amou
         .await
     {
         Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
+        Ok(Err(error)) => Err(format!("ICRC2 approve ledger 1 {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve ledger 1  {error:?}")),
     };
 
     match x {
@@ -87,8 +87,8 @@ pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amou
         .await
     {
         Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
+        Ok(Err(error)) => Err(format!("ICRC2 approve ledger 2 {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve ledger 2  {error:?}")),
     };
 
     match x2 {

@@ -11,10 +11,6 @@ export const idlFactory = ({ IDL }) => {
         'shares' : IDL.Nat,
         'amount' : IDL.Nat,
     });
-    const WithdrawResponse = IDL.Record({
-        'amount' : IDL.Nat,
-        'current_shares' : IDL.Nat,
-    });
     const PoolReply = IDL.Record({
         'tvl' : IDL.Nat,
         'lp_token_symbol' : IDL.Text,
@@ -43,7 +39,9 @@ export const idlFactory = ({ IDL }) => {
         'id' : IDL.Nat16,
         'name' : IDL.Text,
         'description' : IDL.Text,
-        'current_pool' : PoolReply,
+        'total_shares' : IDL.Nat,
+        'user_shares' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Nat)),
+        'current_pool' : IDL.Opt(PoolReply),
         'pools' : IDL.Vec(IDL.Text),
     });
     const SupportedStandard = IDL.Record({ 'url' : IDL.Text, 'name' : IDL.Text });
@@ -76,18 +74,21 @@ export const idlFactory = ({ IDL }) => {
     });
     const UserBalancesReply = IDL.Variant({ 'LP' : LPReply });
     const UserStrategyResponse = IDL.Record({
-        'strategy_id' : IDL.Nat16,
-        'strategy_name' : IDL.Text,
         'strategy_current_pool' : IDL.Text,
         'total_shares' : IDL.Nat,
+        'strategy_id' : IDL.Nat16,
         'user_shares' : IDL.Nat,
-    });UserStrategyResponse
+        'strategy_name' : IDL.Text,
+    });
     const WithdrawArgs = IDL.Record({
         'strategy_id' : IDL.Nat16,
         'ledger' : IDL.Principal,
         'amount' : IDL.Nat,
     });
-    const Result = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
+    const WithdrawResponse = IDL.Record({
+        'current_shares' : IDL.Nat,
+        'amount' : IDL.Nat,
+    });
     return IDL.Service({
         'accept_investment' : IDL.Func(
             [AcceptInvestmentArgs],
@@ -103,11 +104,6 @@ export const idlFactory = ({ IDL }) => {
         ),
         'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
         'kong_pools' : IDL.Func([], [PoolsReply], []),
-        'withdraw' : IDL.Func(
-            [WithdrawArgs],
-            [WithdrawResponse],
-            []
-        ),
         'user_balance_all' : IDL.Func(
             [IDL.Principal],
             [IDL.Vec(UserBalancesReply)],
@@ -118,6 +114,7 @@ export const idlFactory = ({ IDL }) => {
             [IDL.Vec(UserStrategyResponse)],
             [],
         ),
+        'withdraw' : IDL.Func([WithdrawArgs], [WithdrawResponse], []),
     });
 };
 export const init = ({ IDL }) => {

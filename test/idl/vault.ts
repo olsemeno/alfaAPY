@@ -14,10 +14,6 @@ export interface DepositResponse {
     'shares' : bigint,
     'amount' : bigint,
 }
-export interface WithdrawResponse {
-    'amount' : bigint,
-    'current_shares' : bigint,
-}
 export interface Icrc28TrustedOriginsResponse {
     'trusted_origins' : Array<string>,
 }
@@ -69,27 +65,31 @@ export interface PoolsReply {
     'pools' : Array<PoolReply>,
     'total_24h_num_swaps' : bigint,
 }
-export type Result = { 'Ok' : bigint } |
-    { 'Err' : string };
 export interface StrategyResponse {
     'id' : number,
     'name' : string,
     'description' : string,
-    'current_pool' : PoolReply,
+    'total_shares' : bigint,
+    'user_shares' : Array<[Principal, bigint]>,
+    'current_pool' : [] | [PoolReply],
     'pools' : Array<string>,
 }
 export interface SupportedStandard { 'url' : string, 'name' : string }
 export type UserBalancesReply = { 'LP' : LPReply };
 export interface UserStrategyResponse {
-    'strategy_id' : number,
-    'strategy_name' : string,
     'strategy_current_pool' : string,
     'total_shares' : bigint,
+    'strategy_id' : number,
     'user_shares' : bigint,
+    'strategy_name' : string,
 }
 export interface WithdrawArgs {
     'strategy_id' : number,
     'ledger' : Principal,
+    'amount' : bigint,
+}
+export interface WithdrawResponse {
+    'current_shares' : bigint,
     'amount' : bigint,
 }
 export interface _SERVICE {
