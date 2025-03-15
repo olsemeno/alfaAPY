@@ -36,14 +36,14 @@ pub(crate) async fn swap_icrc2_kong(
         .await
     {
         Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve  {error:?}")),
+        Ok(Err(error)) => Err(format!("ICRC2 approve SWAP {error:?}")),
+        Err(error) => Err(format!("ICRC2 approve SWAP {error:?}")),
     };
 
     match x {
         Ok(_) => {}
         Err(a) => {
-            trap(format!("ICRC2 approve  {a:?}").as_str());
+            trap(format!("ICRC2 approve SWAP aa {a:?}").as_str());
         }
     }
 
