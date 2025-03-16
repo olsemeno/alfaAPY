@@ -12,6 +12,8 @@
 
 # Alfa APY
 
+**Introduction**: https://youtu.be/ldqRNLbQflI
+
 The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is the first yield optimization DeFi protocol built on the Internet Computer Protocol (ICP) utilizing **ckBTC**, similar to Yearn Finance on Ethereum. The protocol automatically maximizes returns for users by finding the highest-yielding liquidity pools and dynamically reallocating assets to optimize yield.
 
 ## Description
