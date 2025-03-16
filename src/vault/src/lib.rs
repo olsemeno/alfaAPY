@@ -8,20 +8,18 @@ mod util;
 mod types;
 
 use crate::providers::kong::kong::{ user_balances};
-use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save};
+use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
-use crate::types::types::{DepositResponse, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::types::types::{AcceptInvestmentArgs, DepositResponse, Icrc28TrustedOriginsResponse, StrategyResponse, SupportedStandard, UserStrategyResponse, WithdrawArgs, WithdrawResponse};
 use crate::user::user_service::{accept_deposit};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{caller, id, print, trap};
+use ic_cdk::{caller, id, trap};
 use ic_cdk_macros::{ init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
-use providers::kong::kong::pools;
 use serde::Serialize;
 use std::cell::RefCell;
-use ::types::CanisterId;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -41,6 +39,17 @@ impl Default for Conf {
     }
 }
 
+/// Initializes the canister with the given configuration.
+///
+/// # Arguments
+///
+/// * `conf` - An optional configuration object of type `Conf`.
+///
+/// # Description
+///
+/// This function sets the initial configuration for the canister. If a configuration
+/// is provided, it replaces the default configuration with the provided one. It also
+/// initializes the strategies by calling `init_strategies()`.
 #[init]
 #[candid_method(init)]
 fn init(conf: Option<Conf>) {
@@ -53,24 +62,20 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
-//TODO remove / test method
-#[update]
-async fn kong_pools() -> PoolsReply {
-    match pools().await {
-        Ok(reply) => reply,
-        Err(err) => {
-            trap(format!("Error: {}", err).as_str());
-        }
-    }
-}
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct AcceptInvestmentArgs {
-    ledger: CanisterId,
-    amount: Nat,
-    strategy_id: StrategyId,
-}
-
+/// Accepts an investment into a specified strategy.
+///
+/// # Arguments
+///
+/// * `args` - An `AcceptInvestmentArgs` struct containing the ledger, amount, and strategy ID.
+///
+/// # Returns
+///
+/// A `DepositResponse` struct containing the amount, shares, transaction ID, and request ID.
+///
+/// # Errors
+///
+/// This function will trap if the strategy ID is not found
 #[update]
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
     let _ = accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
@@ -78,21 +83,37 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
     str.deposit(caller(), args.amount).await
 }
 
+/// The heartbeat function is called periodically to perform maintenance tasks.
+///
+/// This function increments a counter and checks if a day has passed (based on the counter value).
+/// TODO make unique for each strategy
+/// If a day has passed, it triggers the rebalance operation for all strategies.
 // #[heartbeat]
 #[allow(unused)]
 fn heartbeat() {
-    let n = 5 as u64;
+    let n = (3600 * 24) as u64;
     HEARTBEAT.with(|store| {
         let count = store.borrow_mut().clone();
         if count % n == 0 {
-            // rebalance_all
+            STRATEGIES.with(|strategies| {
+                let mut strategies = strategies.borrow_mut();
+                for strategy in strategies.iter_mut() {
+                    strategy.rebalance();
+                }
+            });
         }
         store.replace(count + 1)
     });
-
-    print("heartbeat");
 }
-
+/// Retrieves the balance of all users.
+///
+/// # Returns
+///
+/// A vector of `UserBalancesReply` containing the balance information of all users.
+///
+/// # Errors
+///
+/// This function will trap if there is an error retrieving the user balances.
 #[update]
 async fn user_balance_all() -> Vec<UserBalancesReply> {
     let canister_id = id();
@@ -104,16 +125,15 @@ async fn user_balance_all() -> Vec<UserBalancesReply> {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct UserStrategyResponse {
-    pub strategy_id: StrategyId,
-    pub strategy_name: String,
-    pub strategy_current_pool: String,
-    pub total_shares: Nat,
-    pub user_shares: Nat,
-    pub initial_deposit: Nat,
-}
-
+/// Retrieves the strategies for a specific user.
+///
+/// # Arguments
+///
+/// * `user` - The `Principal` of the user.
+///
+/// # Returns
+///
+/// A vector of `UserStrategyResponse` containing the strategies information for the user.
 #[update]
 async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
     let strategies = get_all_strategies();
@@ -142,13 +162,20 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
     user_strategies
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct WithdrawArgs {
-    ledger: CanisterId,
-    amount: Nat, // TODO: rename to shares
-    strategy_id: StrategyId,
-}
 
+/// Withdraws an amount from a specified strategy.
+///
+/// # Arguments
+///
+/// * `args` - A `WithdrawArgs` struct containing the ledger, amount, and strategy ID.
+///
+/// # Returns
+///
+/// A `WithdrawResponse` struct containing the amount and current shares.
+///
+/// # Errors
+///
+/// This function will trap if the strategy ID is not found.
 #[update]
 async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
     let mut str = get_strategy_by_id(args.strategy_id).unwrap();
@@ -160,6 +187,11 @@ async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
     }
 }
 
+/// Retrieves the current configuration.
+///
+/// # Returns
+///
+/// A `Conf` struct containing the current configuration.
 #[query]
 fn get_config() -> Conf {
     CONF.with(|c| c.borrow().clone())
@@ -174,13 +206,11 @@ fn get_strategies() -> Vec<StrategyResponse> {
 fn pre_upgrade() {
     stable_save();
 }
-
-#[derive(CandidType, Deserialize, Eq, PartialEq, Debug)]
-pub struct SupportedStandard {
-    pub url: String,
-    pub name: String,
-}
-
+/// Retrieves the supported standards for ICRC-10.
+///
+/// # Returns
+///
+/// A vector of `SupportedStandard` containing the supported standards.
 #[query]
 fn icrc10_supported_standards() -> Vec<SupportedStandard> {
     vec![
@@ -195,12 +225,11 @@ fn icrc10_supported_standards() -> Vec<SupportedStandard> {
     ]
 }
 
-#[derive(Clone, Debug, CandidType, Deserialize)]
-pub struct Icrc28TrustedOriginsResponse {
-    pub trusted_origins: Vec<String>,
-}
-
-// list every base URL that users will authenticate to your app from
+/// Retrieves the trusted origins for ICRC-28.
+///
+/// # Returns
+///
+/// An `Icrc28TrustedOriginsResponse` struct containing the trusted origins.
 #[update]
 fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
     let trusted_origins = vec![

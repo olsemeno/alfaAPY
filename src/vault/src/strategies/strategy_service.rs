@@ -1,4 +1,4 @@
-use crate::repo::repo::{add_if_not_exists, add_or_update_strategy, save_strategy, STRATEGIES};
+use crate::repo::repo::{add_if_not_exists, add_or_update_strategy, STRATEGIES};
 use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
 use crate::strategies::r#impl::panda_icp_stategy::PandaTestStrategy;
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
@@ -13,6 +13,7 @@ pub fn init_strategies() {
     add_or_update_strategy(Box::new(PandaTestStrategy::new()));
     add_or_update_strategy(Box::new(IcpCkUSDTStrategy::new()));
 }
+
 pub fn get_actual_strategies() -> Vec<StrategyResponse> {
     let strategies: Vec<StrategyResponse> = STRATEGIES.with(|trss| {
         let a = trss.borrow();

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 use kongswap_canister::PoolReply;
+use types::CanisterId;
 use types::exchanges::TokenInfo;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
@@ -16,6 +17,42 @@ pub struct StrategyResponse {
     pub initial_deposit: HashMap<Principal, Nat>,
 }
 
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct AcceptInvestmentArgs {
+   pub ledger: CanisterId,
+   pub amount: Nat,
+   pub strategy_id: StrategyId,
+}
+
+#[derive(Clone, Debug, CandidType, Deserialize)]
+pub struct Icrc28TrustedOriginsResponse {
+    pub trusted_origins: Vec<String>,
+}
+
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct WithdrawArgs {
+    pub ledger: CanisterId,
+    pub amount: Nat, // TODO: rename to shares
+    pub strategy_id: StrategyId,
+}
+
+
+#[derive(CandidType, Deserialize, Eq, PartialEq, Debug)]
+pub struct SupportedStandard {
+    pub url: String,
+    pub name: String,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct UserStrategyResponse {
+    pub strategy_id: StrategyId,
+    pub strategy_name: String,
+    pub strategy_current_pool: String,
+    pub total_shares: Nat,
+    pub user_shares: Nat,
+    pub initial_deposit: Nat,
+}
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct Pool {
