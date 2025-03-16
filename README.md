@@ -38,10 +38,10 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 
 ### How It Works
 
-1. **Deposit**: Users deposit assets (ckBTC, ICP, etc.) into their chosen strategy
-2. **Monitoring**: Protocol tracks APY across various liquidity pools
-3. **Rebalancing**: Funds automatically move to higher-yielding pools
-4. **Withdrawal**: Users can withdraw assets with accumulated yield anytime
+1. **Deposit**: Users deposit assets (ckBTC, ICP, etc.) into their chosen strategy.
+2. **Monitoring**: Protocol tracks APY across various liquidity pools.
+3. **Rebalancing**: Funds automatically move to higher-yielding pools.
+4. **Withdrawal**: Users can withdraw assets with accumulated yield anytime.
 
 ## Features
 
@@ -50,7 +50,7 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 - **Multiple Providers**: Integrates with various DeFi providers on ICP, including Kongswap and ICPSwap.
 - **Non-custodial**: Users maintain control of their assets while benefiting from optimization.
 - **Secure and Transparent**: Built on the secure and transparent infrastructure of ICP.
-- **Low Fees**: Minimal fees compared to manual rebalancing due to efficient ckBTC transactions
+- **Low Fees**: Minimal fees compared to manual rebalancing due to efficient ckBTC transactions.
 
 ## Architecture
 
