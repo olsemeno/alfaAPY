@@ -88,6 +88,8 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         if let Some(pool) = pool {
             let tokens_info = to_tokens_info(pool.clone());
 
+
+            // trap(format!("shares: {:?}, total: {:?}", shares, self.get_total_shares()).as_str());
             // Remove liquidity from pool
             let withdraw_response = withdraw_from_pool(self.get_total_shares() ,shares.clone(),pool).await;
 
@@ -127,21 +129,21 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             };
 
             // Update total shares
-            let total_shares = self.get_total_shares().min(shares.clone());
-            self.set_total_shares(total_shares);
-
+            let total_shares = self.get_total_shares() - shares.clone();
+            self.set_total_shares(total_shares.clone());
 
             // Update user shares
-            let current_shares = self.get_user_shares().get(&investor).cloned().unwrap_or(Nat::from(0u64));
-            let new_shares = current_shares.clone().min(shares);
+            let shares_before_withdraw = self.get_user_shares().get(&investor).cloned().unwrap();
+            let new_shares = shares_before_withdraw.clone() - shares;
             self.update_user_shares(investor.clone(), new_shares.clone());
 
 
-            // Update initial deposit
-            let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
-            // Remaining initial deposit proportional to the new shares
-            let new_initial_deposit = initial_deposit * new_shares.clone() / current_shares;
-            self.update_initial_deposit(investor.clone(), new_initial_deposit.clone());
+            // Update initial deposit //TODO WIP - need to fix
+            // let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
+            // // Remaining initial deposit proportional to the new shares
+            //
+            // let new_initial_deposit = initial_deposit / shares_before_withdraw.clone() * new_shares.clone();
+            // self.update_initial_deposit(investor.clone(), new_initial_deposit.clone());
 
 
             save_strategy(self.clone_self());

@@ -1,13 +1,13 @@
-import { Ed25519KeyIdentity } from "@dfinity/identity";
-import { getTypedActor } from "../util/util";
-import { _SERVICE as ledgerService, ApproveArgs } from "../idl/ledger";
-import { idlFactory as ledger_idl } from "../idl/ledger_idl";
-import { _SERVICE as VaultType, DepositResponse, WithdrawResponse } from "../idl/vault";
-import { idlFactory } from "../idl/vault_idl";
-import { Principal } from "@dfinity/principal";
-import { ActorSubclass } from "@dfinity/agent";
-import { AccountIdentifier } from '@dfinity/ledger-icp';
-import { expect } from 'chai';
+import {Ed25519KeyIdentity} from "@dfinity/identity";
+import {getTypedActor} from "../util/util";
+import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
+import {idlFactory as ledger_idl} from "../idl/ledger_idl";
+import {_SERVICE as VaultType, DepositResponse, WithdrawResponse} from "../idl/vault";
+import {idlFactory} from "../idl/vault_idl";
+import {Principal} from "@dfinity/principal";
+import {ActorSubclass} from "@dfinity/agent";
+import {AccountIdentifier} from '@dfinity/ledger-icp';
+import {expect} from 'chai';
 
 export const isLocalENV = true;
 
@@ -23,7 +23,7 @@ describe("VR Test PROD", () => {
     let balance;
 
     beforeEach(async () => {
-        memberIdentity  = getIdentity(identity);
+        memberIdentity = getIdentity(identity);
         principalId = memberIdentity.getPrincipal(); //2ammq-nltzb-zsfkk-35abp-eprrz-eawlg-f36u7-arsde-gdhv5-flu25-iqe
 
         let userAddress = await principalToAddress(principalId); // 0d445feb87a73ff4dd16e744c70aede3ab806a4d6cf9a224d439d9d82489302a
@@ -65,7 +65,7 @@ describe("VR Test PROD", () => {
                 expect(depositResp.shares).to.equal(depositAmount);
             } catch (e) {
                 console.log("Deposit error:", e);
-                throw new Error("Deposit failed with error: " + e); 
+                throw new Error("Deposit failed with error: " + e);
             }
         });
 
@@ -74,9 +74,9 @@ describe("VR Test PROD", () => {
     });
 
     describe(".withdraw", () => {
-        const strategyId = 2;
-        const approveAmount = BigInt(10000000);
-        const depositAmount = BigInt(1000000);
+        const strategyId = 4;
+        const approveAmount = BigInt(10000000000);
+        const depositAmount = BigInt(1000000000);
         let shares: bigint;
         let sharesToWithdraw: bigint;
         let remainingShares: bigint;
@@ -110,6 +110,11 @@ describe("VR Test PROD", () => {
             remainingShares = 0n; // No shares left
 
             try {
+                let user_shares = await actorVault.get_strategies();
+
+                console.log("User shares 1:", user_shares);
+
+
                 console.log("Withdraw starting...");
                 let withdrawResp: WithdrawResponse = await actorVault.withdraw({
                     amount: sharesToWithdraw,
@@ -118,6 +123,8 @@ describe("VR Test PROD", () => {
                 });
                 // @ts-ignore
                 console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
+                user_shares = await actorVault.get_strategies();
+                console.log("User shares 2:", user_shares);
 
                 expect(withdrawResp.current_shares).to.equal(0n);
             } catch (e) {
@@ -184,16 +191,16 @@ describe("VR Test PROD", () => {
 
 
     describe(".rebalance", () => {
-    // it("Rebalance", async function () {
-    //     console.log("== START REBALANCE TEST ==");
-    //
-    //     try {
-    //         let rebalance = await actorVault.rebalance();
-    //         console.log("Rebalance success" + rebalance)
-    //     } catch (e) {
-    //         console.log(e)
-    //     }
-    // });
+        // it("Rebalance", async function () {
+        //     console.log("== START REBALANCE TEST ==");
+        //
+        //     try {
+        //         let rebalance = await actorVault.rebalance();
+        //         console.log("Rebalance success" + rebalance)
+        //     } catch (e) {
+        //         console.log(e)
+        //     }
+        // });
     });
 });
 
@@ -204,9 +211,9 @@ export const getIdentity = (seed: string): Ed25519KeyIdentity => {
 };
 
 export const checkAndApproveTokens = async (
-    amount: bigint, 
-    canisterId: string, 
-    memberIdentity: Ed25519KeyIdentity, 
+    amount: bigint,
+    canisterId: string,
+    memberIdentity: Ed25519KeyIdentity,
     ledgerActor: ActorSubclass<ledgerService>
 ) => {
     let approveArgs: ApproveArgs = {
