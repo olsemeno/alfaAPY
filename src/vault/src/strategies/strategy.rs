@@ -18,12 +18,39 @@ use std::cmp::Ordering;
 
 #[async_trait]
 pub trait IStrategy: Send + Sync+  BasicStrategy  {
+    /// Updates the shares owned by a specific user in the strategy
+    /// 
+    /// # Arguments
+    /// 
+    /// * `user` - The Principal ID of the user whose shares are being updated
+    /// * `shares` - The new total number of shares for this user
+    ///
+    /// # Details
+    ///
+    /// This function:
+    /// 1. Gets the current user shares mapping
+    /// 2. Updates or inserts the new share amount for the specified user
+    /// 3. Saves the updated mapping back to the strategy state
     fn update_user_shares(&mut self, user: Principal, shares: Nat) {
         let mut user_shares = self.get_user_shares();
         user_shares.insert(user, shares);
         self.set_user_shares(user_shares);
     }
 
+    /// Updates the initial deposit amount for an investor based on their new share allocation
+    /// 
+    /// # Arguments
+    /// 
+    /// * `investor` - The Principal ID of the investor whose initial deposit is being updated
+    /// * `new_shares` - The new number of shares owned by the investor
+    ///
+    /// # Details
+    /// 
+    /// This function:
+    /// 1. Gets the current initial deposit mapping
+    /// 2. Retrieves the investor's current deposit amount (defaults to 0 if none exists)
+    /// 3. Calculates the new initial deposit proportional to the new shares
+    /// 4. Updates the initial deposit mapping with the new amount
     fn update_initial_deposit(&mut self, investor: Principal, new_shares: Nat) {
         let mut initial_deposit = self.get_initial_deposit();
         let user_deposit = initial_deposit.get(&investor).cloned().unwrap_or(Nat::from(0u64));
@@ -33,6 +60,32 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         self.set_initial_deposit(initial_deposit);
     }
 
+    /// Deposits an amount of tokens into the strategy
+    /// 
+    /// # Arguments
+    /// 
+    /// * `investor` - The Principal ID of the investor who is depositing tokens
+    /// * `amount` - The amount of tokens to deposit
+    ///
+    /// # Returns
+    ///
+    /// A `DepositResponse` struct containing the following fields:
+    /// - `amount`: The amount of tokens deposited
+    /// - `shares`: The number of shares received
+    /// - `tx_id`: The transaction ID (always 0 for this implementation)
+    /// - `request_id`: The request ID from the deposit call
+    ///
+    /// # Details
+    ///
+    /// This function:
+    /// 1. Retrieves the current pool from the strategy
+    /// 2. Calculates the new shares for the investor's deposit
+    /// 3. Updates the total balance and total shares
+    /// 4. Updates the user shares mapping
+    /// 5. Updates the initial deposit mapping
+    /// 6. Adds liquidity to the pool
+    /// 7. Saves the updated strategy state
+    /// 
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         // TODO: remove this (added to setting current pool)
         let pools_data = get_pools_data(self.get_pools()).await;
@@ -72,6 +125,27 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         }
     }
 
+    /// Withdraws shares from the strategy and returns the corresponding tokens to the investor
+    ///
+    /// # Arguments
+    ///
+    /// * `shares` - The number of shares to withdraw
+    ///
+    /// # Returns
+    ///
+    /// * `WithdrawResponse` - Contains the amount of tokens withdrawn and remaining shares
+    ///
+    /// # Details
+    ///
+    /// This function:
+    /// 1. Verifies the caller has sufficient shares
+    /// 2. Gets the current pool and token information
+    /// 3. Removes liquidity from the pool proportional to shares
+    /// 4. Swaps secondary token to base token
+    /// 5. Transfers total tokens to caller
+    /// 6. Updates total shares, user shares and initial deposit
+    /// 7. Saves updated strategy state
+    ///
     async fn withdraw(&mut self, shares: Nat) -> WithdrawResponse {
         let investor = caller();
         // Check if user has enough shares
@@ -157,10 +231,23 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
     fn to_candid(&self) -> StrategyCandid;
 
+    /// Converts the strategy into a StrategyResponse struct that can be returned to clients
+    /// 
+    /// # Returns
+    /// 
+    /// * `StrategyResponse` - A struct containing:
+    ///   * `name` - Name of the strategy
+    ///   * `id` - Unique identifier for the strategy
+    ///   * `description` - Description of what the strategy does
+    ///   * `pools` - List of pool symbols this strategy can invest in
+    ///   * `current_pool` - The pool currently being used, if any
+    ///   * `total_shares` - Total number of shares issued by this strategy
+    ///   * `user_shares` - Mapping of user principals to their share amounts
+    ///   * `initial_deposit` - Mapping of user principals to their initial deposits
     fn to_response(&self) -> StrategyResponse {
         StrategyResponse {
             name: self.get_name(),
-            id: self.get_id(),
+            id: self.get_id(), 
             description: self.get_description(),
             pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
             current_pool: self.get_current_pool(),
@@ -170,6 +257,23 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         }
     }
 
+    /// Rebalances the strategy by finding and moving to the pool with the highest APY
+    /// 
+    /// # Details
+    ///
+    /// 1. Gets data for all available pools
+    /// 2. Finds the pool with highest APY
+    /// 3. If current pool is different from highest APY pool:
+    ///    - Withdraws liquidity from current pool
+    ///    - Swaps token_1 to token_0 (base token)
+    ///    - Adds liquidity to new pool
+    ///    - Updates current pool
+    /// 
+    /// # Returns
+    /// 
+    /// * `RebalanceResponse` - Contains:
+    ///   * `pool` - The pool being used after rebalancing
+    ///
     async fn rebalance(&mut self) -> RebalanceResponse {
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
         let mut max_apy = 0.0;
@@ -287,4 +391,3 @@ impl PartialOrd for dyn IStrategy {
         Some(other.get_id().cmp(&self.get_id()))
     }
 }
-
