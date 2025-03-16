@@ -7,6 +7,7 @@ import {idlFactory} from "../idl/vault_idl";
 import {idlFactory as ledger_idl} from "../idl/ledger_idl";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {Principal} from "@dfinity/principal";
+import {execute} from "../util/call.util";
 
 export const isLocalENV = false
 
@@ -14,8 +15,8 @@ export const isLocalENV = false
 describe("VR Test", () => {
     let canister_id
     before(async () => {
-        // DFX.INIT();
-        // console.log(execute(`dfx deploy vault`))
+        DFX.INIT();
+        console.log(execute(`dfx deploy vault`))
         canister_id = DFX.GET_CANISTER_ID("vault");
     });
 

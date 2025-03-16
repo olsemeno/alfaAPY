@@ -88,7 +88,7 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
 /// This function increments a counter and checks if a day has passed (based on the counter value).
 /// TODO make unique for each strategy
 /// If a day has passed, it triggers the rebalance operation for all strategies.
-#[heartbeat]
+// #[heartbeat]
 #[allow(unused)]
 fn heartbeat() {
     let n = (3600 * 24) as u64;

@@ -1,0 +1,38 @@
+@import 'pixel-retroui/dist/index.css';
+@import 'pixel-retroui/dist/fonts.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.connected-wallet-dropdown * {
+  font-weight: normal !important;
+  color: black !important;
+  font-family: 'Minecraft', sans-serif !important;
+  stroke: black !important;
+  font-size: 14px !important;
+}
+
+body {
+  background: 
+  linear-gradient(0deg, transparent 24%, #fde68a 25%, transparent 26%, transparent 74%, #fde68a 75%, transparent 76%),
+  linear-gradient(90deg, transparent 24%, #fde68a 25%, transparent 26%, transparent 74%, #fde68a 75%, transparent 76%);
+  background-size: 50px 50px; /* Size of each square */
+  width: 100%; /* Full width */
+}
+
+@media screen and (min-width: 768px) {
+  .modal > div {
+    width: 500px;
+  }
+}
+
+.gradient-text {
+  background: -webkit-linear-gradient(45deg, #f59e0b, #c084fc 80%);
+  -webkit-background-clip: text; /* apply background clip */
+  -webkit-text-fill-color: transparent;
+}
+
+.connect-wallet-dropdown {
+  overflow: initial !important;
+  top: 90px !important;
+}
