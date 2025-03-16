@@ -20,7 +20,7 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is the first yield o
 
 The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is designed to solve the challenge of finding and utilizing the best yield opportunities in the ICP ecosystem. The protocol continuously monitors APY across various liquidity pools from different DeFi providers like KongSwap, ICPSwap, and others. When a higher-yielding opportunity is detected, it automatically rebalances funds to maximize returns.
 
-With an easy-to-use interface for managing investments and tracking performance, users can effortlessly monitor their yield optimization strategies while leveraging the power of **ckBTC** for efficient cross-chain transactions and yield generation.
+With an easy-to-use interface for managing investments and tracking performance, users can effortlessly monitor their yield optimization strategies while leveraging the power of ckBTC for efficient cross-chain transactions and yield generation.
 
 
 ### Interface
@@ -29,10 +29,10 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 
 <div style="display:flex;flex-direction:row;gap:20px;">
   <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
-    <img src="./readme/alfa_apy1.jpg" role="presentation" alt="image" width="400" height="auto"/>
+    <img src="./readme/alfa_apy2.jpg" role="presentation" alt="image" width="400" height="auto"/>
   </a>
   <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
-    <img src="./readme/alfa_apy2.jpg" role="presentation" alt="image" width="400" height="auto"/>
+    <img src="./readme/alfa_apy1.jpg" role="presentation" alt="image" width="400" height="auto"/>
   </a>
 </div>
 
@@ -46,11 +46,11 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 ## Features
 
 - **Automated Yield Optimization**: Automatically moves assets between liquidity pools and providers to maximize APY.
-- **Multiple Asset Strategies**: Supports various assets including **ckBTC**, ICP, and stablecoin pairs.
+- **Multiple Asset Strategies**: Supports various assets including ckBTC, ICP, and stablecoin pairs.
 - **Multiple Providers**: Integrates with various DeFi providers on ICP, including Kongswap and ICPSwap.
 - **Non-custodial**: Users maintain control of their assets while benefiting from optimization.
 - **Secure and Transparent**: Built on the secure and transparent infrastructure of ICP.
-- **Low Fees**: Minimal fees compared to manual rebalancing due to efficient **ckBTC** transactions
+- **Low Fees**: Minimal fees compared to manual rebalancing due to efficient ckBTC transactions
 
 ## Architecture
 
