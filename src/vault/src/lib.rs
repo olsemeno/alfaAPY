@@ -15,7 +15,7 @@ use crate::user::user_service::{accept_deposit};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
 use ic_cdk::{caller, id, trap};
-use ic_cdk_macros::{ init, post_upgrade, pre_upgrade, query, update};
+use ic_cdk_macros::{heartbeat, init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
 use serde::Serialize;
@@ -88,7 +88,7 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
 /// This function increments a counter and checks if a day has passed (based on the counter value).
 /// TODO make unique for each strategy
 /// If a day has passed, it triggers the rebalance operation for all strategies.
-// #[heartbeat]
+#[heartbeat]
 #[allow(unused)]
 fn heartbeat() {
     let n = (3600 * 24) as u64;

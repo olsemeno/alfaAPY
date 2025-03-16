@@ -106,10 +106,10 @@ service : (opt Conf) -> {
     accept_investment : (WithdrawArgs) -> (DepositResponse);
     get_config : () -> (Conf) query;
     get_strategies : () -> (vec StrategyResponse) query;
-    icrc10_supported_standards : () -> (vec SupportedStandard) query;
-    icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
-    kong_pools : () -> (PoolsReply);
     user_balance_all : () -> (vec UserBalancesReply);
     user_strategies : (principal) -> (vec UserStrategyResponse);
     withdraw : (WithdrawArgs) -> (WithdrawResponse);
+
+     icrc10_supported_standards : () -> (vec SupportedStandard) query;
+     icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
 }
