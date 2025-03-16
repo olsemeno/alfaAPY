@@ -96,8 +96,6 @@ Ensure you have the following tools installed before diving into development:
 - **Rustup** `^v1.27.1`
 - **DFX** `^v0.24.0`
 - **jq** `^1.6`
-- **Node.js**
-- **npm**
 
 > ⚠️ Note: These versions are specific for compatibility with the Internet Computer SDK.
 
