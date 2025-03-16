@@ -50,42 +50,12 @@ impl SwapClient for KongSwapClient {
 
     async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
 
-        // trap(format!("SwapArgs: {:?} {:?} {:?}", amount, min_amount_out, self.token_in.ledger).as_str());
-       //
-       //  let aaa: CallResult<(Result<SwapReply, String>,)> = call(KONG_BE_CANISTER, "swap", (SwapArgs {
-       //      pay_amount: amount.into(),
-       //      pay_token: format!("IC.{}", self.token_in.ledger),
-       //      receive_token: format!("IC.{}", self.token_out.ledger),
-       //      // referred_by: Some(SNS_GOVERNANCE_CANISTER_ID.to_string()),
-       //      receive_amount: None,
-       //      receive_address: None,
-       //      max_slippage: Some(50f64),
-       //      referred_by: None,
-       //  },)
-       //  ).await;
-       //
-       // let b =  match aaa {
-       //      Ok(x) => {
-       //          match x.0 {
-       //              Ok(s) => {
-       //                  s
-       //              }
-       //              Err(e) => {
-       //                  trap(format!("Error 1: {}", e).as_str());
-       //              }
-       //          }
-       //      }
-       //      Err(l) => {
-       //          trap(format!("Error 2: {}", l.1).as_str());
-       //      }
-       //  };
-
 
 let args = &kongswap_canister::swap::Args {
     pay_amount: amount.into(),
     pay_token: format!("IC.{}", self.token_in.ledger),
     receive_token: format!("IC.{}", self.token_out.ledger),
-    max_slippage: Some(50.0),
+    max_slippage: Some(10.0),
 };
 
 

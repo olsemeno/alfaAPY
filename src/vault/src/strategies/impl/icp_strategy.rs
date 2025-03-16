@@ -211,8 +211,10 @@ impl IStrategy for ICPStrategy {
         // TODO: remove this (added to setting current pool)
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
 
+
+        //TODO fixme
         if self.current_pool.is_none() {
-            self.current_pool = pools_data.iter().find(|&x| x.symbol == "ckUSDC_ICP").cloned();
+            self.current_pool = pools_data.iter().find(|&x| x.symbol == "ICP_ckUSDT").cloned();
         }
 
         // Calculate new shares for investor's deposit

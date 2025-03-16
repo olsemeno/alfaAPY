@@ -40,8 +40,8 @@ describe("VR Test PROD", () => {
 
     describe(".accept_investment", () => {
         const strategyId = 2;
-        const approveAmount = BigInt(30000000);
-        const depositAmount = BigInt(100000);
+        const approveAmount = BigInt(100000000);
+        const depositAmount = BigInt(10000000);
 
         it("Deposits to strategy without any liquidity", async () => {
             console.log("== START \"Deposits to strategy without any liquidity\" TEST==");

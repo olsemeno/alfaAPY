@@ -43,7 +43,8 @@ pub(crate) async fn swap_icrc2_kong(
     match x {
         Ok(_) => {}
         Err(a) => {
-            trap(format!("ICRC2 approve SWAP aa {a:?}").as_str());
+            let c = input_token.ledger.to_text();
+            trap(format!("ICRC2 approve SWAP aa {a:?} : {c:?}").as_str());
         }
     }
 
