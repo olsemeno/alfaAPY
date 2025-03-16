@@ -4,29 +4,24 @@ mod strategies;
 mod liquidity;
 mod repo;
 mod user;
+mod util;
+mod types;
 
+use crate::providers::kong::kong::{ user_balances};
 use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save};
-use crate::strategies::strategy::{DepositResponse, WithdrawResponse, StrategyId, StrategyResponse};
-use crate::strategies::strategy_candid::StrategyCandid;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
-use crate::swap::swap_service::{swap_icrc2_kong, KONG_BE_CANISTER};
-use crate::user::user_service::{accept_deposit, withdraw_from_strategy};
+use crate::types::types::{DepositResponse, StrategyId, StrategyResponse, WithdrawResponse};
+use crate::user::user_service::{accept_deposit};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{call, caller, id, print, trap};
-use ic_cdk_macros::{heartbeat, init, post_upgrade, pre_upgrade, query, update};
+use ic_cdk::{caller, id, print, trap};
+use ic_cdk_macros::{ init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
+use kongswap_canister::user_balances::UserBalancesReply;
 use providers::kong::kong::pools;
 use serde::Serialize;
 use std::cell::RefCell;
-use std::env::args;
-use ic_cdk::api::call::CallResult;
-use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
-use kongswap_canister::user_balances::UserBalancesReply;
-use types::exchanges::TokenInfo;
-use types::swap_tokens::{Response as R2, SuccessResult};
-use types::CanisterId;
-use crate::providers::kong::kong::{add_liquidity_amounts, user_balances};
+use ::types::CanisterId;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -77,21 +72,20 @@ pub struct AcceptInvestmentArgs {
 }
 
 #[update]
-async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse  {
-    //1000 ICP ryjl3-tyaaa-aaaaa-aaaba-cai 2
-    accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
-
-    let  mut str = get_strategy_by_id(args.strategy_id).unwrap();
+async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
+    let _ = accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
+    let mut str = get_strategy_by_id(args.strategy_id).unwrap();
     str.deposit(caller(), args.amount).await
 }
 
-#[heartbeat]
+// #[heartbeat]
+#[allow(unused)]
 fn heartbeat() {
     let n = 5 as u64;
     HEARTBEAT.with(|store| {
-        let mut count = store.borrow_mut().clone();
+        let count = store.borrow_mut().clone();
         if count % n == 0 {
-           // rebalance_all
+            // rebalance_all
         }
         store.replace(count + 1)
     });
@@ -100,13 +94,13 @@ fn heartbeat() {
 }
 
 #[update]
-async fn user_balance_all(user: Principal) -> Vec<UserBalancesReply>  {
-    let canisterId = id();
-    match user_balances(canisterId.to_text()).await.0 {
-            Ok(reply) => reply,
-            Err(err) => {
-                trap(format!("Error: {}", err).as_str());
-            }
+async fn user_balance_all() -> Vec<UserBalancesReply> {
+    let canister_id = id();
+    match user_balances(canister_id.to_text()).await.0 {
+        Ok(reply) => reply,
+        Err(err) => {
+            trap(format!("Error: {}", err).as_str());
+        }
     }
 }
 
@@ -156,10 +150,10 @@ pub struct WithdrawArgs {
 }
 
 #[update]
-async fn withdraw(args: WithdrawArgs)  -> WithdrawResponse  {
-    let  mut str = get_strategy_by_id(args.strategy_id).unwrap() ;
-    let response =  str.withdraw(caller(), args.amount).await;
-    
+async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
+    let mut str = get_strategy_by_id(args.strategy_id).unwrap();
+    let response = str.withdraw(args.amount).await;
+
     WithdrawResponse {
         amount: response.amount,
         current_shares: response.current_shares,
@@ -203,7 +197,7 @@ fn icrc10_supported_standards() -> Vec<SupportedStandard> {
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct Icrc28TrustedOriginsResponse {
-    pub trusted_origins: Vec<String>
+    pub trusted_origins: Vec<String>,
 }
 
 // list every base URL that users will authenticate to your app from

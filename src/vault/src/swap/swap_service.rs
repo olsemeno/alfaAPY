@@ -1,14 +1,13 @@
-use candid::{Nat, Principal};
+use crate::swap::token_swaps::kongswap::KongSwapClient;
+use crate::swap::token_swaps::swap_client::SwapClient;
+use candid::Nat;
 use ic_cdk::api::management_canister::main::CanisterId;
 use ic_cdk::trap;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::SuccessResult;
-use crate::swap::token_swaps::kongswap::KongSwapClient;
-use crate::swap::token_swaps::swap_client::SwapClient;
 
 pub const KONG_BE_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 2, 48, 2, 23, 1, 1]);
-pub const SNS_GOVERNANCE_CANISTER_ID: CanisterId = Principal::from_slice(&[0, 0, 0, 0, 2, 0, 0, 24, 1, 1]);
 
 pub(crate) async fn swap_icrc2_kong(
     input_token: TokenInfo,
@@ -16,10 +15,7 @@ pub(crate) async fn swap_icrc2_kong(
     amount: u128,
 ) -> SuccessResult {
 
-    // trap(format!("SwapArgs: {:?} output {:?} input {:?} tokan {:?}", amount, output_token.ledger.to_text(), input_token.ledger.to_text(), min_amount_out.0.count_ones()).as_str());
-
     let swap_client =  Box::new(KongSwapClient::new(KONG_BE_CANISTER, input_token.clone(), output_token));
-
     let x = match icrc_ledger_canister_c2c_client::icrc2_approve(
         input_token.ledger.clone(),
         &ApproveArgs {

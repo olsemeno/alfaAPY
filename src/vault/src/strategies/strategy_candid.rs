@@ -6,6 +6,7 @@ use crate::strategies::strategy::IStrategy;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub enum StrategyCandid {
+    #[allow(non_camel_case_types)]
     ckBTCStrategyV(ckBTCStrategy),
     ICPStrategyV(ICPStrategy),
 }

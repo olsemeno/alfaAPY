@@ -2,8 +2,6 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-const ICP_FEE: u128 = 10_000;
-
 #[deprecated]
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Cryptocurrency {

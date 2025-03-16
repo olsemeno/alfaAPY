@@ -1,17 +1,10 @@
-use std::fmt::format;
 use super::swap_client::{SwapClient, SwapSuccess};
+use crate::swap::token_swaps::nat_to_u128;
 use async_trait::async_trait;
-use candid::{CandidType, Deserialize, Nat};
-use ic_cdk::{call, trap};
-use ic_cdk::api::call::CallResult;
+use ic_cdk::trap;
 use ic_response_codes::RejectCode;
-use serde::Serialize;
-use kongswap_canister::add_liquidity_amounts::AddLiquidityAmountsReply;
-use kongswap_canister::swap::SwapReply;
 use types::exchanges::TokenInfo;
 use types::CanisterId;
-use crate::swap::swap_service::{KONG_BE_CANISTER, SNS_GOVERNANCE_CANISTER_ID};
-use crate::swap::token_swaps::nat_to_u128;
 
 pub struct KongSwapClient {
     canister_id: CanisterId,

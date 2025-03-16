@@ -2,7 +2,6 @@
 use crate::CanisterId;
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use candid::{Deserialize, Nat};
+use candid::Deserialize;
 use ic_response_codes::RejectCode;
 use serde::Serialize;
 use types::CanisterId;

@@ -1,9 +1,9 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::{RefCell};
 use candid::{CandidType, Deserialize};
 use ic_cdk::storage;
 use serde::Serialize;
 use crate::{Conf, CONF};
-use crate::strategies::strategy::{IStrategy, Strategy, StrategyIterator};
+use crate::strategies::strategy::{IStrategy, StrategyIterator};
 use crate::strategies::strategy_candid::{Candid, StrategyCandid};
 
 thread_local! {

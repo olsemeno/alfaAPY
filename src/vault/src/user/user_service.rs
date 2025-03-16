@@ -4,14 +4,9 @@ use icrc_ledger_canister::updates::icrc2_transfer_from::Args as Icrc2TransferFro
 use icrc_ledger_types::icrc1::account::Account;
 use std::convert::TryInto;
 use ic_cdk::api::time;
-use ic_cdk::{call, caller, id, trap};
-use ic_cdk::api::call::CallResult;
-use ic_ledger_types::Timestamp;
-use icrc_ledger_types::icrc1::transfer::TransferArg;
-use icrc_ledger_canister::icrc1_transfer::Args;
-use icrc_ledger_canister_c2c_client::icrc1_transfer;
+use ic_cdk::{caller, id, trap};
 use types::CanisterId;
-use crate::strategies::strategy::{Strategy, StrategyId};
+use crate::types::types::StrategyId;
 
 thread_local! {
     pub static USER_ACCOUNTS: RefCell<Vec<UserAccount>> = RefCell::new(Default::default());
@@ -22,6 +17,7 @@ struct UserAccount {
     deposits: Vec<UserDeposit>
 }
 
+#[allow(unused)]
 struct UserDeposit {
     amount: Nat,
     strategy: StrategyId,
@@ -44,7 +40,7 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
     };
 
     let bi = match icrc2_transfer_from(ledger, &transfer_args).await {
-        Ok(mut block_index) => {
+        Ok(block_index) => {
             block_index
         }
         Err(message) => {
@@ -53,7 +49,7 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
     };
 
     let deposit = UserDeposit {
-        amount: amount,
+        amount,
         strategy: str_id,
         ledger: ledger.into(),
         block_index: bi,
@@ -76,28 +72,6 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
     Ok(())
 }
 
-
-pub async fn withdraw_from_strategy(strategy_id: StrategyId, amount: Nat , ledger: Principal) -> Result<Nat, String> {
-    let a =  icrc1_transfer(ledger, &Args {
-        from_subaccount: None,
-        to: Account { owner: caller(), subaccount: None },
-        fee: None,
-        created_at_time: None,
-        memo: None,
-        amount,
-    }).await;
-    match a {
-        Ok(Ok(block_index)) => {
-            Ok(block_index)
-        }
-        Ok(Err(e)) => {
-            trap(format!("Error withdrawing: {e}").as_str());
-        }
-        Err(e) => {
-            trap(e.1.as_str());
-        }
-    }
-}
 
 
 async fn icrc2_transfer_from(ledger_canister_id: CanisterId, transfer_args: &icrc_ledger_canister::updates::icrc2_transfer_from::Args) -> Result<u64, String> {

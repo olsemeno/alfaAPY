@@ -1,13 +1,13 @@
 use crate::repo::repo::{add_or_update_strategy, STRATEGIES};
 use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
-use crate::strategies::strategy::StrategyResponse;
-use crate::strategies::strategy_candid::StrategyCandid;
+use crate::types::types::StrategyResponse;
 
 pub fn init_strategies() {
-    let ckBTC = Box::new(ckBTCStrategy::new());
+
+    let ck_btc = Box::new(ckBTCStrategy::new());
     let icp = Box::new(ICPStrategy::new());
-    add_or_update_strategy(ckBTC);
+    add_or_update_strategy(ck_btc);
     add_or_update_strategy(icp);
 }
 
@@ -20,3 +20,14 @@ pub fn get_actual_strategies() -> Vec<StrategyResponse> {
     });
     strategies
 }
+
+// pub async fn withdraw(strategy_id: u16, amount: Nat) -> WithdrawResponse {
+//     STRATEGIES.with(|strategies| async {
+//         let mut strategies = strategies.borrow_mut();
+//         let index = strategies.iter().position(|s| s.get_id() == strategy_id);
+//         if let Some(index) = index {
+//             strategies[index]
+//                 .withdraw(amount).await
+//         } else { panic!("Strategy not found") }
+//     }).await
+// }

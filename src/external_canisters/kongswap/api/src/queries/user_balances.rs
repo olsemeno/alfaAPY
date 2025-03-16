@@ -1,7 +1,6 @@
 pub use crate::PoolsReply;
-use candid::{CandidType, Deserialize, Nat};
+use candid::{CandidType, Deserialize};
 use serde::Serialize;
-use crate::add_liquidity_amounts::AddLiquidityAmountsReply;
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
 pub enum UserBalancesReply {
     LP(LPReply),

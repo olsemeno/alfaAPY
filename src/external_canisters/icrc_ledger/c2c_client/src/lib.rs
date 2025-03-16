@@ -20,7 +20,7 @@ pub async fn icrc1_transfer(
     args: &icrc1_transfer::Args,
 ) -> ::ic_cdk::api::call::CallResult<icrc1_transfer::Response> {
     let method_name = "icrc1_transfer";
-    let mut args = args.clone();
+    let args = args.clone();
     canister_client::make_c2c_call(canister_id, method_name, &args, ::candid::encode_one, |r| {
         ::candid::decode_one(r)
     })

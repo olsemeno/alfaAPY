@@ -847,6 +847,7 @@ dependencies = [
  "icrc_ledger_canister_c2c_client",
  "kongswap_canister",
  "kongswap_canister_c2c_client",
+ "lazy_static",
  "serde",
  "serde_bytes",
  "serde_json",

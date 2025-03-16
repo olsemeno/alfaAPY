@@ -1,5 +1,4 @@
-use candid::Nat;
-use std::ops::{Add, Div, Mul};
+use std::ops::{Mul};
 
 pub struct Calculator;
 
@@ -11,9 +10,6 @@ pub struct CalculatePoolLiquidityAmountsResponse {
 }
 
 impl Calculator {
-    pub fn calculate_pool_ratio(amount_1: Nat, amount_0: Nat) -> Nat {
-        amount_1 / amount_0
-    }
 
     pub fn calculate_shares(amount: f64, total_balance: f64, total_shares: f64) -> f64 {
         let zero =0f64;
@@ -92,7 +88,7 @@ mod tests {
     }
 
     mod calculate_pool_liquidity_amounts {
-        use crate::strategies::r#impl::icp_strategy::f64_to_nat;
+        use candid::Nat;
         use super::super::*;
 
         #[test]
@@ -187,17 +183,4 @@ mod tests {
         }
     }
 
-    mod calculate_pool_ratio {
-        use super::super::*;
-        use candid::Nat;
-
-        #[test]
-        fn test_with_zero_amount() {
-            let amount_1 = Nat::from(5u64);
-            let amount_0 = Nat::from(100u64);
-
-            let ratio = Calculator::calculate_pool_ratio(amount_1, amount_0);
-            assert_eq!(ratio, Nat::from(0u64));
-        }
-    }
 }
