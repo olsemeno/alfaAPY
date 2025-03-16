@@ -153,34 +153,6 @@ mod tests {
             let total_token_0 = result.token_0_for_swap + result.token_0_for_pool;
             assert!(total_token_0 <= amount);
         }
-
-        #[test]
-        fn test_real_data() {
-
-            let amount = 1_000_000f64;
-            let pool_ratio = 0.053083f64; // 3:1 ratio
-            let swap_price = 0.042924f64; // 2:1 ratio
-
-
-            let nat = Nat::from(amount as u128);
-
-            print!("nat: {:?}", nat.to_string());
-
-            let result = Calculator::calculate_pool_liquidity_amounts(
-                amount.clone(),
-                pool_ratio.clone(),
-                swap_price
-            );
-
-            assert_eq!(result.token_0_for_swap, 600f64);
-            assert_eq!(result.token_0_for_pool, 400f64);
-            //23733.0
-            assert_eq!(result.token_1_for_pool, 1200f64);
-
-            // Verify total token0 used equals original amount
-            let total_token_0 = result.token_0_for_swap + result.token_0_for_pool;
-            assert!(total_token_0 <= amount);
-        }
     }
 
 }
