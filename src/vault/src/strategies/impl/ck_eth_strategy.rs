@@ -1,0 +1,48 @@
+use crate::impl_strategy_methods;
+use crate::strategies::basic_strategy::BasicStrategy;
+use crate::strategies::r#impl::description::STRATEGY_MAP;
+use crate::strategies::strategy::IStrategy;
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::types::types::{Pool, StrategyId};
+use async_trait::async_trait;
+use candid::{CandidType, Deserialize, Nat, Principal};
+use kongswap_canister::PoolReply;
+use serde::Serialize;
+use std::collections::HashMap;
+
+impl_strategy_methods!(ckETHStrategy);
+#[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
+pub struct ckETHStrategy {
+    id: StrategyId,
+    current_pool: Option<PoolReply>,
+    total_balance: Nat,
+    total_shares: Nat,
+    user_shares: HashMap<Principal, Nat>,
+    initial_deposit: HashMap<Principal, Nat>,
+}
+
+impl ckETHStrategy {
+    pub fn new() -> Self {
+        //TODO move to config
+        ckETHStrategy {
+            current_pool: None,
+            total_balance: Nat::from(0u64),
+            total_shares: Nat::from(0u64),
+            user_shares: HashMap::new(),
+            initial_deposit: HashMap::new(),
+            id: 1,
+        }
+    }
+}
+
+#[async_trait]
+impl IStrategy for ckETHStrategy {
+    fn to_candid(&self) -> StrategyCandid {
+        StrategyCandid::ckETHStrategyV(self.clone())
+    }
+
+    fn clone_self(&self) -> Box<dyn IStrategy> {
+        Box::new(self.clone())
+    }
+}
