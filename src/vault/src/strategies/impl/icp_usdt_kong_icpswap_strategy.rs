@@ -10,6 +10,8 @@ use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::collections::HashMap;
 
+
+//TODO override deposit/withdraw to support ICPSWAP
 impl_strategy_methods!(IcpCkUSDTStrategy);
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
@@ -31,7 +33,7 @@ impl IcpCkUSDTStrategy {
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
             initial_deposit: HashMap::new(),
-            id: 1,
+            id: 3,
         }
     }
 }

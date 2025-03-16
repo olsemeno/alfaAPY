@@ -40,7 +40,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         //TODO fixme temp approach to run the pool
         if self.get_current_pool().is_none() {
             self.set_current_pool(pools_data.iter()
-                .find(|&x| x.symbol == "ICP_ckUSDT")
+                .find(|&x| x.symbol == "PANDA_ICP")
                 .cloned());
         }
 

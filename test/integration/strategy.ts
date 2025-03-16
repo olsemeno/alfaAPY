@@ -8,7 +8,7 @@ import * as Agent from "@dfinity/agent";
 import {Principal} from "@dfinity/principal";
 
 export const alfaACanister = "hx54w-raaaa-aaaaa-qafla-cai";
-export const kongCanister = "hx54w-raaaa-aaaaa-qafla-cai";
+export const kongCanister = "2ipq2-uqaaa-aaaar-qailq-cai";
 
 export class StrategyWrapper {
     private actor: ActorSubclass<VaultType>
@@ -52,7 +52,7 @@ export class StrategyWrapper {
         // Get user strategies and balances
         return Promise.all([
             this.actor.user_strategies(user),
-            this.actor.user_balance_all(user)
+            this.kongActor.user_balances(alfaACanister)
         ])
         .then(([userStrategies, userBalances]) => {
             console.log("User strategies:", userStrategies);
@@ -60,7 +60,8 @@ export class StrategyWrapper {
 
             const selectedUserBalances = [];
 
-            userBalances.forEach(balance => {
+            // @ts-ignore
+            userBalances.Ok.forEach(balance => {
                 userStrategies.forEach(strategy => {
                     const lpPosition = balance.LP;
                     // Select balances that match user's strategy and have non-zero total shares

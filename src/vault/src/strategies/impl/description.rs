@@ -62,13 +62,13 @@ lazy_static! {
             ],
         });
         m.insert(4, StrategyInfo {
-            name: "ICP-ckETH Balanced Strategy".to_string(),
-            description: "A balanced strategy that allocates funds between ICP and ckETH, utilizing Kongswap and ICPSwap for optimal returns.".to_string(),
+            name: "Panda-ICP Balanced Strategy".to_string(),
+            description: "Cheap test strategy".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "ICP_ckETH".to_string(),
-                    token0: "ICP".to_string(),
-                    token1: "ckETH".to_string(),
+                    pool_symbol: "PANDA_ICP".to_string(),
+                    token0: "PANDA".to_string(),
+                    token1: "ICP".to_string(),
                     rolling_24h_apy: 0.0,
                 },
             ],

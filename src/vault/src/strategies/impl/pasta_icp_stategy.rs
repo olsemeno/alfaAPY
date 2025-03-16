@@ -10,10 +10,11 @@ use kongswap_canister::PoolReply;
 use serde::Serialize;
 use std::collections::HashMap;
 
-impl_strategy_methods!(ckETHStrategy);
+
+impl_strategy_methods!(PandaTestStrategy);
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-pub struct ckETHStrategy {
+pub struct PandaTestStrategy {
     id: StrategyId,
     current_pool: Option<PoolReply>,
     total_balance: Nat,
@@ -22,24 +23,24 @@ pub struct ckETHStrategy {
     initial_deposit: HashMap<Principal, Nat>,
 }
 
-impl ckETHStrategy {
+impl PandaTestStrategy {
     pub fn new() -> Self {
         //TODO move to config
-        ckETHStrategy {
+        PandaTestStrategy {
             current_pool: None,
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
             initial_deposit: HashMap::new(),
-            id: 1,
+            id: 4,
         }
     }
 }
 
 #[async_trait]
-impl IStrategy for ckETHStrategy {
+impl IStrategy for PandaTestStrategy {
     fn to_candid(&self) -> StrategyCandid {
-        StrategyCandid::ckETHStrategyV(self.clone())
+        StrategyCandid::PandaTestStrategyV(self.clone())
     }
 
     fn clone_self(&self) -> Box<dyn IStrategy> {

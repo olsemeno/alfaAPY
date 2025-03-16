@@ -1,6 +1,6 @@
 use std::cell::{RefCell};
 use candid::{CandidType, Deserialize};
-use ic_cdk::storage;
+use ic_cdk::{storage, trap};
 use serde::Serialize;
 use crate::{Conf, CONF};
 use crate::strategies::strategy::{IStrategy, StrategyIterator};
@@ -36,6 +36,16 @@ pub fn add_or_update_strategy(strategy: Box<dyn IStrategy>) {
         if let Some(index) = index {
             strategies[index] = strategy;
         } else {
+            strategies.push(strategy);
+        }
+    });
+}
+
+pub fn add_if_not_exists(strategy: Box<dyn IStrategy>) {
+    STRATEGIES.with(|strategies| {
+        let mut strategies = strategies.borrow_mut();
+        let index = strategies.iter().position(|s| s.get_id() == strategy.get_id());
+        if index.is_none() {
             strategies.push(strategy);
         }
     });
