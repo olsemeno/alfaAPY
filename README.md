@@ -1,10 +1,12 @@
 <div style="display:flex;flex-direction:row;gap:20px;">
   <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
-    <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="400" height="auto"/>
+    <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="250" height="auto"/>
   </a>
-
   <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
-    <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="400" height="auto"/>
+    <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="250" height="auto"/>
+  </a>
+  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
+    <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="250" height="auto"/>
   </a>
 </div>
 
