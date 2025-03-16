@@ -16,7 +16,7 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is the first yield o
 
 ## Description
 
-AlfaAPY is designed to solve the challenge of finding and utilizing the best yield opportunities in the ICP ecosystem. The protocol continuously monitors APY across various liquidity pools from different DeFi providers like KongSwap, ICPSwap, and others. When a higher-yielding opportunity is detected, it automatically rebalances funds to maximize returns.
+The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is designed to solve the challenge of finding and utilizing the best yield opportunities in the ICP ecosystem. The protocol continuously monitors APY across various liquidity pools from different DeFi providers like KongSwap, ICPSwap, and others. When a higher-yielding opportunity is detected, it automatically rebalances funds to maximize returns.
 
 With an easy-to-use interface for managing investments and tracking performance, users can effortlessly monitor their yield optimization strategies while leveraging the power of **ckBTC** for efficient cross-chain transactions and yield generation.
 
