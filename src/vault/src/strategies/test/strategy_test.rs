@@ -2,10 +2,16 @@
 mod tests {
     use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
-    use crate::types::types::{AddLiquidityResponse, Pool};
-    use candid::Principal;
+    use crate::types::types::{AddLiquidityResponse, DepositResponse, Pool, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use candid::{Nat, Principal};
     use std::collections::HashMap;
+    use async_trait::async_trait;
+    use ic_cdk::trap;
     use kongswap_canister::PoolReply;
+    use crate::strategies::calculator::Calculator;
+    use crate::strategies::strategy::IStrategy;
+    use crate::strategies::strategy_candid::StrategyCandid;
+    use crate::util::util::nat_to_f64;
 
     // Mock for external functions
     pub mod liquidity_service_mock {
