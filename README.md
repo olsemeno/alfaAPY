@@ -58,11 +58,11 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 
 ### Core Components
 
-- **Vault**: Main entry point for user deposits and withdrawals
-- **Strategies**: Asset-specific implementations for yield optimization
-- **Liquidity Service**: Handles interactions with liquidity pools
-- **Swap Service**: Manages token swaps between different assets
-- **Repository**: Manages persistent state and strategy data
+- **Vault**: Main entry point for user deposits and withdrawals.
+- **Strategies**: Asset-specific implementations for yield optimization.
+- **Liquidity Service**: Handles interactions with liquidity pools.
+- **Swap Service**: Manages token swaps between different assets.
+- **Repository**: Manages persistent state and strategy data.
 
 ### Documentations
 
@@ -76,8 +76,8 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 - **Rust**: Primary programming language
 - **Internet Computer Protocol (ICP)**: Blockchain platform
 - **Candid**: Interface description language for ICP
-- **KongSwap/ICPSwap**: DEX integrations for liquidity provision and swaps
 - **ICRC-1/ICRC-2**: Token standards for asset handling
+- **KongSwap/ICPSwap**: DEX integrations for liquidity provision and swaps
 
 ### Frontend
 
