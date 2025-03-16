@@ -1,9 +1,9 @@
 <div style="display:flex;flex-direction:row;gap:20px;">
-  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/">
+  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
     <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="400" height="auto"/>
   </a>
 
-  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/">
+  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
     <img src="./readme/alfaWolf.png" role="presentation" alt="image" width="400" height="auto"/>
   </a>
 </div>
@@ -24,10 +24,10 @@ With an easy-to-use interface for managing investments and tracking performance,
 The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides an intuitive and user-friendly experience for managing your yield optimization strategies.
 
 <div style="display:flex;flex-direction:row;gap:20px;">
-  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/">
+  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
     <img src="./readme/alfa_apy1.jpg" role="presentation" alt="image" width="500" height="auto"/>
   </a>
-  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/">
+  <a href="https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/" target="_blank" rel="noopener noreferrer">
     <img src="./readme/alfa_apy2.jpg" role="presentation" alt="image" width="500" height="auto"/>
   </a>
 </div>
