@@ -18,16 +18,16 @@ lazy_static! {
             description: "A balanced strategy utilizing Kongswap with 50% ICP and 50% stable coin, featuring pool pairs like ckUSDC/ICP and ICP/ckUSDT.".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "ckUSDC_ICP".to_string(),
-                    token0: "ckUSDC".to_string(),
-                    token1: "ICP".to_string(),
-                    rolling_24h_apy: 10.0,
-                },
-                Pool {
                     pool_symbol: "ICP_ckUSDT".to_string(),
                     token0: "ICP".to_string(),
                     token1: "ckUSDT".to_string(),
                     rolling_24h_apy: 20.0,
+                },
+                Pool {
+                    pool_symbol: "ckUSDC_ICP".to_string(),
+                    token0: "ckUSDC".to_string(),
+                    token1: "ICP".to_string(),
+                    rolling_24h_apy: 10.0,
                 }
             ],
         });
