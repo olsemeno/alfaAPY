@@ -133,11 +133,16 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
             // Update user shares
             let current_shares = self.get_user_shares().get(&investor).cloned().unwrap_or(Nat::from(0u64));
-            let new_shares = current_shares.min(shares);
+            let new_shares = current_shares.clone().min(shares);
             self.update_user_shares(investor.clone(), new_shares.clone());
 
 
             // Update initial deposit
+            let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
+            // Remaining initial deposit proportional to the new shares
+            let new_initial_deposit = initial_deposit * new_shares.clone() / current_shares;
+            self.update_initial_deposit(investor.clone(), new_initial_deposit.clone());
+
 
             save_strategy(self.clone_self());
 
