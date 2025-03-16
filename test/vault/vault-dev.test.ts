@@ -14,7 +14,8 @@ export const isLocalENV = true;
 describe("VR Test PROD", () => {
     const canisterId = "hx54w-raaaa-aaaaa-qafla-cai";
     const identity = "87654321876543218765432187654399";
-    const ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    // const ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    const ledgerCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
     let ledgerActor: ActorSubclass<ledgerService>
@@ -39,9 +40,9 @@ describe("VR Test PROD", () => {
     });
 
     describe(".accept_investment", () => {
-        const strategyId = 2;
-        const approveAmount = BigInt(100000000);
-        const depositAmount = BigInt(10000000);
+        const strategyId = 4;
+        const approveAmount = BigInt(10000000000);
+        const depositAmount = BigInt(1000000000);
 
         it("Deposits to strategy without any liquidity", async () => {
             console.log("== START \"Deposits to strategy without any liquidity\" TEST==");
