@@ -66,8 +66,8 @@ The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) interface provides a
 
 ### Documentations
 
-- [Calculator Functions Documentation](docs/liquidity_pools_calculation_flow.md) - Detailed documentation of share calculation and liquidity distribution functions
-- [Kong Swap Provider Documentation](docs/kong_swap_provider_flow.md) - Documentation for working with Kong Swap pools and APY calculations
+- [Calculator Functions Documentation](docs/liquidity_pools_calculation_flow.md) - Detailed documentation of share calculation and liquidity distribution functions.
+- [Kong Swap Provider Documentation](docs/kong_swap_provider_flow.md) - Documentation for working with Kong Swap pools and APY calculations.
 
 ## Technologies
 
