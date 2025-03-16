@@ -40,7 +40,7 @@ impl PandaTestStrategy {
 #[async_trait]
 impl IStrategy for PandaTestStrategy {
     fn to_candid(&self) -> StrategyCandid {
-        StrategyCandid::PandaTestStrategyV(self.clone())
+        StrategyCandid::ckETHStrategyV(self.clone())
     }
 
     fn clone_self(&self) -> Box<dyn IStrategy> {

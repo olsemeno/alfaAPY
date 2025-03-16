@@ -1,7 +1,7 @@
 use candid::{CandidType, Deserialize};
 use serde::Serialize;
 use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
-use crate::strategies::r#impl::pasta_icp_stategy::PandaTestStrategy;
+use crate::strategies::r#impl::panda_icp_stategy::PandaTestStrategy;
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;
 use crate::strategies::r#impl::icp_usdt_kong_icpswap_strategy::IcpCkUSDTStrategy;
 use crate::strategies::strategy::IStrategy;
@@ -12,7 +12,7 @@ pub enum StrategyCandid {
     ckBTCStrategyV(ckBTCStrategy),
     ICPStrategyV(ICPStrategy),
     #[allow(non_camel_case_types)]
-    PandaTestStrategyV(PandaTestStrategy),
+    ckETHStrategyV(PandaTestStrategy),
     IcpCkUSDTStrategyV(IcpCkUSDTStrategy),
 }
 
@@ -27,7 +27,7 @@ impl Candid for StrategyCandid {
         match self {
             StrategyCandid::ckBTCStrategyV(strategy) => Box::new(strategy.clone()),
             StrategyCandid::ICPStrategyV(strategy) => Box::new(strategy.clone()),
-            StrategyCandid::PandaTestStrategyV(strategy) => Box::new(strategy.clone()),
+            StrategyCandid::ckETHStrategyV(strategy) => Box::new(strategy.clone()),
             StrategyCandid::IcpCkUSDTStrategyV(strategy) => Box::new(strategy.clone()),
         }
     }

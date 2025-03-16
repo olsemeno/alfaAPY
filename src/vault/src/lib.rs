@@ -53,13 +53,6 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
-
-#[candid_method(update)]
-#[update]
-fn init_s(conf: Option<Conf>) {
-    init_strategies();
-}
-
 //TODO remove / test method
 #[update]
 async fn kong_pools() -> PoolsReply {
