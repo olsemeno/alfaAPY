@@ -14,9 +14,9 @@
 
 ### ⚠️ Important Notice
 
-> **🚧 Some functionality may not work temporarily**
-> This is due to recent changes in **Kongswap DEX canister interfaces** made after our hackathon submission.
-> We are actively working on fixing this and will address it after the jury review.
+> **🚧 Some functionality may not work temporarily**\
+> This is due to recent changes in **Kongswap DEX canister interfaces** made after our hackathon submission.\
+> We are actively working on fixing this and will address it after the jury review.\
 > Thanks for your patience! 🙌
 
 
