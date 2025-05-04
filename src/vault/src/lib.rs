@@ -7,7 +7,7 @@ mod user;
 mod util;
 mod types;
 
-use crate::providers::kong::kong::{ user_balances};
+use crate::providers::kong::kong::{user_balances};
 use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::types::types::{AcceptInvestmentArgs, DepositResponse, Icrc28TrustedOriginsResponse, StrategyResponse, SupportedStandard, UserStrategyResponse, WithdrawArgs, WithdrawResponse};
