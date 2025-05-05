@@ -1,4 +1,4 @@
-use crate::repo::repo::{add_if_not_exists, add_or_update_strategy, STRATEGIES};
+use crate::repository::strategies_repo::{add_if_not_exists, add_or_update_strategy, STRATEGIES};
 use crate::strategies::r#impl::ck_btc_strategy::ckBTCStrategy;
 use crate::strategies::r#impl::panda_icp_stategy::PandaTestStrategy;
 use crate::strategies::r#impl::icp_strategy::ICPStrategy;

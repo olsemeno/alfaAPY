@@ -1,14 +1,3 @@
-use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
-use crate::events::event_service::{EventService, IEventService};
-use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
-use crate::repo::repo::save_strategy;
-use crate::strategies::basic_strategy::BasicStrategy;
-use crate::strategies::calculator::Calculator;
-use crate::strategies::strategy_candid::StrategyCandid;
-use crate::swap::swap_service::swap_icrc2_kong;
-use crate::swap::token_swaps::nat_to_u128;
-use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-use crate::util::util::nat_to_f64;
 use async_trait::async_trait;
 use candid::{Nat, Principal};
 use ic_cdk::{caller, trap};
@@ -17,6 +6,19 @@ use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
+
+use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
+use crate::events::event_service::{add_user_event, add_system_event};
+use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
+use crate::repository::strategies_repo::save_strategy;
+use crate::strategies::basic_strategy::BasicStrategy;
+use crate::strategies::calculator::Calculator;
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::swap::swap_service::swap_icrc2_kong;
+use crate::swap::token_swaps::nat_to_u128;
+use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+use crate::util::util::nat_to_f64;
+
 
 #[async_trait]
 pub trait IStrategy: Send + Sync+  BasicStrategy  {
@@ -116,7 +118,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             save_strategy(self.clone_self());
 
             // Add event for deposit
-            EventService::instance().borrow_mut().add_user_event(
+            add_user_event(
                 UserEventType::AddLiquidity,
                 UserEventDetails::AddLiquidity {
                     amount: amount.clone(),
@@ -235,7 +237,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             save_strategy(self.clone_self());
 
             // Add event for withdraw
-            EventService::instance().borrow_mut().add_user_event(
+            add_user_event(
                 UserEventType::RemoveLiquidity,
                 UserEventDetails::RemoveLiquidity {
                     amount: amount_to_withdraw.clone(),
@@ -348,7 +350,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 ).await;
 
                 // Add event for rebalance
-                EventService::instance().borrow_mut().add_system_event(
+                add_system_event(
                     SystemEventType::Rebalance,
                     SystemEventDetails::Rebalance {
                         old_pool: current_pool.symbol.clone(),
