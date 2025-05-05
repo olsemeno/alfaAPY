@@ -1,5 +1,5 @@
 use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
-use crate::events::event_service::EventService;
+use crate::events::event_service::{EventService, IEventService};
 use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
 use crate::repo::repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
@@ -116,7 +116,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             save_strategy(self.clone_self());
 
             // Add event for deposit
-            EventService::new().add_user_event(
+            EventService::instance().borrow_mut().add_user_event(
                 UserEventType::AddLiquidity,
                 UserEventDetails::AddLiquidity {
                     amount: amount.clone(),
@@ -235,11 +235,11 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             save_strategy(self.clone_self());
 
             // Add event for withdraw
-            EventService::new().add_user_event(
+            EventService::instance().borrow_mut().add_user_event(
                 UserEventType::RemoveLiquidity,
                 UserEventDetails::RemoveLiquidity {
-                    amount: shares.clone(),
-                    token: tokens_info.token_0.clone(),
+                    amount: amount_to_withdraw.clone(),
+                    token: tokens_info.token_0.ledger.to_text(),
                     symbol: tokens_info.token_0.symbol.clone(),
                 },
                 investor,
@@ -348,7 +348,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 ).await;
 
                 // Add event for rebalance
-                EventService::new().add_system_event(
+                EventService::instance().borrow_mut().add_system_event(
                     SystemEventType::Rebalance,
                     SystemEventDetails::Rebalance {
                         old_pool: current_pool.symbol.clone(),

@@ -1,5 +1,4 @@
-use candid::Principal;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Principal};
 use serde::Serialize;
 use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
 
@@ -7,8 +6,8 @@ use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEvent
 pub struct UserEvent {
     pub id: u64,
     pub event_type: UserEventType,
-    pub timestamp: u64,
     pub details: UserEventDetails,
+    pub timestamp: u64,
     pub user: Principal,
 }
 

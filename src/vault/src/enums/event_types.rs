@@ -1,4 +1,4 @@
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
@@ -16,12 +16,12 @@ pub enum SystemEventType {
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum UserEventDetails {
     AddLiquidity {
-        amount: u64,
+        amount: Nat,
         token: String,
         symbol: String,
     },
     RemoveLiquidity {
-        amount: u64,
+        amount: Nat,
         token: String,
         symbol: String,
     },

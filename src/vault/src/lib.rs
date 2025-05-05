@@ -6,6 +6,8 @@ mod repo;
 mod user;
 mod util;
 mod types;
+mod events;
+mod enums;
 
 use crate::providers::kong::kong::{user_balances};
 use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save, STRATEGIES};
@@ -14,12 +16,13 @@ use crate::types::types::{AcceptInvestmentArgs, DepositResponse, Icrc28TrustedOr
 use crate::user::user_service::{accept_deposit};
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{caller, id, trap};
+use ic_cdk::{caller, id, storage, trap};
 use ic_cdk_macros::{heartbeat, init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
 use serde::Serialize;
 use std::cell::RefCell;
+use crate::events::event_service::{EventService, EventCounters};
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -204,7 +207,8 @@ fn get_strategies() -> Vec<StrategyResponse> {
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    stable_save();
+    let counters = EventService::get_counters();
+    storage::stable_save((counters,)).unwrap();
 }
 /// Retrieves the supported standards for ICRC-10.
 ///
@@ -240,8 +244,9 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 }
 
 #[post_upgrade]
-pub async fn post_upgrade() {
-    stable_restore()
+fn post_upgrade() {
+    let (counters,): (EventCounters,) = storage::stable_restore().unwrap();
+    EventService::set_counters(counters);
 }
 export_service!();
 

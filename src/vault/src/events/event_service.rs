@@ -11,6 +11,24 @@ use crate::events_repo::repo::{
     get_user_event_by_id,
     get_system_event_by_id,
 };
+use std::cell::RefCell;
+use candid::{CandidType, Deserialize};
+use serde::Serialize;
+
+#[derive(CandidType, Serialize, Deserialize)]
+pub struct EventCounters {
+    user_event_counter: u64,
+    system_event_counter: u64,
+}
+
+thread_local! {
+    static EVENT_COUNTERS: RefCell<EventCounters> = RefCell::new(EventCounters {
+        user_event_counter: 0,
+        system_event_counter: 0,
+    });
+
+    static EVENT_SERVICE: RefCell<EventService> = RefCell::new(EventService::default());
+}
 
 pub trait IEventService {
     fn add_user_event(&mut self, event_type: UserEventType, details: UserEventDetails, user: Principal);
@@ -23,43 +41,61 @@ pub trait IEventService {
     fn get_system_event_by_id(&self, id: u64) -> Option<SystemEvent>;
 }
 
-pub struct EventService {
-    user_event_counter: u64,
-    system_event_counter: u64,
+pub struct EventService {}
+
+impl Default for EventService {
+    fn default() -> Self {
+        EventService {}
+    }
 }
 
 impl EventService {
-    pub fn new() -> Self {
-        EventService {
-            user_event_counter: 0,
-            system_event_counter: 0,
-        }
+    pub fn instance() -> &'static RefCell<EventService> {
+        EVENT_SERVICE.with(|service| unsafe {
+            std::mem::transmute::<&RefCell<EventService>, &'static RefCell<EventService>>(service)
+        })
+    }
+
+    pub fn get_counters() -> EventCounters {
+        EVENT_COUNTERS.with(|counters| {
+            let borrowed = counters.borrow();
+            EventCounters {
+                user_event_counter: borrowed.user_event_counter,
+                system_event_counter: borrowed.system_event_counter,
+            }
+        })
+    }
+
+    pub fn set_counters(counters: EventCounters) {
+        EVENT_COUNTERS.with(|c| *c.borrow_mut() = counters);
     }
 }
 
 impl IEventService for EventService {
     fn add_user_event(&mut self, event_type: UserEventType, details: UserEventDetails, user: Principal) {
+        let mut counters = Self::get_counters();
         let event = UserEvent {
-            id: self.user_event_counter,
+            id: counters.user_event_counter,
             event_type,
             details,
             timestamp: ic_cdk::api::time(),
             user,
         };
-        self.user_event_counter += 1;
-
+        counters.user_event_counter += 1;
+        Self::set_counters(counters);
         add_user_event(event);
     }
 
     fn add_system_event(&mut self, event_type: SystemEventType, details: SystemEventDetails) {
-        let event: SystemEvent = SystemEvent {
-            id: self.system_event_counter,
+        let mut counters = Self::get_counters();
+        let event = SystemEvent {
+            id: counters.system_event_counter,
             event_type,
             details,
             timestamp: ic_cdk::api::time(),
         };
-        self.system_event_counter += 1;
-
+        counters.system_event_counter += 1;
+        Self::set_counters(counters);
         add_system_event(event);
     }
 
