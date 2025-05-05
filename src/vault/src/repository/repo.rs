@@ -39,14 +39,14 @@ pub fn stable_save() {
         events.borrow().iter().map(|event| event.to_candid()).collect()
     });
 
-    let mem = Memory {
+    let memory = Memory {
         strategies,
         user_events,
         system_events,
         config: conf,
     };
 
-    storage::stable_save((mem, )).unwrap();
+    storage::stable_save((memory, )).unwrap();
 }
 
 pub fn stable_restore() {

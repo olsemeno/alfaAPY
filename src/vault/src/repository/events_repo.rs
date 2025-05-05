@@ -9,15 +9,7 @@ thread_local! {
     pub static SYSTEM_EVENTS: RefCell<Vec<Box<dyn IEvent>>> = RefCell::new(Default::default());
 }
 
-pub fn get_user_events_count() -> u64 {
-    USER_EVENTS.with(|events| events.borrow().len() as u64)
-}
-
-pub fn get_system_events_count() -> u64 {
-    SYSTEM_EVENTS.with(|events| events.borrow().len() as u64)
-}
-
-pub fn add_event(event: Box<dyn IEvent>) {
+pub fn save_event(event: Box<dyn IEvent>) {
     match event.to_candid() {
         EventCandid::User(user_event) => {
             USER_EVENTS.with(|events| events.borrow_mut().push(Box::new(user_event)));
@@ -27,6 +19,15 @@ pub fn add_event(event: Box<dyn IEvent>) {
         }
     }
 }
+
+pub fn get_user_events_count() -> u64 {
+    USER_EVENTS.with(|events| events.borrow().len() as u64)
+}
+
+pub fn get_system_events_count() -> u64 {
+    SYSTEM_EVENTS.with(|events| events.borrow().len() as u64)
+}
+
 
 pub fn get_user_events(user: Principal) -> Vec<UserEvent> {
     USER_EVENTS.with(|events| {

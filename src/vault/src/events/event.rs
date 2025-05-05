@@ -1,15 +1,17 @@
 use candid::{CandidType, Deserialize, Principal};
 use serde::Serialize;
 
-use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
+use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails, UserEventParams, SystemEventParams};
 use crate::events::event_candid::EventCandid;
 use crate::types::types::EventResponse;
+use crate::repository::events_repo::save_event;
 
 pub trait IEvent {
     fn get_id(&self) -> u64;
     fn get_timestamp(&self) -> u64;
     fn to_candid(&self) -> EventCandid;
     fn to_response(&self) -> EventResponse;
+    fn save(&self);
 }
 
 pub trait IUserEvent: IEvent {
@@ -44,11 +46,21 @@ impl UserEvent {
     pub fn new(id: u64, event_type: UserEventType, details: UserEventDetails, timestamp: u64, user: Principal) -> Self {
         Self {
             id,
-            timestamp,
             event_type,
             details,
+            timestamp,
             user,
         }
+    }
+
+    pub fn from_params(id: u64, params: UserEventParams, timestamp: u64, user: Principal) -> Self {
+        Self::new(
+            id,
+            params.event_type(),
+            params.details(),
+            timestamp,
+            user,
+        )
     }
 }
 
@@ -68,6 +80,10 @@ impl IEvent for UserEvent {
     fn to_response(&self) -> EventResponse {
         EventResponse::User(self.clone())
     }
+
+    fn save(&self) {
+        save_event(Box::new(self.clone()));
+    }
 }
 
 impl IUserEvent for UserEvent {
@@ -86,10 +102,19 @@ impl SystemEvent {
     pub fn new(id: u64, event_type: SystemEventType, details: SystemEventDetails, timestamp: u64) -> Self {
         Self {
             id,
-            timestamp,
             event_type,
             details,
+            timestamp,
         }
+    }
+
+    pub fn from_params(id: u64, params: SystemEventParams, timestamp: u64) -> Self {
+        Self::new(
+            id,
+            params.event_type(),
+            params.details(),
+            timestamp,
+        )
     }
 }
 
@@ -108,6 +133,10 @@ impl IEvent for SystemEvent {
 
     fn to_response(&self) -> EventResponse {
         EventResponse::System(self.clone())
+    }
+
+    fn save(&self) {
+        save_event(Box::new(self.clone()));
     }
 }
 

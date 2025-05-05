@@ -7,8 +7,8 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 
-use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
-use crate::events::event_service::{add_user_event, add_system_event};
+use crate::enums::{UserEventParams, SystemEventParams};
+use crate::events::event_service::{create_user_event, create_system_event};
 use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
@@ -117,10 +117,9 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
             save_strategy(self.clone_self());
 
-            // Add event for deposit
-            add_user_event(
-                UserEventType::AddLiquidity,
-                UserEventDetails::AddLiquidity {
+            // Create event for deposit
+            create_user_event(
+                UserEventParams::AddLiquidity {
                     amount: amount.clone(),
                     token: pool_reply.address_0.clone(),
                     symbol: pool_reply.symbol_0.clone(),
@@ -236,10 +235,9 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
             save_strategy(self.clone_self());
 
-            // Add event for withdraw
-            add_user_event(
-                UserEventType::RemoveLiquidity,
-                UserEventDetails::RemoveLiquidity {
+            // Create event for withdraw
+            create_user_event(
+                UserEventParams::RemoveLiquidity {
                     amount: amount_to_withdraw.clone(),
                     token: tokens_info.token_0.ledger.to_text(),
                     symbol: tokens_info.token_0.symbol.clone(),
@@ -349,10 +347,9 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                     max_apy_pool.clone().unwrap()
                 ).await;
 
-                // Add event for rebalance
-                add_system_event(
-                    SystemEventType::Rebalance,
-                    SystemEventDetails::Rebalance {
+                // Create event for rebalance
+                create_system_event(
+                    SystemEventParams::Rebalance {
                         old_pool: current_pool.symbol.clone(),
                         new_pool: max_pool.symbol.clone(),
                     },

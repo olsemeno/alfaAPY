@@ -1,34 +1,42 @@
 use candid::Principal;
+use ic_cdk::api::time;
 
-use crate::events::event::{UserEvent, SystemEvent};
-use crate::enums::{UserEventType, UserEventDetails, SystemEventType, SystemEventDetails};
-use crate::repository::events_repo::{add_event, get_user_events_count, get_system_events_count};
+use crate::events::event::{UserEvent, SystemEvent, IEvent};
+use crate::enums::{UserEventParams, SystemEventParams};
+use crate::repository::events_repo::{
+    get_user_events_count,
+    get_system_events_count,
+    get_user_events as repo_get_user_events,
+    get_system_events as repo_get_system_events,
+};
 
-pub fn add_user_event(event_type: UserEventType, details: UserEventDetails, user: Principal) {
-    let event = UserEvent::new(
+pub fn create_user_event(event_params: UserEventParams, user: Principal) -> UserEvent {
+    let event = UserEvent::from_params(
         get_user_events_count(),
-        event_type,
-        details,
-        ic_cdk::api::time(),
+        event_params,
+        time(),
         user,
     );
-    add_event(Box::new(event));
+
+    event.save();
+    event
 }
 
-pub fn add_system_event(event_type: SystemEventType, details: SystemEventDetails) {
-    let event = SystemEvent::new(
+pub fn create_system_event(event_params: SystemEventParams) -> SystemEvent {
+    let event = SystemEvent::from_params(
         get_system_events_count(),
-        event_type,
-        details,
-        ic_cdk::api::time(),
+        event_params,
+        time(),
     );
-    add_event(Box::new(event));
+
+    event.save();
+    event
 }
 
 pub fn get_user_events(user: Principal) -> Vec<UserEvent> {
-    crate::repository::events_repo::get_user_events(user)
+    repo_get_user_events(user)
 }
 
 pub fn get_system_events() -> Vec<SystemEvent> {
-    crate::repository::events_repo::get_system_events()
+    repo_get_system_events()
 }
