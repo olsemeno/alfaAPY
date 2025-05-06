@@ -1,12 +1,3 @@
-use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
-use crate::repo::repo::save_strategy;
-use crate::strategies::basic_strategy::BasicStrategy;
-use crate::strategies::calculator::Calculator;
-use crate::strategies::strategy_candid::StrategyCandid;
-use crate::swap::swap_service::swap_icrc2_kong;
-use crate::swap::token_swaps::nat_to_u128;
-use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-use crate::util::util::nat_to_f64;
 use async_trait::async_trait;
 use candid::{Nat, Principal};
 use ic_cdk::{caller, trap};
@@ -15,6 +6,19 @@ use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
+
+use crate::enums::{UserEventParams, SystemEventParams};
+use crate::events::event_service::{create_user_event, create_system_event};
+use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
+use crate::repository::strategies_repo::save_strategy;
+use crate::strategies::basic_strategy::BasicStrategy;
+use crate::strategies::calculator::Calculator;
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::swap::swap_service::swap_icrc2_kong;
+use crate::swap::token_swaps::nat_to_u128;
+use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+use crate::util::util::nat_to_f64;
+
 
 #[async_trait]
 pub trait IStrategy: Send + Sync+  BasicStrategy  {
@@ -98,7 +102,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         }
 
         if let Some(ref pool_reply) = self.get_current_pool() {
-
             // Calculate new shares for investor's deposit
             let new_shares = Calculator::calculate_shares(nat_to_f64(&amount), nat_to_f64(&self.get_total_balance()), nat_to_f64(&self.get_total_shares()));
 
@@ -113,6 +116,16 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             let resp = add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
 
             save_strategy(self.clone_self());
+
+            // Create event for deposit
+            create_user_event(
+                UserEventParams::AddLiquidity {
+                    amount: amount.clone(),
+                    token: pool_reply.address_0.clone(),
+                    symbol: pool_reply.symbol_0.clone(),
+                },
+                investor,
+            );
 
             DepositResponse {
                 amount: amount,
@@ -222,6 +235,16 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
             save_strategy(self.clone_self());
 
+            // Create event for withdraw
+            create_user_event(
+                UserEventParams::RemoveLiquidity {
+                    amount: amount_to_withdraw.clone(),
+                    token: tokens_info.token_0.ledger.to_text(),
+                    symbol: tokens_info.token_0.symbol.clone(),
+                },
+                investor,
+            );
+
             WithdrawResponse {
                 amount: amount_to_withdraw,
                 current_shares: new_shares.clone(),
@@ -314,6 +337,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                     nat_to_u128(token_1_amount)
                 ).await;
 
+
                 // Calculate total token_0 to send in new pool after swap
                 let token_0_to_pool_amount = token_0_amount + swap_response.amount_out;
 
@@ -322,6 +346,14 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                     token_0_to_pool_amount,
                     max_apy_pool.clone().unwrap()
                 ).await;
+
+                // Create event for rebalance
+                create_system_event(
+                    SystemEventParams::Rebalance {
+                        old_pool: current_pool.symbol.clone(),
+                        new_pool: max_pool.symbol.clone(),
+                    },
+                );
 
                 // Update current pool
                 self.set_current_pool(Some(max_apy_pool.clone().unwrap()));

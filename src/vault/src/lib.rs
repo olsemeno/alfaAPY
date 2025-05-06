@@ -2,24 +2,37 @@ mod swap;
 mod providers;
 mod strategies;
 mod liquidity;
-mod repo;
+mod repository;
 mod user;
 mod util;
 mod types;
+mod events;
+mod enums;
 
-use crate::providers::kong::kong::{ user_balances};
-use crate::repo::repo::{get_all_strategies, get_strategy_by_id, stable_restore, stable_save, STRATEGIES};
-use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
-use crate::types::types::{AcceptInvestmentArgs, DepositResponse, Icrc28TrustedOriginsResponse, StrategyResponse, SupportedStandard, UserStrategyResponse, WithdrawArgs, WithdrawResponse};
-use crate::user::user_service::{accept_deposit};
+use serde::Serialize;
+use std::cell::RefCell;
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
 use ic_cdk::{caller, id, trap};
-use ic_cdk_macros::{heartbeat, init, post_upgrade, pre_upgrade, query, update};
-pub use kongswap_canister::pools::{PoolsReply, Response};
+use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 use kongswap_canister::user_balances::UserBalancesReply;
-use serde::Serialize;
-use std::cell::RefCell;
+pub use kongswap_canister::pools::{PoolsReply, Response};
+
+use crate::providers::kong::kong::user_balances;
+use crate::repository::repo::{stable_restore, stable_save};
+use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
+use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
+use crate::user::user_service::accept_deposit;
+use crate::types::types::{
+    AcceptInvestmentArgs,
+    DepositResponse,
+    Icrc28TrustedOriginsResponse,
+    StrategyResponse,
+    SupportedStandard,
+    UserStrategyResponse,
+    WithdrawArgs,
+    WithdrawResponse
+};
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -204,7 +217,7 @@ fn get_strategies() -> Vec<StrategyResponse> {
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    stable_save();
+    stable_save()
 }
 /// Retrieves the supported standards for ICRC-10.
 ///
@@ -240,7 +253,7 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 }
 
 #[post_upgrade]
-pub async fn post_upgrade() {
+fn post_upgrade() {
     stable_restore()
 }
 export_service!();

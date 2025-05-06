@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
+
 use kongswap_canister::PoolReply;
 use types::CanisterId;
 use types::exchanges::TokenInfo;
+use crate::events::event::{UserEvent, SystemEvent};
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StrategyResponse {
@@ -19,9 +21,9 @@ pub struct StrategyResponse {
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct AcceptInvestmentArgs {
-   pub ledger: CanisterId,
-   pub amount: Nat,
-   pub strategy_id: StrategyId,
+    pub ledger: CanisterId,
+    pub amount: Nat,
+    pub strategy_id: StrategyId,
 }
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -99,3 +101,8 @@ pub struct TokensInfo {
 
 pub type PoolSymbol = String;
 pub type StrategyId = u16;
+
+pub enum EventResponse {
+    User(UserEvent),
+    System(SystemEvent),
+}
