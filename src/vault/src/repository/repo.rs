@@ -21,15 +21,11 @@ struct Memory {
 
 pub fn stable_save() {
     let conf = CONF.with(|conf| {
-        let a = conf.borrow();
-        a.clone()
+        conf.borrow().clone()
     });
 
-    let strategies: Vec<StrategyCandid> = STRATEGIES.with(|trss| {
-        let a = trss.borrow();
-        a.iter()
-            .map(|a| a.to_candid())
-            .collect()
+    let strategies: Vec<StrategyCandid> = STRATEGIES.with(|strategies| {
+        strategies.borrow().iter().map(|strategy| strategy.to_candid()).collect()
     });
 
     let user_events: Vec<EventCandid> = USER_EVENTS.with(|events| {
