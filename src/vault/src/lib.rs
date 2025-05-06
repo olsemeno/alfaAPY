@@ -217,7 +217,7 @@ fn get_strategies() -> Vec<StrategyResponse> {
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    stable_save();
+    stable_save()
 }
 /// Retrieves the supported standards for ICRC-10.
 ///
@@ -254,7 +254,7 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 
 #[post_upgrade]
 fn post_upgrade() {
-    stable_restore();
+    stable_restore()
 }
 export_service!();
 
