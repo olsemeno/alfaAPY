@@ -1,19 +1,13 @@
-use candid::CandidType;
-use serde::{Deserialize, Serialize};
+pub mod queries;
+pub mod updates;
 
-mod queries;
-mod updates;
-
-pub use queries::*;
-use types::ResultLowercase;
+use candid::{CandidType, Deserialize};
+use serde::Serialize;
 pub use updates::*;
+pub use queries::*;
 
-pub type ICPSwapResult<T> = ResultLowercase<T, ICPSwapError>;
-
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub enum ICPSwapError {
-    CommonError,
-    InternalError(String),
-    UnsupportedToken(String),
-    InsufficientFunds,
+#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
+pub struct Token {
+    pub address: String,
+    pub standard: String,
 }
