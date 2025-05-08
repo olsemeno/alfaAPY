@@ -2,8 +2,7 @@ use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 pub use crate::PoolsReply;
 
-
-pub type  Args =  (String, Nat, String);
+pub type Args =  (String, Nat, String);
 pub type Response = (Result<SwapAmountsReply, String>,);
 
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
@@ -37,5 +36,3 @@ pub struct SwapAmountsReply {
     pub slippage: f64,
     pub txs: Vec<SwapAmountsTxReply>,
 }
-
-
