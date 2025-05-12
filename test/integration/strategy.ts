@@ -7,7 +7,7 @@ import {IDL} from "@dfinity/candid";
 import * as Agent from "@dfinity/agent";
 import {Principal} from "@dfinity/principal";
 
-export const alfaACanister = "hx54w-raaaa-aaaaa-qafla-cai";
+export const alfaACanister = "ownab-uaaaa-aaaap-qp2na-cai";
 export const kongCanister = "2ipq2-uqaaa-aaaar-qailq-cai";
 
 export class StrategyWrapper {

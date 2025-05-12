@@ -12,7 +12,7 @@ import {expect} from 'chai';
 export const isLocalENV = true;
 
 describe("VR Test PROD", () => {
-    const canisterId = "hx54w-raaaa-aaaaa-qafla-cai";
+    const canisterId = "ownab-uaaaa-aaaap-qp2na-cai";
     const identity = "87654321876543218765432187654399";
     // const ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
     const ledgerCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";

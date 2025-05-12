@@ -19,7 +19,7 @@ import { Principal } from "@dfinity/principal";
 import { _SERVICE as ledgerService, ApproveArgs } from "./idl/ledger.ts";
 import { idlFactory as ledger_idl } from "./idl/ledger_idl.ts";
 
-export const alfaACanister = "hx54w-raaaa-aaaaa-qafla-cai";
+export const alfaACanister = "ownab-uaaaa-aaaap-qp2na-cai";
 export const kongCanister = "2ipq2-uqaaa-aaaar-qailq-cai";
 
 export class StrategiesService {

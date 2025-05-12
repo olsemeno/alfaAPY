@@ -124,7 +124,7 @@ dfx start --background --clean
 To deploy the vault canister with the specified ID, run:
 
 ```bash
-dfx deploy vault --no-wallet --specified-id "hx54w-raaaa-aaaaa-qafla-cai"
+dfx deploy vault --no-wallet --specified-id "ownab-uaaaa-aaaap-qp2na-cai"
 ```
 
 ## Unit Tests

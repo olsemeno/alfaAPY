@@ -11,7 +11,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Provider store={store}>
       <IdentityKitProvider
-        signerClientOptions={{ targets: ["hx54w-raaaa-aaaaa-qafla-cai"] }}
+        signerClientOptions={{ targets: ["ownab-uaaaa-aaaap-qp2na-cai"] }}
       >
         <App />
       </IdentityKitProvider>
