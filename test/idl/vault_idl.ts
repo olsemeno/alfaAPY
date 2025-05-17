@@ -91,6 +91,10 @@ export const idlFactory = ({ IDL }) => {
         'current_shares' : IDL.Nat,
         'amount' : IDL.Nat,
     });
+    const TokenInfo = IDL.Record({
+        'ledger' : IDL.Principal,
+        'symbol' : IDL.Text,
+    });
     return IDL.Service({
         'accept_investment' : IDL.Func(
             [AcceptInvestmentArgs],
@@ -117,6 +121,8 @@ export const idlFactory = ({ IDL }) => {
             [],
         ),
         'withdraw' : IDL.Func([WithdrawArgs], [WithdrawResponse], []),
+        'get_icpswap_quote' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
+        'swap_icpswap' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
     });
 };
 export const init = ({ IDL }) => {

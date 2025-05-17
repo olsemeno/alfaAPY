@@ -18,6 +18,9 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 use kongswap_canister::user_balances::UserBalancesReply;
 pub use kongswap_canister::pools::{PoolsReply, Response};
 
+use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
+use ::types::exchanges::TokenInfo;
+
 use crate::providers::kong::kong::user_balances;
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
@@ -75,6 +78,33 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
+// Temporary functions for testing
+
+#[update]
+async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    let icpswap_quote_result = icpswap_quote(input_token, output_token, amount).await;
+    icpswap_quote_result
+}
+
+#[update]
+async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    let kongswap_quote_result = kongswap_quote(input_token, output_token, amount).await;
+    kongswap_quote_result
+}
+
+#[update]
+async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    let swap_icrc2_result = swap_icrc2_icpswap(input_token, output_token, amount).await;
+    swap_icrc2_result.amount_out
+}
+
+#[update]
+async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    let swap_icrc2_result = swap_icrc2_kong(input_token, output_token, amount).await;
+    swap_icrc2_result.amount_out
+}
+
+// End of temporary functions for testing
 
 /// Accepts an investment into a specified strategy.
 ///

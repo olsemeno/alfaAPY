@@ -102,6 +102,11 @@ type WithdrawResponse = record {
     amount : nat
 };
 
+type TokenInfo = record {
+    symbol : text;
+    ledger : principal;
+};
+
 service : (opt Conf) -> {
     accept_investment : (WithdrawArgs) -> (DepositResponse);
     get_config : () -> (Conf) query;
@@ -109,7 +114,10 @@ service : (opt Conf) -> {
     user_balance_all : () -> (vec UserBalancesReply);
     user_strategies : (principal) -> (vec UserStrategyResponse);
     withdraw : (WithdrawArgs) -> (WithdrawResponse);
-
-     icrc10_supported_standards : () -> (vec SupportedStandard) query;
-     icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
+    icrc10_supported_standards : () -> (vec SupportedStandard) query;
+    icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
+    get_icpswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    get_kongswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    swap_icpswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    swap_kongswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
 }

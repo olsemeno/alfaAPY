@@ -1,6 +1,8 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
+use crate::ICPSwapSwapPoolResult;
+
 #[derive(CandidType, Clone, Debug, Serialize, Deserialize)]
 pub struct Args {
     pub amountIn: String,
@@ -8,4 +10,4 @@ pub struct Args {
     pub amountOutMinimum: String,
 }
 
-pub type Response = Result<Nat, String>;
+pub type Response = ICPSwapSwapPoolResult<Nat>;

@@ -1,3 +1,4 @@
-pub mod deposit_from;
+pub mod depositFrom;
 pub mod swap;
 pub mod withdraw;
+pub mod getTokenMeta;

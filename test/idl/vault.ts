@@ -94,6 +94,10 @@ export interface WithdrawResponse {
     'current_shares' : bigint,
     'amount' : bigint,
 }
+export interface TokenInfo {
+    'ledger' : Principal,
+    'symbol' : string,
+}
 export interface _SERVICE {
     'accept_investment' : ActorMethod<[AcceptInvestmentArgs], DepositResponse>,
     'get_config' : ActorMethod<[], Conf>,
@@ -104,6 +108,8 @@ export interface _SERVICE {
     'user_balance_all' : ActorMethod<[Principal], Array<UserBalancesReply>>,
     'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
     'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
+    'get_icpswap_quote' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'swap_icpswap' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

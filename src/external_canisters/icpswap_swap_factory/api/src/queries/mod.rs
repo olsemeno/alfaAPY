@@ -1,2 +1,2 @@
-pub mod get_pool;
-pub mod get_pools;
+pub mod getPool;
+pub mod getPools;

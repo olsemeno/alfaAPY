@@ -1,9 +1,11 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
+use crate::ICPSwapSwapPoolResult;
+
 pub type Args = (Nat,);
 
-pub type Response = Result<Position, String>;
+pub type Response = ICPSwapSwapPoolResult<Position, String>;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct Position {

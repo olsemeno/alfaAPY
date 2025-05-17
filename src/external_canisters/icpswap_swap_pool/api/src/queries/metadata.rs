@@ -1,9 +1,11 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
+use crate::ICPSwapSwapPoolResult;
+
 pub use crate::Token;
 
-pub type Response = Result<Metadata, String>;
+pub type Response = ICPSwapSwapPoolResult<Metadata, String>;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {

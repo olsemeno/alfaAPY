@@ -5,13 +5,60 @@ use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 
 use types::exchanges::TokenInfo;
 use types::swap_tokens::SuccessResult;
+use types::exchange_id::ExchangeId;
 
 use crate::swap::token_swaps::kongswap::KongSwapClient;
 use crate::swap::token_swaps::icpswap::ICPSwapClient;
 use crate::swap::token_swaps::swap_client::SwapClient;
 
 pub const KONG_BE_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 2, 48, 2, 23, 1, 1]);
-pub const ICPSWAP_SWAP_POOL_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 2, 48, 2, 23, 1, 1]); // TODO: Fix canister id
+
+// Temporary functions for testing
+
+pub(crate) async fn icpswap_quote(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+) -> u128 {
+    let icpswap_client = Box::new(
+        ICPSwapClient::new(
+            input_token.clone(),
+            output_token.clone()
+        ).await
+    );
+
+    match icpswap_client.quote(amount).await {
+        Ok(result) => match result {
+            Ok(quote) => quote.amount_out,
+            Err(e) => trap(format!("ICPSwap quote error: {:?}", e).as_str()),
+        },
+        Err(e) => trap(format!("ICPSwap quote failed: {:?}", e).as_str()),
+    }
+}
+
+pub(crate) async fn kongswap_quote(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+) -> u128 {
+    let kongswap_client = Box::new(
+        KongSwapClient::new(
+            KONG_BE_CANISTER,
+            input_token.clone(),
+            output_token.clone()
+        )
+    );
+
+    match kongswap_client.quote(amount).await {
+        Ok(result) => match result {
+            Ok(quote) => quote.amount_out,
+            Err(e) => trap(format!("KongSwap quote error: {:?}", e).as_str()),
+        },
+        Err(e) => trap(format!("KongSwap quote failed: {:?}", e).as_str()),
+    }
+}
+
+// End of temporary functions for testing
 
 pub(crate) async fn swap_icrc2(
     input_token: TokenInfo,
@@ -28,10 +75,9 @@ pub(crate) async fn swap_icrc2(
 
     let icpswap_client = Box::new(
         ICPSwapClient::new(
-            ICPSWAP_SWAP_POOL_CANISTER,
             input_token.clone(),
             output_token.clone()
-        )
+        ).await
     );
 
     // Fetch KongSwap quote
@@ -81,10 +127,9 @@ pub(crate) async fn swap_icrc2_icpswap(
 ) -> SuccessResult {
     let swap_client = Box::new(
         ICPSwapClient::new(
-            ICPSWAP_SWAP_POOL_CANISTER,
             input_token.clone(),
             output_token
-        )
+        ).await
     );
 
     // ICRC2 APPROVE
@@ -116,10 +161,7 @@ pub(crate) async fn swap_icrc2_icpswap(
         }
     }
 
-    let swap_result = match swap_client
-        .swap(amount)
-        .await
-    {
+    let swap_result = match swap_client.swap(amount).await {
         Ok(r) => {
             r
         }
@@ -131,7 +173,10 @@ pub(crate) async fn swap_icrc2_icpswap(
 
     match swap_result {
         Ok(x) => {
-            SuccessResult { amount_out: x.amount_out }
+            SuccessResult {
+                swap_provider: ExchangeId::ICPSwap,
+                amount_out: x.amount_out
+            }
         }
         Err(e) => {
             let msg = format!("Swap error 2 (ICPSWAP): {e:?}");
@@ -145,7 +190,6 @@ pub(crate) async fn swap_icrc2_kong(
     output_token: TokenInfo,
     amount: u128,
 ) -> SuccessResult {
-
     let swap_client = Box::new(
         KongSwapClient::new(
             KONG_BE_CANISTER,
@@ -182,10 +226,7 @@ pub(crate) async fn swap_icrc2_kong(
         }
     }
 
-    let swap_result = match swap_client
-        .swap(amount)
-        .await
-    {
+    let swap_result = match swap_client.swap(amount).await {
         Ok(r) => {
             r
         }
@@ -197,7 +238,10 @@ pub(crate) async fn swap_icrc2_kong(
 
     match swap_result {
         Ok(x) => {
-            SuccessResult { amount_out: x.amount_out }
+            SuccessResult {
+                swap_provider: ExchangeId::KongSwap,
+                amount_out: x.amount_out
+            }
         }
         Err(e) => {
             let msg = format!("Swap error 2 (KONGSWAP): {e:?} arguments: {}", amount);

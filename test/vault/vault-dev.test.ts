@@ -189,7 +189,6 @@ describe("VR Test PROD", () => {
         });
     });
 
-
     describe(".rebalance", () => {
         // it("Rebalance", async function () {
         //     console.log("== START REBALANCE TEST ==");
@@ -201,6 +200,30 @@ describe("VR Test PROD", () => {
         //         console.log(e)
         //     }
         // });
+    });
+
+    describe(".swap_icpswap", () => {
+        const icpCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+        const ckBtcCanisterId = "mxzaz-hqaaa-aaaar-qaada-cai";
+
+        it("Swaps ICP for USDC", async () => {
+            const inputToken = {
+                ledger: Principal.fromText(icpCanisterId),
+                symbol: "ICP",
+            };
+            const outputToken = {
+                ledger: Principal.fromText(ckBtcCanisterId),
+                symbol: "ckBTC",
+            };
+
+            const amount = 90000n; // 0.0009 ICP
+
+            const quote = await actorVault.get_icpswap_quote(inputToken, outputToken, amount);
+            console.log("ICP/ckBTC quote:", quote);
+
+            const swapResult = await actorVault.swap_icpswap(inputToken, outputToken, amount);
+            console.log("Swap result:", swapResult);
+        });
     });
 });
 
