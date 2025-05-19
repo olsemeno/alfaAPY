@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 
 use crate::enums::{UserEventParams, SystemEventParams};
 use crate::events::event_service::{create_user_event, create_system_event};
-use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, to_tokens_info, withdraw_from_pool};
+use crate::liquidity::liquidity_service::{add_liquidity_to_pool, get_pools_data, withdraw_from_pool};
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::calculator::Calculator;
@@ -18,6 +18,8 @@ use crate::swap::swap_service::swap_icrc2_kong;
 use crate::swap::token_swaps::nat_to_u128;
 use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
 use crate::util::util::nat_to_f64;
+use types::exchanges::TokenInfo;
+use kongswap_canister::PoolReply;
 
 
 #[async_trait]
@@ -64,6 +66,20 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         self.set_initial_deposit(initial_deposit);
     }
 
+    fn get_token0(&self, pool: PoolReply) -> TokenInfo {
+        TokenInfo {
+            ledger: Principal::from_text(pool.address_0).unwrap(),
+            symbol: pool.symbol_0.clone(),
+        }
+    }
+
+    fn get_token1(&self, pool: PoolReply) -> TokenInfo {
+        TokenInfo {
+            ledger: Principal::from_text(pool.address_1).unwrap(),
+            symbol: pool.symbol_1.clone(),
+        }
+    }
+
     /// Deposits an amount of tokens into the strategy
     /// 
     /// # Arguments
@@ -103,7 +119,11 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
 
         if let Some(ref pool_reply) = self.get_current_pool() {
             // Calculate new shares for investor's deposit
-            let new_shares = Calculator::calculate_shares(nat_to_f64(&amount), nat_to_f64(&self.get_total_balance()), nat_to_f64(&self.get_total_shares()));
+            let new_shares = Calculator::calculate_shares(
+                nat_to_f64(&amount),
+                nat_to_f64(&self.get_total_balance()),
+                nat_to_f64(&self.get_total_shares())
+            );
 
             // Update total balance and total shares
             self.set_total_balance(self.get_total_balance() + amount.clone());
@@ -113,7 +133,16 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             // Update initial deposit
             self.update_initial_deposit(investor, amount.clone());
 
-            let resp = add_liquidity_to_pool(amount.clone(), pool_reply.clone()).await;
+            let token0 = self.get_token0(pool_reply.clone());
+            let token1 = self.get_token1(pool_reply.clone());
+
+            // Add liquidity to pool
+            let add_liquidity_response = add_liquidity_to_pool(
+                amount.clone(),
+                pool_reply.clone(),
+                token0.clone(),
+                token1.clone()
+            ).await;
 
             save_strategy(self.clone_self());
 
@@ -131,7 +160,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 amount: amount,
                 shares: Nat::from(new_shares as u128),
                 tx_id: 0,
-                request_id: resp.request_id,
+                request_id: add_liquidity_response.request_id,
             }
         } else {
             trap("Rebalance");
@@ -173,17 +202,23 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
         let pool = self.get_current_pool();
 
         if let Some(pool) = pool {
-            let tokens_info = to_tokens_info(pool.clone());
-
+            let token0 = self.get_token0(pool.clone());
+            let token1 = self.get_token1(pool.clone());
 
             // trap(format!("shares: {:?}, total: {:?}", shares, self.get_total_shares()).as_str());
             // Remove liquidity from pool
-            let withdraw_response = withdraw_from_pool(self.get_total_shares() ,shares.clone(),pool).await;
+            let withdraw_response = withdraw_from_pool(
+                self.get_total_shares(),
+                shares.clone(),
+                pool.clone(),
+                token0.clone(),
+                token1.clone()
+            ).await;
 
             // Swap token_1 to token_0 (to base token)
             let swap_response = swap_icrc2_kong(
-                tokens_info.token_1,
-                tokens_info.token_0.clone(),
+                token1.clone(),
+                token0.clone(),
                 nat_to_f64(&withdraw_response.token_1_amount) as u128,
             ).await;
 
@@ -191,7 +226,7 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             let amount_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
 
             let transfer_result = icrc1_transfer(
-                tokens_info.token_0.ledger,
+                token0.ledger,
                 &TransferArg {
                     from_subaccount: None,
                     to: Account {
@@ -224,7 +259,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             let new_shares = shares_before_withdraw.clone() - shares;
             self.update_user_shares(investor.clone(), new_shares.clone());
 
-
             // Update initial deposit //TODO WIP - need to fix
             // let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
             // // Remaining initial deposit proportional to the new shares
@@ -232,15 +266,14 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             // let new_initial_deposit = initial_deposit / shares_before_withdraw.clone() * new_shares.clone();
             // self.update_initial_deposit(investor.clone(), new_initial_deposit.clone());
 
-
             save_strategy(self.clone_self());
 
             // Create event for withdraw
             create_user_event(
                 UserEventParams::RemoveLiquidity {
                     amount: amount_to_withdraw.clone(),
-                    token: tokens_info.token_0.ledger.to_text(),
-                    symbol: tokens_info.token_0.symbol.clone(),
+                    token: token0.ledger.to_text(),
+                    symbol: token0.symbol.clone(),
                 },
                 investor,
             );
@@ -322,21 +355,27 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                     };
                 }
 
+                let token0 = self.get_token0(current_pool.clone());
+                let token1 = self.get_token1(current_pool.clone());
+
                 // Remove liquidity from current pool
-                let withdraw_response = withdraw_from_pool(self.get_total_shares(), self.get_total_shares(), current_pool.clone()).await;
+                let withdraw_response = withdraw_from_pool(
+                    self.get_total_shares(),
+                    self.get_total_shares(),
+                    current_pool.clone(),
+                    token0.clone(),
+                    token1.clone()
+                ).await;
 
                 let token_0_amount = withdraw_response.token_0_amount;
                 let token_1_amount = withdraw_response.token_1_amount;
 
-                let tokens_info = to_tokens_info(current_pool.clone());
-
                 // Swap withdrawed token_1 to token_0 (to base token)
                 let swap_response = swap_icrc2_kong(
-                    tokens_info.token_1,
-                    tokens_info.token_0,
+                    token1.clone(),
+                    token0.clone(),
                     nat_to_u128(token_1_amount)
                 ).await;
-
 
                 // Calculate total token_0 to send in new pool after swap
                 let token_0_to_pool_amount = token_0_amount + swap_response.amount_out;
@@ -344,7 +383,9 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 // Add liquidity to new pool
                 let _ = add_liquidity_to_pool(
                     token_0_to_pool_amount,
-                    max_apy_pool.clone().unwrap()
+                    max_apy_pool.clone().unwrap(),
+                    token0,
+                    token1
                 ).await;
 
                 // Create event for rebalance

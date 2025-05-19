@@ -5,7 +5,7 @@ use crate::ICPSwapSwapPoolResult;
 
 pub use crate::Token;
 
-pub type Response = ICPSwapSwapPoolResult<Metadata, String>;
+pub type Response = ICPSwapSwapPoolResult<Metadata>;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {

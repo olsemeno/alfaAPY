@@ -5,20 +5,20 @@ use crate::ICPSwapSwapPoolResult;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct TokenMeta {
-    pub token0: Vec<MetadataRecord>,
-    pub token1: Vec<MetadataRecord>,
+    pub token0: Vec<TokenMetadataRecord>,
+    pub token1: Vec<TokenMetadataRecord>,
     pub token0Fee: Option<Nat>,
     pub token1Fee: Option<Nat>,
 }
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct MetadataRecord(
+pub struct TokenMetadataRecord(
     #[serde(rename = "0")] pub String,
-    #[serde(rename = "1")] pub MetadataValue,
+    #[serde(rename = "1")] pub TokenMetadataValue,
 );
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub enum MetadataValue {
+pub enum TokenMetadataValue {
     #[serde(rename = "Int")]
     Int(i128),
     #[serde(rename = "Nat")]

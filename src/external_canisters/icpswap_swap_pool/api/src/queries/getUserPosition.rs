@@ -5,10 +5,10 @@ use crate::ICPSwapSwapPoolResult;
 
 pub type Args = (Nat,);
 
-pub type Response = ICPSwapSwapPoolResult<Position, String>;
+pub type Response = ICPSwapSwapPoolResult<UserPosition>;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct Position {
+pub struct UserPosition {
     pub tickUpper: i32,
     pub tokensOwed0: Nat,
     pub tokensOwed1: Nat,

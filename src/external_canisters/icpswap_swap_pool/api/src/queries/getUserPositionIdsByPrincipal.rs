@@ -5,4 +5,4 @@ use crate::ICPSwapSwapPoolResult;
 
 pub type Args = (String,);
 
-pub type Response = ICPSwapSwapPoolResult<Vec<Nat>, String>;
+pub type Response = ICPSwapSwapPoolResult<Vec<Nat>>;

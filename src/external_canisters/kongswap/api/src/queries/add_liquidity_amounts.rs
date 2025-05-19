@@ -1,7 +1,6 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
-
 pub type Args =  (String, Nat, String);
 pub type Response = (Result<AddLiquidityAmountsReply, String>,);
 
