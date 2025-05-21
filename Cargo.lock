@@ -893,6 +893,7 @@ dependencies = [
  "kongswap_canister_c2c_client",
  "lazy_static",
  "num-traits",
+ "once_cell",
  "serde",
  "serde_bytes",
  "serde_json",

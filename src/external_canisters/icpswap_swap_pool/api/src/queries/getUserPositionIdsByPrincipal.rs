@@ -1,8 +1,7 @@
-use candid::{CandidType, Nat};
-use serde::{Deserialize, Serialize};
+use candid::{Nat, Principal};
 
 use crate::ICPSwapSwapPoolResult;
 
-pub type Args = (String,);
+pub type Args = (Principal,);
 
-pub type Response = ICPSwapSwapPoolResult<Vec<Nat>>;
+pub type Response = (ICPSwapSwapPoolResult<Vec<Nat>>,);

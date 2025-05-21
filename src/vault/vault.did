@@ -99,12 +99,23 @@ type WithdrawArgs = record {
 
 type WithdrawResponse = record {
     current_shares : nat;
-    amount : nat
+    amount : nat;
 };
 
 type TokenInfo = record {
     symbol : text;
     ledger : principal;
+};
+
+type AddLiquidityResponse = record {
+    token_0_amount : nat;
+    token_1_amount : nat;
+    request_id : nat64;
+};
+
+type WithdrawFromPoolResponse = record {
+    token_0_amount : nat;
+    token_1_amount : nat;
 };
 
 service : (opt Conf) -> {
@@ -120,4 +131,7 @@ service : (opt Conf) -> {
     get_kongswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
     swap_icpswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
     swap_kongswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    icpswap_withdraw : (token_out : TokenInfo, amount : nat, token_fee : nat) -> (variant { Ok : nat; Err : text });
+    icpswap_add_liquidity : (amount: nat, token_in : TokenInfo, token_out : TokenInfo) -> (AddLiquidityResponse);
+    icpswap_withdraw_from_pool : (total_shares: nat, shares: nat, token_in: TokenInfo, token_out: TokenInfo) -> (WithdrawFromPoolResponse);
 }

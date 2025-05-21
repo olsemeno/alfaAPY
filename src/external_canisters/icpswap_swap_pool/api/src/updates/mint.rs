@@ -1,4 +1,4 @@
-use candid::{CandidType, Nat};
+use candid::{CandidType, Nat, Int};
 use serde::{Deserialize, Serialize};
 
 use crate::ICPSwapSwapPoolResult;
@@ -10,8 +10,8 @@ pub struct Args {
 	pub token1: String, 
 	pub amount0Desired: String, 
 	pub amount1Desired: String, 
-	pub tickUpper: i32,
-	pub tickLower: i32,
+	pub tickUpper: Int,
+	pub tickLower: Int,
 }
 
 pub type Response = ICPSwapSwapPoolResult<Nat>;

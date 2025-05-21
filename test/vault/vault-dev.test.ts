@@ -14,13 +14,20 @@ export const isLocalENV = true;
 describe("VR Test PROD", () => {
     const canisterId = "ownab-uaaaa-aaaap-qp2na-cai";
     const identity = "87654321876543218765432187654399";
-    // const ledgerCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-    const ledgerCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";
+
+    const icpCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    const ckBtcCanisterId = "mxzaz-hqaaa-aaaar-qaada-cai";
+    const pandaCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";
+
+    const ledgerCanisterId = icpCanisterId; // ICP
+
+    // const ledgerCanisterId = "druyg-tyaaa-aaaaq-aactq-cai"; // PANDA
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
     let ledgerActor: ActorSubclass<ledgerService>
     let actorVault: ActorSubclass<VaultType>
     let balance;
+    let tokenMetadata;
 
     beforeEach(async () => {
         memberIdentity = getIdentity(identity);
@@ -32,9 +39,18 @@ describe("VR Test PROD", () => {
         console.log("Member address:", userAddress);
 
         ledgerActor = await getTypedActor<ledgerService>(ledgerCanisterId, memberIdentity, ledger_idl);
-        balance = await ledgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
 
-        console.log("Balance:", balance);
+
+        // ICP balance
+        let icpLedgerActor = await getTypedActor<ledgerService>(icpCanisterId, memberIdentity, ledger_idl);
+        let icpBalance = await icpLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
+        console.log("ICP balance:", icpBalance);
+
+
+        // ckBTC balance
+        let ckBtcLedgerActor = await getTypedActor<ledgerService>(ckBtcCanisterId, memberIdentity, ledger_idl);
+        let ckBtcBalance = await ckBtcLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
+        console.log("ckBTC balance:", ckBtcBalance);
 
         actorVault = await getTypedActor<VaultType>(canisterId, memberIdentity, idlFactory);
     });
@@ -202,27 +218,65 @@ describe("VR Test PROD", () => {
         // });
     });
 
-    describe(".swap_icpswap", () => {
-        const icpCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-        const ckBtcCanisterId = "mxzaz-hqaaa-aaaar-qaada-cai";
+    context("ICPSWAP", () => {
+        const token0 = {
+            ledger: Principal.fromText(icpCanisterId),
+            symbol: "ICP",
+        };
+        const token1 = {
+            ledger: Principal.fromText(ckBtcCanisterId),
+            symbol: "ckBTC",
+        };
+        const token0Fee = 10_000n;
+        const token1Fee = 10n;
 
-        it("Swaps ICP for USDC", async () => {
-            const inputToken = {
-                ledger: Principal.fromText(icpCanisterId),
-                symbol: "ICP",
-            };
-            const outputToken = {
-                ledger: Principal.fromText(ckBtcCanisterId),
-                symbol: "ckBTC",
-            };
+        describe(".get_icpswap_quote", () => {
+            it("Returns ICP/ckBTC quote", async () => {
+                const amount = 300_000n;
 
-            const amount = 90000n; // 0.0009 ICP
+                const quote = await actorVault.get_icpswap_quote(token0, token1, amount);
+                console.log("ICP/ckBTC quote:", quote);
+            });
+        });
 
-            const quote = await actorVault.get_icpswap_quote(inputToken, outputToken, amount);
-            console.log("ICP/ckBTC quote:", quote);
+        describe(".swap_icpswap", () => {
+            it("Swaps ICP for USDC", async () => {
+                const amount = 270_000n;
 
-            const swapResult = await actorVault.swap_icpswap(inputToken, outputToken, amount);
-            console.log("Swap result:", swapResult);
+                const quote = await actorVault.get_icpswap_quote(token0, token1, amount);
+                console.log("ICP/ckBTC quote:", quote);
+
+                const swapResult = await actorVault.swap_icpswap(token0, token1, amount);
+                console.log("Swap result:", swapResult);
+            });
+        });
+
+        describe(".icpswap_withdraw_1", () => {
+            it("Withdraws", async () => {
+                const amount = 955_281n;
+
+                const withdrawResult = await actorVault.icpswap_withdraw(token0, amount, token0Fee);
+                console.log("Withdraw result:", withdrawResult);
+            });
+        });
+
+        describe(".icpswap_add_liquidity", () => {
+            it("Adds liquidity to ICP/ckBTC pool", async () => {
+                const amount = 500_000n; // 0.005 ICP
+
+                const addLiquidityResult = await actorVault.icpswap_add_liquidity(amount, token0, token1);
+                console.log("Add liquidity result:", addLiquidityResult);
+            });
+        });
+
+        describe(".icpswap_withdraw_from_pool", () => {
+            it("Withdraws ICP from ICP/ckBTC pool", async () => {
+                const shares = 1000000000000000000n; 
+                const total_shares = 1000000000000000000n;
+
+                const withdrawResult = await actorVault.icpswap_withdraw_from_pool(total_shares, shares, token0, token1);
+                console.log("Withdraw result:", withdrawResult);
+            });
         });
     });
 });

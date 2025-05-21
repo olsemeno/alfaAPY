@@ -1,14 +1,15 @@
-use candid::{CandidType, Nat, Int};
+use candid::{CandidType, Nat, Principal, Int};
 use serde::{Deserialize, Serialize};
 
 use crate::ICPSwapSwapPoolResult;
 
-pub type Args = (Nat,);
+pub type Args = (Principal,);
 
-pub type Response = (ICPSwapSwapPoolResult<UserPosition>,);
+pub type Response = (ICPSwapSwapPoolResult<Vec<UserPositionWithId>>,);
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct UserPosition {
+pub struct UserPositionWithId {
+    pub id: Nat,
     pub tickUpper: Int,
     pub tokensOwed0: Nat,
     pub tokensOwed1: Nat,

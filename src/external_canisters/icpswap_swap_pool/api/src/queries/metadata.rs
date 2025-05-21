@@ -1,4 +1,4 @@
-use candid::{CandidType, Nat};
+use candid::{CandidType, Nat, Int};
 use serde::{Deserialize, Serialize};
 
 use crate::ICPSwapSwapPoolResult;
@@ -12,7 +12,7 @@ pub struct Metadata {
     pub fee: Nat,
     pub key: String,
     pub sqrtPriceX96: Nat,
-    pub tick: i32,
+    pub tick: Int,
     pub liquidity: Nat,
     pub token0: Token,
     pub token1: Token,

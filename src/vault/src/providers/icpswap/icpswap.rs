@@ -1,5 +1,6 @@
 use types::CanisterId;
-use candid::Nat;
+use candid::{Nat, Principal, Int};
+use once_cell::sync::Lazy;
 
 use crate::swap::token_swaps::nat_to_u128;
 use types::exchanges::TokenInfo;
@@ -10,9 +11,16 @@ use icpswap_swap_pool_canister::metadata::Metadata;
 use icpswap_swap_pool_canister::getUserPosition::UserPosition;
 use icpswap_swap_pool_canister::decreaseLiquidity::DecreaseLiquidityResponse;
 use icpswap_swap_pool_canister::claim::ClaimResponse;
+use icpswap_swap_pool_canister::getUserUnusedBalance::UserUnusedBalance;
+use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 
-pub const SWAP_FACTORY_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
-pub const SWAP_CALCULATOR_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]); // TODO: change to real canister id
+use crate::util::util::principal_to_canister_id;
+
+// pub const SWAP_FACTORY_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
+
+pub static SWAP_FACTORY_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("4mmnk-kiaaa-aaaag-qbllq-cai"));
+pub static SWAP_CALCULATOR_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("phr2m-oyaaa-aaaag-qjuoq-cai"));
+
 pub const SWAP_FEE: u128 = 3000;
 pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
 pub const ICP_TOKEN_STANDARD: &str = "ICP";
@@ -38,7 +46,7 @@ pub async fn get_pool(token_in: TokenInfo, token_out: TokenInfo) -> Result<ICPSw
         token1: make_icpswap_token(&token_out),
     };
 
-    match icpswap_swap_factory_canister_c2c_client::getPool(SWAP_FACTORY_CANISTER, pool_args).await {
+    match icpswap_swap_factory_canister_c2c_client::getPool(*SWAP_FACTORY_CANISTER, pool_args).await {
         Ok(response) => {
             match response {
                 ICPSwapSwapFactoryResult::Ok(pool) => {
@@ -216,9 +224,9 @@ pub async fn mint(
     amount0_desired: String, 
     amount1_desired: String, 
     fee: Nat, 
-    tick_lower: i32, 
-    tick_upper: i32
-) -> Result<u128, String> {
+    tick_lower: Int,
+    tick_upper: Int
+) -> Result<Nat, String> {
     let args = &icpswap_swap_pool_canister::mint::Args {
         fee,
         tickUpper: tick_upper,
@@ -233,7 +241,7 @@ pub async fn mint(
         Ok(response) => {
             match response {
                 ICPSwapSwapPoolResult::Ok(minted_amount_nat) => {
-                    Ok(nat_to_u128(minted_amount_nat))
+                    Ok(minted_amount_nat)
                 }
                 ICPSwapSwapPoolResult::Err(error) => {
                     Err(format!("Mint error 2 (ICPSWAP) : {:?} arguments {:?}", error, args))
@@ -246,20 +254,60 @@ pub async fn mint(
     }
 }
 
-pub async fn get_user_position_ids_by_principal(canister_id: CanisterId, principal: String) -> Result<Vec<Nat>, String> {
-    match icpswap_swap_pool_canister_c2c_client::getUserPositionIdsByPrincipal(canister_id, &(principal,)).await {
+pub async fn get_user_position_ids_by_principal(canister_id: CanisterId, principal: Principal) -> Result<Vec<Nat>, String> {
+    match icpswap_swap_pool_canister_c2c_client::getUserPositionIdsByPrincipal(canister_id, (principal,)).await {
         Ok(response) => {
             match response {
-                ICPSwapSwapPoolResult::Ok(position_ids) => {
+                (ICPSwapSwapPoolResult::Ok(position_ids),) => {
                     Ok(position_ids)
                 }
-                ICPSwapSwapPoolResult::Err(error) => {
+                (ICPSwapSwapPoolResult::Err(error),) => {
                     Err(format!("Get user position ids by principal error 2 (ICPSWAP) : {:?}", error))
                 }
             }
         }
         Err(error) => {
             Err(format!("Get user position ids by principal error 1 (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+pub async fn get_user_positions_by_principal(canister_id: CanisterId, principal: Principal) -> Result<Vec<UserPositionWithId>, String> {
+    match icpswap_swap_pool_canister_c2c_client::getUserPositionsByPrincipal(canister_id, (principal,)).await {
+        Ok(response) => {
+            match response {
+                (ICPSwapSwapPoolResult::Ok(user_positions),) => {
+                    Ok(user_positions)
+                }
+                (ICPSwapSwapPoolResult::Err(error),) => {
+                    Err(format!("Get user positions by principal error 2 (ICPSWAP) : {:?}", error))
+                }
+            }
+        }
+        Err(error) => {
+            Err(format!("Get user positions by principal error 1 (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+pub async fn get_user_unused_balance(canister_id: CanisterId, principal: String) -> Result<UserUnusedBalance, String> {
+    let args = &icpswap_swap_pool_canister::getUserUnusedBalance::Args {
+        principal: principal,
+    };
+
+    match icpswap_swap_pool_canister_c2c_client::getUserUnusedBalance(canister_id, args).await {
+        Ok(response) => {
+            match response {
+                ICPSwapSwapPoolResult::Ok(user_unused_balance) => {
+                    Ok(user_unused_balance)
+                }
+                ICPSwapSwapPoolResult::Err(error) => {
+                    Err(format!("Get user unused balance error 2 (ICPSWAP) : {:?}", error))
+                }
+            }
+        }
+        Err(error) => {
+            Err(format!("Get user unused balance error 1 (ICPSWAP) : {:?}", error))
         }
     }
 }
@@ -321,13 +369,13 @@ pub async fn decrease_liquidity(
 }
 
 pub async fn get_user_position(canister_id: CanisterId, position_id: Nat) -> Result<UserPosition, String> {
-    match icpswap_swap_pool_canister_c2c_client::getUserPosition(canister_id, &(position_id,)).await {
+    match icpswap_swap_pool_canister_c2c_client::getUserPosition(canister_id, (position_id,)).await {
         Ok(response) => {
             match response {
-                ICPSwapSwapPoolResult::Ok(user_position) => {
+                (ICPSwapSwapPoolResult::Ok(user_position),) => {
                     Ok(user_position)
                 }
-                ICPSwapSwapPoolResult::Err(error) => {
+                (ICPSwapSwapPoolResult::Err(error),) => {
                     Err(format!("Get user position error 2 (ICPSWAP) : {:?}", error))
                 }
             }
@@ -366,7 +414,10 @@ pub async fn claim(
 // Swap Calculator canister
 
 pub async fn get_price(sqrt_price_x96: Nat, token_0_decimals: Nat, token_1_decimals: Nat) -> Result<f64, String> {
-    match icpswap_swap_calculator_canister_c2c_client::getPrice(SWAP_CALCULATOR_CANISTER, &(sqrt_price_x96, token_0_decimals, token_1_decimals)).await {
+    match icpswap_swap_calculator_canister_c2c_client::getPrice(
+        *SWAP_CALCULATOR_CANISTER,
+        (sqrt_price_x96, token_0_decimals, token_1_decimals)
+    ).await {
         Ok(response) => {
             Ok(response.0)
         }

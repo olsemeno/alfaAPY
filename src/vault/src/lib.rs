@@ -26,6 +26,12 @@ use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
+use crate::providers::icpswap::icpswap::{withdraw as withdraw_icpswap};
+
+use crate::liquidity::liquidity_service::{add_liquidity_to_pool_icpswap, get_pools_data, withdraw_from_pool_icpswap};
+use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
+
+
 use crate::types::types::{
     AcceptInvestmentArgs,
     DepositResponse,
@@ -79,6 +85,42 @@ fn init(conf: Option<Conf>) {
 }
 
 // Temporary functions for testing
+
+#[update]
+async fn icpswap_withdraw_from_pool(total_shares: Nat, shares: Nat, token_in: TokenInfo, token_out: TokenInfo) -> WithdrawFromPoolResponse {
+    let icpswap_quote_result = withdraw_from_pool_icpswap(
+        total_shares, shares,
+        token_in,
+        token_out
+    ).await;
+    icpswap_quote_result
+}
+
+#[update]
+async fn icpswap_add_liquidity(amount: Nat, token_in: TokenInfo, token_out: TokenInfo) -> AddLiquidityResponse {
+    // let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
+    let icpswap_quote_result = add_liquidity_to_pool_icpswap(
+        amount,
+        token_in,
+        token_out
+    ).await;
+
+    icpswap_quote_result
+}
+
+#[update]
+async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
+    let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
+
+    let icpswap_quote_result = withdraw_icpswap(
+        canister_id,
+        token_out,
+        amount,
+        token_fee
+    ).await;
+
+    icpswap_quote_result.unwrap()
+}
 
 #[update]
 async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {

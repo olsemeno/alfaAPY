@@ -13,15 +13,15 @@ use crate::providers::icpswap::icpswap::{get_pool, get_token_meta, deposit_from,
 use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_pool_canister::ICPSwapSwapPoolResult;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
+use crate::types::types::TokensFee;
 
 pub const SLIPPAGE_TOLERANCE: u128 = 50; // 5%
 
 pub struct ICPSwapClient {
     canister_id: CanisterId,
-    token_in: TokenInfo,
-    token_out: TokenInfo,
+    token0: TokenInfo,
+    token1: TokenInfo,
     pool: ICPSwapPool,
-    token_meta: TokenMeta,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -30,40 +30,34 @@ pub struct DepositFromSuccess {
 }
 
 impl ICPSwapClient {
-    pub async fn new(token_in: TokenInfo, token_out: TokenInfo) -> ICPSwapClient {
-        let pool = match Self::get_pool(token_in.clone(), token_out.clone()).await {
+    pub async fn new(token0: TokenInfo, token1: TokenInfo) -> ICPSwapClient {
+        let pool = match Self::get_pool(token0.clone(), token1.clone()).await {
             Ok(pool) => pool,
             Err(e) => trap(format!("Failed to get pool (ICPSWAP): {}", e).as_str()),
         };
 
         let canister_id = pool.canisterId;
 
-        let token_meta = match Self::get_token_meta(canister_id).await {
-            Ok(token_meta) => token_meta,
-            Err(e) => trap(format!("Failed to get token meta (ICPSWAP): {}", e).as_str()),
-        };
-
         ICPSwapClient {
             canister_id,
-            token_in,
-            token_out,
+            token0, // token0 may be token1 in the pool and vice versa
+            token1, // token1 may be token0 in the pool and vice versa
             pool,
-            token_meta,
         }
     }
 
     fn is_zero_for_one_swap_direction(&self) -> bool {
-        let token_in_str = self.token_in.ledger.to_string();
-        let token_out_str = self.token_out.ledger.to_string();
+        let token0_str = self.token0.ledger.to_string();
+        let token1_str = self.token1.ledger.to_string();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
-            (t0, t1) if t0 == token_in_str && t1 == token_out_str => true,
-            (t0, t1) if t0 == token_out_str && t1 == token_in_str => false,
+            (t0, t1) if t0 == token0_str && t1 == token1_str => true,
+            (t0, t1) if t0 == token1_str && t1 == token0_str => false,
             (t0, t1) => trap(
                 format!(
                     "Invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}", 
-                    self.token_in,
-                    self.token_out,
+                    self.token0,
+                    self.token1,
                     t0,
                     t1
                 ).as_str()
@@ -71,54 +65,54 @@ impl ICPSwapClient {
         }
     }
 
-    fn get_token_fee(&self, token: &TokenInfo) -> Nat {
-        let token_address = token.ledger.to_string();
+    fn get_tokens_fee(&self, token_meta: &TokenMeta) -> TokensFee {
+        let token0_str = self.token0.ledger.to_string();
+        let token1_str = self.token1.ledger.to_string();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
-            (t0, _) if t0 == token_address => {
-                // If token is token0, use token0Fee
-                match &self.token_meta.token0Fee {
-                    Some(fee) => fee.clone(),
-                    None => Nat::from(0u8)
-                }
+            (t0, t1) if t0 == token0_str && t1 == token1_str => TokensFee {
+                token0_fee: token_meta.token0Fee.clone(),
+                token1_fee: token_meta.token1Fee.clone(),
             },
-            (_, t1) if t1 == token_address => {
-                // If token is token1, use token1Fee
-                match &self.token_meta.token1Fee {
-                    Some(fee) => fee.clone(),
-                    None => Nat::from(0u8)
-                }
+            (t0, t1) if t0 == token1_str && t1 == token0_str => TokensFee {
+                token0_fee: token_meta.token1Fee.clone(),
+                token1_fee: token_meta.token0Fee.clone(),
             },
-            _ => {
-                // Should fall into one of the above cases
-                Nat::from(0u8)
-            }
+            (t0, t1) => trap(
+                format!(
+                    "Invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}", 
+                    self.token0,
+                    self.token1,
+                    t0,
+                    t1
+                ).as_str()
+            ),
         }
     }
 
-    async fn get_pool(token_in: TokenInfo, token_out: TokenInfo) -> Result<ICPSwapPool, String> {
-        match get_pool(token_in, token_out).await {
+    async fn get_pool(token0: TokenInfo, token1: TokenInfo) -> Result<ICPSwapPool, String> {
+        match get_pool(token0, token1).await {
             Ok(pool) => Ok(pool),
             Err(e) => Err(format!("Failed to get pool (ICPSWAP): {}", e)),
         }
     }
 
-    async fn get_token_meta(canister_id: CanisterId) -> Result<TokenMeta, String> {
-        match get_token_meta(canister_id).await {
+    async fn get_token_meta(&self) -> Result<TokenMeta, String> {
+        match get_token_meta(self.canister_id).await {
             Ok(token_meta) => Ok(token_meta),
             Err(e) => Err(format!("Failed to get token meta (ICPSWAP): {}", e)),
         }
     }
     
-    async fn deposit_from(&self, amount: Nat) -> Result<Nat, String> {
-        match deposit_from(self.canister_id, self.token_in.clone(), amount, self.get_token_fee(&self.token_in)).await {
+    async fn deposit_from(&self, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
+        match deposit_from(self.canister_id, self.token0.clone(), amount, token_fee).await {
             Ok(deposited_amount) => Ok(deposited_amount),
             Err(e) => Err(format!("Failed to deposit_from (ICPSWAP): {}", e)),
         }
     }
 
-    async fn withdraw(&self, amount: Nat) -> Result<Nat, String> {
-        match withdraw(self.canister_id, self.token_out.clone(), amount, self.get_token_fee(&self.token_out)).await {
+    async fn withdraw(&self, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
+        match withdraw(self.canister_id, self.token1.clone(), amount, token_fee).await {
             Ok(withdrawn_amount) => Ok(withdrawn_amount),
             Err(e) => Err(format!("Failed to withdraw (ICPSWAP): {}", e)),
         }
@@ -147,12 +141,29 @@ impl SwapClient for ICPSwapClient {
 
     async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
         // Flow:
-        // 1. Deposit from token_in to ICPSwap
+        // 1. Deposit from token0 to ICPSwap
         // 2. Swap
-        // 3. Withdraw from ICPSwap to token_out
+        // 3. Withdraw from ICPSwap to token1
+
+        // TODO: Fix token meta fetching
+        // let token_meta = match self.get_token_meta().await {
+        //     Ok(token_meta) => token_meta,
+        //     Err(e) => trap(format!("Failed to get token meta (ICPSWAP): {}", e).as_str()),
+        // };
+
+        // let tokens_fee = self.get_tokens_fee(&token_meta);
+        // let token0_fee = tokens_fee.token0_fee.unwrap_or(Nat::from(0u8));
+        // let token1_fee = tokens_fee.token1_fee.unwrap_or(Nat::from(0u8));
+
+        //TODO: Remove hardcoded fees
+        let token0_fee = Nat::from(10_000u128); // For ICP
+        let token1_fee = Nat::from(10u8); // For ckBTC
 
         // 1. Deposit
-        let deposited_amount = match self.deposit_from(Nat::from(amount as u128)).await {
+        let deposited_amount = match self.deposit_from(
+            Nat::from(amount as u128),
+            token0_fee
+        ).await {
             Ok(amt) => amt,
             Err(e) => trap(format!("Failed to deposit_from (ICPSWAP): {}", e).as_str()),
         };
@@ -171,7 +182,7 @@ impl SwapClient for ICPSwapClient {
             Ok(amt) => amt,
             Err(e) => {
                 // If swap fails, withdraw the deposited amount
-                match self.withdraw(deposited_amount.clone()).await {
+                match self.withdraw(deposited_amount.clone(), token1_fee).await {
                     Ok(amt) => amt,
                     Err(e) => trap(format!("Failed to withdraw after failed swap (ICPSWAP): {}", e).as_str()),
                 };
@@ -181,7 +192,7 @@ impl SwapClient for ICPSwapClient {
         };
 
         // 4. Withdraw
-        let withdrawn_amount = match self.withdraw(amount_out).await {
+        let withdrawn_amount = match self.withdraw(amount_out, token1_fee).await {
             Ok(amt) => amt,
             Err(e) => trap(format!("Failed to withdraw (ICPSWAP): {}", e).as_str()),
         };
