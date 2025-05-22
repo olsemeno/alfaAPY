@@ -232,7 +232,7 @@ describe("VR Test PROD", () => {
 
         describe(".get_icpswap_quote", () => {
             it("Returns ICP/ckBTC quote", async () => {
-                const amount = 300_000n;
+                const amount = 300_000_000n;
 
                 const quote = await actorVault.get_icpswap_quote(token0, token1, amount);
                 console.log("ICP/ckBTC quote:", quote);
@@ -251,11 +251,12 @@ describe("VR Test PROD", () => {
             });
         });
 
+        // Withdraw token from ICPSwap canister
         describe(".icpswap_withdraw_1", () => {
             it("Withdraws", async () => {
-                const amount = 955_281n;
+                const amount = 166n;
 
-                const withdrawResult = await actorVault.icpswap_withdraw(token0, amount, token0Fee);
+                const withdrawResult = await actorVault.icpswap_withdraw(token1, amount, token1Fee);
                 console.log("Withdraw result:", withdrawResult);
             });
         });
@@ -275,6 +276,57 @@ describe("VR Test PROD", () => {
                 const total_shares = 1000000000000000000n;
 
                 const withdrawResult = await actorVault.icpswap_withdraw_from_pool(total_shares, shares, token0, token1);
+                console.log("Withdraw result:", withdrawResult);
+            });
+        });
+    });
+
+    context("KONGSWAP", () => {
+        const token0 = {
+            ledger: Principal.fromText(icpCanisterId),
+            symbol: "ICP",
+        };
+        const token1 = {
+            ledger: Principal.fromText(ckBtcCanisterId),
+            symbol: "ckBTC",
+        };
+
+        describe(".get_kongswap_quote", () => {
+            it("Returns ICP/ckBTC quote", async () => {
+                const amount = 400_000n;
+
+                const quote = await actorVault.get_kongswap_quote(token0, token1, amount);
+                console.log("ICP/ckBTC quote:", quote);
+            });
+        });
+
+        describe(".swap_kongswap", () => {
+            it("Swaps ICP for USDC", async () => {
+                const amount = 900_000n;
+
+                const quote = await actorVault.get_kongswap_quote(token0, token1, amount);
+                console.log("ICP/ckBTC quote:", quote);
+
+                const swapResult = await actorVault.swap_kongswap(token0, token1, amount);
+                console.log("Swap result:", swapResult);
+            });
+        });
+
+        describe(".kong_add_liquidity", () => {
+            it("Adds liquidity to ICP/ckBTC pool", async () => {
+                const amount = 900_000n; // 0.009 ICP
+
+                const addLiquidityResult = await actorVault.kong_add_liquidity(amount, token0, token1);
+                console.log("Add liquidity result:", addLiquidityResult);
+            });
+        });
+
+        describe(".kong_withdraw_from_pool", () => {
+            it("Withdraws ICP from ICP/ckBTC pool", async () => {
+                const shares = 1000000000000000000n;
+                const total_shares = 1000000000000000000n;
+
+                const withdrawResult = await actorVault.kong_withdraw_from_pool(total_shares, shares, token0, token1);
                 console.log("Withdraw result:", withdrawResult);
             });
         });

@@ -6,6 +6,8 @@ use ic_response_codes::RejectCode;
 use types::exchanges::TokenInfo;
 use types::CanisterId;
 
+const SLIPPAGE_PERCENTAGE: f64 = 50.0; // TODO: Fix this
+
 pub struct KongSwapClient {
     canister_id: CanisterId,
     token_in: TokenInfo,
@@ -46,7 +48,7 @@ impl SwapClient for KongSwapClient {
             pay_amount: amount.into(),
             pay_token: format!("IC.{}", self.token_in.ledger),
             receive_token: format!("IC.{}", self.token_out.ledger),
-            max_slippage: Some(10.0),
+            max_slippage: Some(SLIPPAGE_PERCENTAGE),
         };
 
         match kongswap_canister_c2c_client::swap(

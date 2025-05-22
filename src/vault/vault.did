@@ -127,10 +127,12 @@ service : (opt Conf) -> {
     withdraw : (WithdrawArgs) -> (WithdrawResponse);
     icrc10_supported_standards : () -> (vec SupportedStandard) query;
     icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
-    get_icpswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
     get_kongswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
-    swap_icpswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
     swap_kongswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    kong_add_liquidity : (amount: nat, token0 : TokenInfo, token1 : TokenInfo) -> (AddLiquidityResponse);
+    kong_withdraw_from_pool : (total_shares: nat, shares: nat, token0: TokenInfo, token1: TokenInfo) -> (WithdrawFromPoolResponse);
+    get_icpswap_quote : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
+    swap_icpswap : (input_token : TokenInfo, output_token : TokenInfo, amount : nat) -> (nat);
     icpswap_withdraw : (token_out : TokenInfo, amount : nat, token_fee : nat) -> (variant { Ok : nat; Err : text });
     icpswap_add_liquidity : (amount: nat, token_in : TokenInfo, token_out : TokenInfo) -> (AddLiquidityResponse);
     icpswap_withdraw_from_pool : (total_shares: nat, shares: nat, token_in: TokenInfo, token_out: TokenInfo) -> (WithdrawFromPoolResponse);

@@ -118,10 +118,14 @@ export interface _SERVICE {
     'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
     'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
     'get_icpswap_quote' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'get_kongswap_quote' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
     'swap_icpswap' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'swap_kongswap' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
     'icpswap_withdraw' : ActorMethod<[TokenInfo, bigint, bigint], bigint>,
     'icpswap_add_liquidity' : ActorMethod<[bigint, TokenInfo, TokenInfo], AddLiquidityResponse>,
     'icpswap_withdraw_from_pool' : ActorMethod<[bigint, bigint, TokenInfo, TokenInfo], WithdrawFromPoolResponse>,
+    'kong_add_liquidity' : ActorMethod<[bigint, TokenInfo, TokenInfo], AddLiquidityResponse>,
+    'kong_withdraw_from_pool' : ActorMethod<[bigint, bigint, TokenInfo, TokenInfo], WithdrawFromPoolResponse>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

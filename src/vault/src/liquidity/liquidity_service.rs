@@ -32,18 +32,18 @@ pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolReply> {
     }
 }
 
-pub async fn add_liquidity_to_pool(amount: Nat, pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
+pub async fn add_liquidity_to_pool(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
     // return add_liquidity_to_pool_kong(amount, pool, token0, token1).await;
     return add_liquidity_to_pool_icpswap(amount, token0, token1).await;
 }
 
-pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    return withdraw_from_pool_kong(total_shares, shares, pool, token0, token1).await;
+pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
+    return withdraw_from_pool_kong(total_shares, shares, token0, token1).await;
     // return withdraw_from_pool_icpswap(total_shares, shares, token0, token1).await;
 }
 
-pub async fn add_liquidity_to_pool_kong(amount: Nat, pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
-    let liquidity_client = kong_liquidity_client(pool, token0, token1);
+pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
+    let liquidity_client = kong_liquidity_client(token0, token1);
 
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,
@@ -53,8 +53,8 @@ pub async fn add_liquidity_to_pool_kong(amount: Nat, pool: PoolReply, token0: To
     }
 }
 
-pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    let liquidity_client = kong_liquidity_client(pool, token0, token1);
+pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
+    let liquidity_client = kong_liquidity_client(token0, token1);
 
     match liquidity_client.withdraw_from_pool(total_shares, shares).await {
         Ok(response) => response,
@@ -95,11 +95,10 @@ async fn icpswap_liquidity_client(token0: TokenInfo, token1: TokenInfo) -> Box<d
     )
 }
 
-fn kong_liquidity_client(pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> Box<dyn LiquidityClient> {
+fn kong_liquidity_client(token0: TokenInfo, token1: TokenInfo) -> Box<dyn LiquidityClient> {
     Box::new(
         KongSwapLiquidityClient::new(
             KONG_BE_CANISTER,
-            pool,
             token0,
             token1,
         )

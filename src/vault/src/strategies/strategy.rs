@@ -139,7 +139,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             // Add liquidity to pool
             let add_liquidity_response = add_liquidity_to_pool(
                 amount.clone(),
-                pool_reply.clone(),
                 token0.clone(),
                 token1.clone()
             ).await;
@@ -210,7 +209,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
             let withdraw_response = withdraw_from_pool(
                 self.get_total_shares(),
                 shares.clone(),
-                pool.clone(),
                 token0.clone(),
                 token1.clone()
             ).await;
@@ -362,7 +360,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 let withdraw_response = withdraw_from_pool(
                     self.get_total_shares(),
                     self.get_total_shares(),
-                    current_pool.clone(),
                     token0.clone(),
                     token1.clone()
                 ).await;
@@ -383,7 +380,6 @@ pub trait IStrategy: Send + Sync+  BasicStrategy  {
                 // Add liquidity to new pool
                 let _ = add_liquidity_to_pool(
                     token_0_to_pool_amount,
-                    max_apy_pool.clone().unwrap(),
                     token0,
                     token1
                 ).await;

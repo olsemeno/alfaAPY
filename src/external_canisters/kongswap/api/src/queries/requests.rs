@@ -131,7 +131,7 @@ fn false_bool() -> bool {
 }
 
 
-#[derive(CandidType, Clone, Serialize, Deserialize)]
+#[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
 pub struct AddLiquidityReply {
     pub tx_id: u64,
     pub request_id: u64,

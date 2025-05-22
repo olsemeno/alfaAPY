@@ -28,7 +28,13 @@ use crate::strategies::strategy_service::{get_actual_strategies, init_strategies
 use crate::user::user_service::accept_deposit;
 use crate::providers::icpswap::icpswap::{withdraw as withdraw_icpswap};
 
-use crate::liquidity::liquidity_service::{add_liquidity_to_pool_icpswap, get_pools_data, withdraw_from_pool_icpswap};
+use crate::liquidity::liquidity_service::{
+    add_liquidity_to_pool_icpswap,
+    get_pools_data,
+    withdraw_from_pool_icpswap,
+    add_liquidity_to_pool_kong,
+    withdraw_from_pool_kong
+};
 use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
 
 
@@ -129,15 +135,17 @@ async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amou
 }
 
 #[update]
-async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    let kongswap_quote_result = kongswap_quote(input_token, output_token, amount).await;
-    kongswap_quote_result
-}
-
-#[update]
 async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
     let swap_icrc2_result = swap_icrc2_icpswap(input_token, output_token, amount).await;
     swap_icrc2_result.amount_out
+}
+
+
+
+#[update]
+async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    let kongswap_quote_result = kongswap_quote(input_token, output_token, amount).await;
+    kongswap_quote_result
 }
 
 #[update]
@@ -145,6 +153,18 @@ async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: 
     let swap_icrc2_result = swap_icrc2_kong(input_token, output_token, amount).await;
     swap_icrc2_result.amount_out
 }
+
+#[update]
+async fn kong_add_liquidity(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
+    add_liquidity_to_pool_kong(amount, token0, token1).await
+}
+
+#[update]
+async fn kong_withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
+    withdraw_from_pool_kong(total_shares, shares, token0, token1).await
+}
+
+
 
 // End of temporary functions for testing
 

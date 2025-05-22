@@ -16,18 +16,16 @@ use types::exchanges::TokenInfo;
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
-    pool: PoolReply, // TODO: remove pool
     token0: TokenInfo,
     token1: TokenInfo,
 }
 
 impl KongSwapLiquidityClient {
-    pub fn new(canister_id: CanisterId, pool: PoolReply, token0: TokenInfo, token1: TokenInfo) -> KongSwapLiquidityClient {
+    pub fn new(canister_id: CanisterId, token0: TokenInfo, token1: TokenInfo) -> KongSwapLiquidityClient {
         KongSwapLiquidityClient {
             canister_id,
             token0,
             token1,
-            pool,
         }
     }
 }
@@ -116,7 +114,10 @@ impl LiquidityClient for KongSwapLiquidityClient {
             .filter_map(|reply| match reply {
                 UserBalancesReply::LP(lp) => Some(lp),
             })
-            .find(|balance| balance.symbol == self.pool.symbol)
+            .find(|balance|
+                (balance.address_0 == self.token0.ledger.to_string() && balance.address_1 == self.token1.ledger.to_string()) ||
+                (balance.address_0 == self.token1.ledger.to_string() && balance.address_1 == self.token0.ledger.to_string())
+            )
             .unwrap_or_else(|| trap("Expected LP balance"));
     
         let balance = user_balance_reply.balance;
