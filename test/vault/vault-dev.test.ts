@@ -18,10 +18,11 @@ describe("VR Test PROD", () => {
     const icpCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";
     const ckBtcCanisterId = "mxzaz-hqaaa-aaaar-qaada-cai";
     const pandaCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";
+    const nfidwCanisterId = "mih44-vaaaa-aaaaq-aaekq-cai";
 
     const ledgerCanisterId = icpCanisterId; // ICP
+    // const ledgerCanisterId = pandaCanisterId; // PANDA
 
-    // const ledgerCanisterId = "druyg-tyaaa-aaaaq-aactq-cai"; // PANDA
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
     let ledgerActor: ActorSubclass<ledgerService>
@@ -283,20 +284,24 @@ describe("VR Test PROD", () => {
 
     context("KONGSWAP", () => {
         const token0 = {
+            ledger: Principal.fromText(pandaCanisterId),
+            symbol: "PANDA",
+        }
+        const token1 = {
             ledger: Principal.fromText(icpCanisterId),
             symbol: "ICP",
         };
-        const token1 = {
-            ledger: Principal.fromText(ckBtcCanisterId),
-            symbol: "ckBTC",
-        };
+        // const token1 = {
+        //     ledger: Principal.fromText(nfidwCanisterId),
+        //     symbol: "NFIDW",
+        // };
 
         describe(".get_kongswap_quote", () => {
             it("Returns ICP/ckBTC quote", async () => {
-                const amount = 400_000n;
+                const amount = 50_000_000n;
 
                 const quote = await actorVault.get_kongswap_quote(token0, token1, amount);
-                console.log("ICP/ckBTC quote:", quote);
+                console.log(`${token0.symbol}/${token1.symbol} quote:`, quote);
             });
         });
 
@@ -314,7 +319,7 @@ describe("VR Test PROD", () => {
 
         describe(".kong_add_liquidity", () => {
             it("Adds liquidity to ICP/ckBTC pool", async () => {
-                const amount = 900_000n; // 0.009 ICP
+                const amount = 100_000_000n;
 
                 const addLiquidityResult = await actorVault.kong_add_liquidity(amount, token0, token1);
                 console.log("Add liquidity result:", addLiquidityResult);

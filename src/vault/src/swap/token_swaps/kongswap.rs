@@ -6,7 +6,7 @@ use ic_response_codes::RejectCode;
 use types::exchanges::TokenInfo;
 use types::CanisterId;
 
-const SLIPPAGE_PERCENTAGE: f64 = 50.0; // TODO: Fix this
+const SLIPPAGE_PERCENTAGE: f64 = 40.0; // TODO: Fix this
 
 pub struct KongSwapClient {
     canister_id: CanisterId,
