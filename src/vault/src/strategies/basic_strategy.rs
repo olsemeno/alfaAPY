@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use candid::{Nat, Principal};
-use kongswap_canister::PoolReply;
-use crate::types::types::{Pool, StrategyId};
+use crate::types::types::StrategyId;
+use crate::pool::pool::Pool;
 
 pub trait BasicStrategy {
     fn get_name(&self) -> String;
@@ -12,8 +12,8 @@ pub trait BasicStrategy {
     fn set_total_shares(&mut self, total_shares: Nat);
     fn get_total_balance(&self) -> Nat;
     fn set_total_balance(&mut self, total_balance: Nat);
-    fn get_current_pool(&self) -> Option<PoolReply>;
-    fn set_current_pool(&mut self, pool: Option<PoolReply>);
+    fn get_current_pool(&self) -> Option<Pool>;
+    fn set_current_pool(&mut self, pool: Option<Pool>);
     fn get_user_shares(&self) -> HashMap<Principal, Nat>;
     fn set_user_shares(&mut self, user_shares: HashMap<Principal, Nat>);
     fn get_initial_deposit(&self) -> HashMap<Principal, Nat>;
@@ -57,11 +57,11 @@ macro_rules! impl_strategy_methods {
                 self.total_balance = total_balance;
             }
 
-            fn get_current_pool(&self) -> Option<PoolReply> {
+            fn get_current_pool(&self) -> Option<Pool> {
                 self.current_pool.clone()
             }
 
-            fn set_current_pool(&mut self, pool: Option<PoolReply>) {
+            fn set_current_pool(&mut self, pool: Option<Pool>) {
                 self.current_pool = pool;
             }
 

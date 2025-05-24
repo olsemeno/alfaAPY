@@ -3,10 +3,11 @@ use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::r#impl::description::STRATEGY_MAP;
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::types::types::{Pool, StrategyId};
+use crate::types::types::StrategyId;
+use crate::pool::pool::Pool;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Nat, Principal};
-use kongswap_canister::PoolReply;
+
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -17,7 +18,7 @@ impl_strategy_methods!(IcpCkUSDTStrategy);
 #[allow(non_camel_case_types)]
 pub struct IcpCkUSDTStrategy {
     id: StrategyId,
-    current_pool: Option<PoolReply>,
+    current_pool: Option<Pool>,
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,

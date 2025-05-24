@@ -1,45 +1,71 @@
-use candid::{Nat, Principal};
+use candid::Nat;
 use ic_cdk::trap;
-use kongswap_canister::PoolReply;
 
 use crate::liquidity::clients::kongswap::KongSwapLiquidityClient;
 use crate::liquidity::clients::icpswap::ICPSwapLiquidityClient;
-use crate::providers::kong::kong::{add_liquidity, add_liquidity_amounts, pools, remove_liquidity, swap_amounts, user_balances};
-use crate::types::types::{AddLiquidityResponse, Pool, TokensInfo, WithdrawFromPoolResponse};
-use types::exchanges::TokenInfo;
+use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use crate::pool::pool_data::PoolData;
+use crate::pool::pool::Pool;
+use types::exchanges::{TokenInfo};
+use types::exchange_id::ExchangeId;
 use crate::swap::swap_service::KONG_BE_CANISTER;
 use crate::liquidity::liquidity_client::LiquidityClient;
 
-pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolReply> {
-    match pools().await {
-        Ok(response) => {
-            let pools = response.pools;
-            let mut pool_data = Vec::new();
-            for pool in required_pools {
-                match pools.iter().find(|&x| x.symbol == pool.pool_symbol)
-                {
-                    None => {}
-                    Some(x) => {
-                        pool_data.push(x.to_owned());
-                    }
-                }
-            }
-            pool_data
+pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
+    // TODO: return APY for pools
+
+
+
+    // match pools().await {
+    //     Ok(response) => {
+    //         let pools = response.pools;
+    //         let mut pool_data = Vec::new();
+    //         for pool in required_pools {
+    //             match pools.iter().find(|&x| x.symbol == pool.pool_symbol)
+    //             {
+    //                 None => {}
+    //                 Some(x) => {
+    //                     pool_data.push(x.to_owned());
+    //                 }
+    //             }
+    //         }
+    //         pool_data
+    //     }
+    //     Err(error) => {
+    //         trap(error.as_str());
+    //     }
+    // }
+
+
+    vec![]
+}
+
+pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
+    match pool.provider {
+        ExchangeId::KongSwap => {
+            return add_liquidity_to_pool_kong(amount, pool.token0, pool.token1).await;
         }
-        Err(error) => {
-            trap(error.as_str());
+        ExchangeId::ICPSwap => {
+            return add_liquidity_to_pool_icpswap(amount, pool.token0, pool.token1).await;
+        }
+        _ => {
+            trap("Unsupported provider");
         }
     }
 }
 
-pub async fn add_liquidity_to_pool(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
-    // return add_liquidity_to_pool_kong(amount, pool, token0, token1).await;
-    return add_liquidity_to_pool_icpswap(amount, token0, token1).await;
-}
-
-pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    return withdraw_from_pool_kong(total_shares, shares, token0, token1).await;
-    // return withdraw_from_pool_icpswap(total_shares, shares, token0, token1).await;
+pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
+    match pool.provider {
+        ExchangeId::KongSwap => {
+            return withdraw_from_pool_kong(total_shares, shares, pool.token0, pool.token1).await;
+        }
+        ExchangeId::ICPSwap => {
+            return withdraw_from_pool_icpswap(total_shares, shares, pool.token0, pool.token1).await;
+        }
+        _ => {
+            trap("Unsupported provider");
+        }
+    }
 }
 
 pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {

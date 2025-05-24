@@ -8,6 +8,7 @@ mod util;
 mod types;
 mod events;
 mod enums;
+mod pool;
 
 use serde::Serialize;
 use std::cell::RefCell;
@@ -15,12 +16,11 @@ use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
 use ic_cdk::{caller, id, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
+
 use kongswap_canister::user_balances::UserBalancesReply;
-pub use kongswap_canister::pools::{PoolsReply, Response};
-
-use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
 use ::types::exchanges::TokenInfo;
-
+pub use kongswap_canister::pools::{PoolsReply, Response};
+use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
 use crate::providers::kong::kong::user_balances;
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
@@ -130,28 +130,24 @@ async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> 
 
 #[update]
 async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    let icpswap_quote_result = icpswap_quote(input_token, output_token, amount).await;
-    icpswap_quote_result
+    icpswap_quote(input_token, output_token, amount).await
 }
 
 #[update]
 async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    let swap_icrc2_result = swap_icrc2_icpswap(input_token, output_token, amount).await;
-    swap_icrc2_result.amount_out
+    swap_icrc2_icpswap(input_token, output_token, amount).await.amount_out
 }
 
 
 
 #[update]
 async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    let kongswap_quote_result = kongswap_quote(input_token, output_token, amount).await;
-    kongswap_quote_result
+    kongswap_quote(input_token, output_token, amount).await
 }
 
 #[update]
 async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    let swap_icrc2_result = swap_icrc2_kong(input_token, output_token, amount).await;
-    swap_icrc2_result.amount_out
+    swap_icrc2_kong(input_token, output_token, amount).await.amount_out
 }
 
 #[update]
@@ -255,7 +251,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                 user_strategies.push(UserStrategyResponse {
                     strategy_id: strategy.get_id(),
                     strategy_name: strategy.get_name(),
-                    strategy_current_pool: pool.symbol,
+                    strategy_current_pool: pool.to_response(),
                     total_shares: strategy.get_total_shares(),
                     user_shares: user_shares,
                     initial_deposit: initial_deposit,

@@ -11,7 +11,7 @@ use kongswap_canister::user_balances::UserBalancesReply;
 use crate::util::util::nat_to_f64;
 use crate::strategies::calculator::Calculator;
 use crate::swap::swap_service::swap_icrc2_kong;
-use crate::types::types::{AddLiquidityResponse, Pool, TokensInfo, WithdrawFromPoolResponse};
+use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::exchanges::TokenInfo;
 
 pub struct KongSwapLiquidityClient {

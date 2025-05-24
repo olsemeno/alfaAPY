@@ -2,7 +2,8 @@
 mod tests {
     use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
-    use crate::types::types::{AddLiquidityResponse, DepositResponse, Pool, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use crate::types::types::{AddLiquidityResponse, DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use crate::pool::pool::Pool;
     use candid::{Nat, Principal};
     use std::collections::HashMap;
     use async_trait::async_trait;
@@ -12,12 +13,17 @@ mod tests {
     use crate::strategies::strategy::IStrategy;
     use crate::strategies::strategy_candid::StrategyCandid;
     use crate::util::util::nat_to_f64;
+    use types::exchanges::TokenInfo;
+    use types::exchange_id::ExchangeId;
+
+    const ICP_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
 
     // Mock for external functions
     pub mod liquidity_service_mock {
         use super::*;
         
-        pub async fn add_liquidity_to_pool(amount: Nat, pool: PoolReply) -> AddLiquidityResponse {
+        pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
             AddLiquidityResponse {
                 token_0_amount: amount.clone(),
                 token_1_amount: Nat::from(0u64),
@@ -25,31 +31,18 @@ mod tests {
             }
         }
         
-        pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolReply> {
+        pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<Pool> {
             vec![
-                PoolReply {
-                    pool_id: 1u32,
-                    name: "ICP/USDT Pool".to_string(),
-                    symbol: "ICP_ckUSDT".to_string(),
-                    chain_0: "ICP".to_string(),
-                    symbol_0: "ICP".to_string(),
-                    address_0: "ryjl3-tyaaa-aaaaa-aaaba-cai".to_string(),
-                    balance_0: Nat::from(1000u64),
-                    lp_fee_0: Nat::from(10u64),
-                    chain_1: "ICP".to_string(),
-                    symbol_1: "ckUSDT".to_string(),
-                    address_1: "ryjl3-tyaaa-aaaaa-aaaba-cai".to_string(),
-                    balance_1: Nat::from(1000u64),
-                    lp_fee_1: Nat::from(10u64),
-                    price: 1.0,
-                    lp_fee_bps: 30u8,
-                    tvl: Nat::from(2000u64),
-                    rolling_24h_volume: Nat::from(5000u64),
-                    rolling_24h_lp_fee: Nat::from(15u64),
-                    rolling_24h_num_swaps: Nat::from(50u64),
-                    rolling_24h_apy: 5.0,
-                    lp_token_symbol: "ICP_ckUSDT_LP".to_string(),
-                    is_removed: false,
+                Pool {
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                        symbol: "ckUSDT".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 }
             ]
         }
@@ -70,7 +63,7 @@ mod tests {
         id: u16,
         description: String,
         pools: Vec<Pool>,
-        current_pool: Option<PoolReply>,
+        current_pool: Option<Pool>,
         total_shares: Nat,
         total_balance: Nat,
         user_shares: HashMap<Principal, Nat>,
@@ -85,10 +78,15 @@ mod tests {
                 description: "Test Description".to_string(),
                 pools: vec![
                     Pool {
-                        pool_symbol: "ICP_ckUSDT".to_string(),
-                        token0: "ICP".to_string(),
-                        token1: "ckUSDT".to_string(),
-                        rolling_24h_apy: 5.0,
+                        token0: TokenInfo {
+                            ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                            symbol: "ICP".to_string(),
+                        },
+                        token1: TokenInfo {
+                            ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                            symbol: "ckUSDT".to_string(),
+                        },
+                        provider: ExchangeId::KongSwap,
                     }
                 ],
                 current_pool: None,
@@ -117,11 +115,11 @@ mod tests {
             self.pools.clone()
         }
         
-        fn get_current_pool(&self) -> Option<PoolReply> {
+        fn get_current_pool(&self) -> Option<Pool> {
             self.current_pool.clone()
         }
         
-        fn set_current_pool(&mut self, pool: Option<PoolReply>) {
+        fn set_current_pool(&mut self, pool: Option<Pool>) {
             self.current_pool = pool;
         }
         
@@ -188,7 +186,7 @@ mod tests {
             //TODO fixme temp approach to run the pool
             if self.get_current_pool().is_none() {
                 self.mock.set_current_pool(pools_data.iter()
-                    .find(|&x| x.symbol == "ICP_ckUSDT")
+                    .find(|&pool| pool.token0.symbol == "ICP" && pool.token1.symbol == "ckUSDT")
                     .cloned());
             }
     
@@ -242,7 +240,7 @@ mod tests {
                 name: self.get_name(),
                 id: self.get_id(),
                 description: self.get_description(),
-                pools: self.get_pools().iter().map(|x| x.pool_symbol.clone()).collect(),
+                pools: self.get_pools().iter().map(|pool| pool.to_response()).collect(),
                 current_pool: self.get_current_pool(),
                 total_shares: self.get_total_shares(),
                 user_shares: self.get_user_shares(),
@@ -290,11 +288,11 @@ mod tests {
             self.mock.get_pools()
         }
         
-        fn get_current_pool(&self) -> Option<PoolReply> {
+        fn get_current_pool(&self) -> Option<Pool> {
             self.mock.get_current_pool()
         }
         
-        fn set_current_pool(&mut self, pool: Option<PoolReply>) {
+        fn set_current_pool(&mut self, pool: Option<Pool>) {
             self.mock.set_current_pool(pool)
         }
         
@@ -338,34 +336,21 @@ mod tests {
         let amount = Nat::from(1000u64);
         
         // Create a pool reply for testing
-        let pool_reply = PoolReply {
-            pool_id: 1u32,
-            name: "ICP/USDT Pool".to_string(),
-            symbol: "ICP_ckUSDT".to_string(),
-            chain_0: "ICP".to_string(),
-            symbol_0: "ICP".to_string(),
-            address_0: "ryjl3-tyaaa-aaaaa-aaaba-cai".to_string(),
-            balance_0: Nat::from(1000u64),
-            lp_fee_0: Nat::from(10u64),
-            chain_1: "ICP".to_string(),
-            symbol_1: "ckUSDT".to_string(),
-            address_1: "ryjl3-tyaaa-aaaaa-aaaba-cai".to_string(),
-            balance_1: Nat::from(1000u64),
-            lp_fee_1: Nat::from(10u64),
-            price: 1.0,
-            lp_fee_bps: 30u8,
-            tvl: Nat::from(2000u64),
-            rolling_24h_volume: Nat::from(5000u64),
-            rolling_24h_lp_fee: Nat::from(15u64),
-            rolling_24h_num_swaps: Nat::from(50u64),
-            rolling_24h_apy: 5.0,
-            lp_token_symbol: "ICP_ckUSDT_LP".to_string(),
-            is_removed: false,
+        let pool = Pool {
+            token0: TokenInfo {
+                ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                symbol: "ICP".to_string(),
+            },
+            token1: TokenInfo {
+                ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                symbol: "ckUSDT".to_string(),
+            },
+            provider: ExchangeId::KongSwap,
         };
-        
+
         // Create mock strategy with initial values
         let mut mock_strategy = MockStrategy::new();
-        mock_strategy.set_current_pool(Some(pool_reply));
+        mock_strategy.set_current_pool(Some(pool));
         
         // Create the test strategy with our mock
         let mut test_strategy = TestStrategy { mock: mock_strategy };

@@ -6,14 +6,15 @@ use kongswap_canister::PoolReply;
 use types::CanisterId;
 use types::exchanges::TokenInfo;
 use crate::events::event::{UserEvent, SystemEvent};
+use crate::pool::pool::{Pool, PoolResponse};
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StrategyResponse {
     pub name: String,
     pub id: StrategyId,
     pub description: String,
-    pub pools: Vec<PoolSymbol>,
-    pub current_pool: Option<PoolReply>,
+    pub pools: Vec<PoolResponse>,
+    pub current_pool: Option<Pool>,
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>,
     pub initial_deposit: HashMap<Principal, Nat>,
@@ -38,7 +39,6 @@ pub struct WithdrawArgs {
     pub strategy_id: StrategyId,
 }
 
-
 #[derive(CandidType, Deserialize, Eq, PartialEq, Debug)]
 pub struct SupportedStandard {
     pub url: String,
@@ -49,52 +49,11 @@ pub struct SupportedStandard {
 pub struct UserStrategyResponse {
     pub strategy_id: StrategyId,
     pub strategy_name: String,
-    pub strategy_current_pool: String,
+    pub strategy_current_pool: PoolResponse,
     pub total_shares: Nat,
     pub user_shares: Nat,
     pub initial_deposit: Nat,
 }
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
-pub struct Pool {
-    pub pool_symbol: PoolSymbol,
-    pub token0: String,
-    pub token1: String,
-    pub rolling_24h_apy: f64,
-}
-
-#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-
-pub struct PoolNew {
-    pub token0: TokenInfo,
-    pub token1: TokenInfo,
-}
-
-// pub struct PoolReply {
-//     pub pool_id: u32,
-//     pub name: String,
-//     pub symbol: String,
-//     pub chain_0: String,
-//     pub symbol_0: String,
-//     pub address_0: String,
-//     pub balance_0: Nat,
-//     pub lp_fee_0: Nat,
-//     pub chain_1: String,
-//     pub symbol_1: String,
-//     pub address_1: String,
-//     pub balance_1: Nat,
-//     pub lp_fee_1: Nat,
-//     pub price: f64,
-//     pub lp_fee_bps: u8,
-//     pub tvl: Nat,
-//     pub rolling_24h_volume: Nat,
-//     pub rolling_24h_lp_fee: Nat,
-//     pub rolling_24h_num_swaps: Nat,
-//     pub rolling_24h_apy: f64,
-//     pub lp_token_symbol: String,
-//     pub is_removed: bool,
-// }
-
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct TokensFee {
@@ -130,7 +89,7 @@ pub struct AddLiquidityResponse {
 }
 
 pub struct RebalanceResponse {
-    pub pool: PoolReply,
+    pub pool: Pool,
 }
 
 pub struct TokensInfo {

@@ -1,6 +1,10 @@
-use crate::types::types::Pool;
+use candid::Principal;
+
+use crate::pool::pool::Pool;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
+use types::exchanges::TokenInfo;
+use types::exchange_id::ExchangeId;
 
 #[derive(Debug, Clone)]
 pub struct StrategyInfo {
@@ -8,6 +12,11 @@ pub struct StrategyInfo {
     pub description: String,
     pub pools: Vec<Pool>,
 }
+
+const ICP_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+const CKBTC_CANISTER_ID: &str = "mxzaz-hqaaa-aaaar-qaada-cai";
+const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
+const PANDA_CANISTER_ID: &str = "druyg-tyaaa-aaaaq-aactq-cai";
 
 //TODO init from file
 lazy_static! {
@@ -18,16 +27,26 @@ lazy_static! {
             description: "A balanced strategy utilizing Kongswap with 50% ICP and 50% stable coin, featuring pool pairs like ckUSDC/ICP and ICP/ckUSDT.".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "ICP_ckUSDT".to_string(),
-                    token0: "ICP".to_string(),
-                    token1: "ckUSDT".to_string(),
-                    rolling_24h_apy: 20.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                        symbol: "ckUSDT".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 },
                 Pool {
-                    pool_symbol: "ckUSDC_ICP".to_string(),
-                    token0: "ckUSDC".to_string(),
-                    token1: "ICP".to_string(),
-                    rolling_24h_apy: 10.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                        symbol: "ckUSDT".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 }
             ],
         });
@@ -36,16 +55,26 @@ lazy_static! {
             description: "An aggressive strategy leveraging Kongswap with 50% ckBTC and 50% other assets, including pool pairs like ckBTC/ICP and ckBTC/ckUSDT.".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "ckBTC_ICP".to_string(),
-                    token0: "ckBTC".to_string(),
-                    token1: "ICP".to_string(),
-                    rolling_24h_apy: 0.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(CKBTC_CANISTER_ID).unwrap(),
+                        symbol: "ckBTC".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 },
                 Pool {
-                    pool_symbol: "ckBTC_ckUSDT".to_string(),
-                    token0: "ckBTC".to_string(),
-                    token1: "ckUSDT".to_string(),
-                    rolling_24h_apy: 0.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(CKBTC_CANISTER_ID).unwrap(),
+                        symbol: "ckBTC".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+                        symbol: "ckUSDT".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 }
             ],
         });
@@ -54,10 +83,15 @@ lazy_static! {
             description: "A dynamic strategy that moves the ICP-ckBTC pool between Kongswap and ICPSwap to optimize returns.".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "ICP_ckBTC".to_string(),
-                    token0: "ICP".to_string(),
-                    token1: "ckBTC".to_string(),
-                    rolling_24h_apy: 0.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(CKBTC_CANISTER_ID).unwrap(),
+                        symbol: "ckBTC".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 },
             ],
         });
@@ -66,10 +100,15 @@ lazy_static! {
             description: "Cheap test strategy".to_string(),
             pools: vec![
                 Pool {
-                    pool_symbol: "PANDA_ICP".to_string(),
-                    token0: "PANDA".to_string(),
-                    token1: "ICP".to_string(),
-                    rolling_24h_apy: 0.0,
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(PANDA_CANISTER_ID).unwrap(),
+                        symbol: "PANDA".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    provider: ExchangeId::KongSwap,
                 },
             ],
         });

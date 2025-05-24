@@ -6,9 +6,8 @@ use num_traits::ToPrimitive;
 
 use crate::util::util::{nat_to_u64};
 use crate::liquidity::liquidity_client::LiquidityClient;
-use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse, PoolNew, TokensFee};
+use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee};
 use types::CanisterId;
-use kongswap_canister::PoolReply;
 use crate::providers::icpswap::icpswap::{
     metadata,
     get_token_meta,
@@ -34,7 +33,6 @@ use icpswap_swap_pool_canister::getUserPosition::UserPosition;
 use icpswap_swap_pool_canister::claim::ClaimResponse;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_factory_canister::ICPSwapPool;
-use crate::strategies::calculator::Calculator;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
 
