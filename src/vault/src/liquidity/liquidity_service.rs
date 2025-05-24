@@ -10,6 +10,7 @@ use types::exchanges::{TokenInfo};
 use types::exchange_id::ExchangeId;
 use crate::swap::swap_service::KONG_BE_CANISTER;
 use crate::liquidity::liquidity_client::LiquidityClient;
+use crate::liquidity::liquidity_router::get_liquidity_client;
 
 pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
     // TODO: return APY for pools
@@ -41,32 +42,28 @@ pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
 }
 
 pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
-    match pool.provider {
-        ExchangeId::KongSwap => {
-            return add_liquidity_to_pool_kong(amount, pool.token0, pool.token1).await;
-        }
-        ExchangeId::ICPSwap => {
-            return add_liquidity_to_pool_icpswap(amount, pool.token0, pool.token1).await;
-        }
-        _ => {
-            trap("Unsupported provider");
+    let liquidity_client = get_liquidity_client(&pool).await;
+
+    match liquidity_client.add_liquidity_to_pool(amount).await {
+        Ok(response) => response,
+        Err(error) => {
+            trap(error.as_str());
         }
     }
 }
 
 pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
-    match pool.provider {
-        ExchangeId::KongSwap => {
-            return withdraw_from_pool_kong(total_shares, shares, pool.token0, pool.token1).await;
-        }
-        ExchangeId::ICPSwap => {
-            return withdraw_from_pool_icpswap(total_shares, shares, pool.token0, pool.token1).await;
-        }
-        _ => {
-            trap("Unsupported provider");
+    let liquidity_client = get_liquidity_client(&pool).await;
+
+    match liquidity_client.withdraw_from_pool(total_shares, shares).await {
+        Ok(response) => response,
+        Err(error) => {
+            trap(error.as_str());
         }
     }
 }
+
+// TODO: remove this test methods
 
 pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
     let liquidity_client = kong_liquidity_client(token0, token1);
@@ -130,3 +127,5 @@ fn kong_liquidity_client(token0: TokenInfo, token1: TokenInfo) -> Box<dyn Liquid
         )
     )
 }
+
+// End of test methods
