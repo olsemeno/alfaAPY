@@ -8,7 +8,7 @@ mod util;
 mod types;
 mod events;
 mod enums;
-mod pool;
+mod pools;
 
 use serde::Serialize;
 use std::cell::RefCell;

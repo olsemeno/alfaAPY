@@ -3,7 +3,7 @@ mod tests {
     use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
     use crate::types::types::{AddLiquidityResponse, DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-    use crate::pool::pool::Pool;
+    use crate::pools::pool::Pool;
     use candid::{Nat, Principal};
     use std::collections::HashMap;
     use async_trait::async_trait;

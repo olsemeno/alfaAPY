@@ -6,7 +6,7 @@ use kongswap_canister::PoolReply;
 use types::CanisterId;
 use types::exchanges::TokenInfo;
 use crate::events::event::{UserEvent, SystemEvent};
-use crate::pool::pool::{Pool, PoolResponse};
+use crate::pools::pool::{Pool, PoolResponse};
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StrategyResponse {

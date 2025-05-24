@@ -1,7 +1,7 @@
 use crate::liquidity::clients::kongswap::KongSwapLiquidityClient;
 use crate::liquidity::clients::icpswap::ICPSwapLiquidityClient;
 use crate::liquidity::liquidity_client::LiquidityClient;
-use crate::pool::pool::Pool;
+use crate::pools::pool::Pool;
 use types::exchange_id::ExchangeId;
 use crate::swap::swap_service::KONG_BE_CANISTER;
 

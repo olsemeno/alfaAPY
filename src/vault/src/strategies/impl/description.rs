@@ -1,6 +1,6 @@
 use candid::Principal;
 
-use crate::pool::pool::Pool;
+use crate::pools::pool::Pool;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use types::exchanges::TokenInfo;

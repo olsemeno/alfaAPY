@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use candid::{Nat, Principal};
 use crate::types::types::StrategyId;
-use crate::pool::pool::Pool;
+use crate::pools::pool::Pool;
 
 pub trait BasicStrategy {
     fn get_name(&self) -> String;

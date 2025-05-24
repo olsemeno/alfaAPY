@@ -19,7 +19,7 @@ use crate::strategies::strategy_candid::StrategyCandid;
 use crate::swap::swap_service::swap_icrc2_kong;
 use crate::swap::token_swaps::nat_to_u128;
 use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-use crate::pool::pool::Pool;
+use crate::pools::pool::Pool;
 use crate::util::util::nat_to_f64;
 
 #[async_trait]

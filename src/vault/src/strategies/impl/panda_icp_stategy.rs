@@ -4,7 +4,7 @@ use crate::strategies::r#impl::description::STRATEGY_MAP;
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::types::types::StrategyId;
-use crate::pool::pool::Pool;
+use crate::pools::pool::Pool;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
