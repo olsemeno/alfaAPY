@@ -1,8 +1,7 @@
 use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
-
-pub type  Args =  (String, Nat, String);
+pub type Args =  (String, Nat, String);
 pub type Response = (Result<AddLiquidityAmountsReply, String>,);
 
 #[derive(CandidType, Clone, Serialize, Deserialize, Debug)]
@@ -20,4 +19,3 @@ pub struct AddLiquidityAmountsReply {
     pub fee_1: Nat,
     pub add_lp_token_amount: Nat,
 }
-

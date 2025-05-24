@@ -94,6 +94,19 @@ export interface WithdrawResponse {
     'current_shares' : bigint,
     'amount' : bigint,
 }
+export interface TokenInfo {
+    'ledger' : Principal,
+    'symbol' : string,
+}
+export interface AddLiquidityResponse {
+    'token_0_amount' : bigint,
+    'token_1_amount' : bigint,
+    'request_id' : bigint,
+}
+export interface WithdrawFromPoolResponse {
+    'token_0_amount' : bigint,
+    'token_1_amount' : bigint,
+}
 export interface _SERVICE {
     'accept_investment' : ActorMethod<[AcceptInvestmentArgs], DepositResponse>,
     'get_config' : ActorMethod<[], Conf>,
@@ -104,6 +117,15 @@ export interface _SERVICE {
     'user_balance_all' : ActorMethod<[Principal], Array<UserBalancesReply>>,
     'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
     'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
+    'get_icpswap_quote' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'get_kongswap_quote' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'swap_icpswap' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'swap_kongswap' : ActorMethod<[TokenInfo, TokenInfo, bigint], bigint>,
+    'icpswap_withdraw' : ActorMethod<[TokenInfo, bigint, bigint], bigint>,
+    'icpswap_add_liquidity' : ActorMethod<[bigint, TokenInfo, TokenInfo], AddLiquidityResponse>,
+    'icpswap_withdraw_from_pool' : ActorMethod<[bigint, bigint, TokenInfo, TokenInfo], WithdrawFromPoolResponse>,
+    'kong_add_liquidity' : ActorMethod<[bigint, TokenInfo, TokenInfo], AddLiquidityResponse>,
+    'kong_withdraw_from_pool' : ActorMethod<[bigint, bigint, TokenInfo, TokenInfo], WithdrawFromPoolResponse>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

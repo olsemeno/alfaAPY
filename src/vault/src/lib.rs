@@ -8,6 +8,7 @@ mod util;
 mod types;
 mod events;
 mod enums;
+mod pool;
 
 use serde::Serialize;
 use std::cell::RefCell;
@@ -15,14 +16,28 @@ use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
 use ic_cdk::{caller, id, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
-use kongswap_canister::user_balances::UserBalancesReply;
-pub use kongswap_canister::pools::{PoolsReply, Response};
 
+use kongswap_canister::user_balances::UserBalancesReply;
+use ::types::exchanges::TokenInfo;
+pub use kongswap_canister::pools::{PoolsReply, Response};
+use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
 use crate::providers::kong::kong::user_balances;
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
+use crate::providers::icpswap::icpswap::{withdraw as withdraw_icpswap};
+
+use crate::liquidity::liquidity_service::{
+    add_liquidity_to_pool_icpswap,
+    get_pools_data,
+    withdraw_from_pool_icpswap,
+    add_liquidity_to_pool_kong,
+    withdraw_from_pool_kong
+};
+use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
+
+
 use crate::types::types::{
     AcceptInvestmentArgs,
     DepositResponse,
@@ -75,6 +90,79 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
+// Temporary functions for testing
+
+#[update]
+async fn icpswap_withdraw_from_pool(total_shares: Nat, shares: Nat, token_in: TokenInfo, token_out: TokenInfo) -> WithdrawFromPoolResponse {
+    let icpswap_quote_result = withdraw_from_pool_icpswap(
+        total_shares, shares,
+        token_in,
+        token_out
+    ).await;
+    icpswap_quote_result
+}
+
+#[update]
+async fn icpswap_add_liquidity(amount: Nat, token_in: TokenInfo, token_out: TokenInfo) -> AddLiquidityResponse {
+    // let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
+    let icpswap_quote_result = add_liquidity_to_pool_icpswap(
+        amount,
+        token_in,
+        token_out
+    ).await;
+
+    icpswap_quote_result
+}
+
+#[update]
+async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
+    let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
+
+    let icpswap_quote_result = withdraw_icpswap(
+        canister_id,
+        token_out,
+        amount,
+        token_fee
+    ).await;
+
+    icpswap_quote_result.unwrap()
+}
+
+#[update]
+async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    icpswap_quote(input_token, output_token, amount).await
+}
+
+#[update]
+async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    swap_icrc2_icpswap(input_token, output_token, amount).await.amount_out
+}
+
+
+
+#[update]
+async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    kongswap_quote(input_token, output_token, amount).await
+}
+
+#[update]
+async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
+    swap_icrc2_kong(input_token, output_token, amount).await.amount_out
+}
+
+#[update]
+async fn kong_add_liquidity(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
+    add_liquidity_to_pool_kong(amount, token0, token1).await
+}
+
+#[update]
+async fn kong_withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
+    withdraw_from_pool_kong(total_shares, shares, token0, token1).await
+}
+
+
+
+// End of temporary functions for testing
 
 /// Accepts an investment into a specified strategy.
 ///
@@ -163,7 +251,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                 user_strategies.push(UserStrategyResponse {
                     strategy_id: strategy.get_id(),
                     strategy_name: strategy.get_name(),
-                    strategy_current_pool: pool.symbol,
+                    strategy_current_pool: pool.to_response(),
                     total_shares: strategy.get_total_shares(),
                     user_shares: user_shares,
                     initial_deposit: initial_deposit,

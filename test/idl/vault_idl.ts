@@ -91,6 +91,19 @@ export const idlFactory = ({ IDL }) => {
         'current_shares' : IDL.Nat,
         'amount' : IDL.Nat,
     });
+    const TokenInfo = IDL.Record({
+        'ledger' : IDL.Principal,
+        'symbol' : IDL.Text,
+    });
+    const AddLiquidityResponse = IDL.Record({
+        'token_0_amount' : IDL.Nat,
+        'token_1_amount' : IDL.Nat,
+        'request_id' : IDL.Nat64,
+    });
+    const WithdrawFromPoolResponse = IDL.Record({
+        'token_0_amount' : IDL.Nat,
+        'token_1_amount' : IDL.Nat,
+    });
     return IDL.Service({
         'accept_investment' : IDL.Func(
             [AcceptInvestmentArgs],
@@ -117,6 +130,15 @@ export const idlFactory = ({ IDL }) => {
             [],
         ),
         'withdraw' : IDL.Func([WithdrawArgs], [WithdrawResponse], []),
+        'get_icpswap_quote' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
+        'get_kongswap_quote' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
+        'swap_icpswap' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
+        'swap_kongswap' : IDL.Func([TokenInfo, TokenInfo, IDL.Nat], [IDL.Nat], []),
+        'icpswap_withdraw' : IDL.Func([TokenInfo, IDL.Nat, IDL.Nat], [IDL.Nat], []),
+        'icpswap_add_liquidity' : IDL.Func([IDL.Nat, TokenInfo, TokenInfo], [AddLiquidityResponse], []),
+        'icpswap_withdraw_from_pool' : IDL.Func([IDL.Nat, IDL.Nat, TokenInfo, TokenInfo], [WithdrawFromPoolResponse], []),
+        'kong_add_liquidity' : IDL.Func([IDL.Nat, TokenInfo, TokenInfo], [AddLiquidityResponse], []),
+        'kong_withdraw_from_pool' : IDL.Func([IDL.Nat, IDL.Nat, TokenInfo, TokenInfo], [WithdrawFromPoolResponse], []),
     });
 };
 export const init = ({ IDL }) => {

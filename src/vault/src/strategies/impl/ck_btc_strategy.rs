@@ -2,7 +2,8 @@ use crate::impl_strategy_methods;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::types::types::{Pool, StrategyId};
+use crate::types::types::StrategyId;
+use crate::pool::pool::Pool;
 use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Nat, Principal};
 use kongswap_canister::PoolReply;
@@ -15,7 +16,7 @@ impl_strategy_methods!(ckBTCStrategy);
 #[allow(non_camel_case_types)]
 pub struct ckBTCStrategy {
     id: StrategyId,
-    current_pool: Option<PoolReply>,
+    current_pool: Option<Pool>,
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,

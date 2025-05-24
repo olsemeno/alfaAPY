@@ -16,6 +16,8 @@ byteorder = "1.4.3"
 ic-stable-structures = "0.6.7"
 serde_bytes = "0.11"
 serde_json = "1.0.82"
+num-traits = "0.2"
+once_cell = "1.19.0"
 canister_client_macros = { path = "../libraries/canister_client_macros" }
 types = { path = "../libraries/types" }
 async-trait = "0.1.87"
@@ -28,3 +30,7 @@ kongswap_canister = { path = "../external_canisters/kongswap/api" }
 kongswap_canister_c2c_client = { path = "../external_canisters/kongswap/c2c_client" }
 icpswap_swap_pool_canister = { path = "../external_canisters/icpswap_swap_pool/api" }
 icpswap_swap_pool_canister_c2c_client = { path = "../external_canisters/icpswap_swap_pool/c2c_client" }
+icpswap_swap_factory_canister = { path = "../external_canisters/icpswap_swap_factory/api" }
+icpswap_swap_factory_canister_c2c_client = { path = "../external_canisters/icpswap_swap_factory/c2c_client" }
+icpswap_swap_calculator_canister = { path = "../external_canisters/icpswap_swap_calculator/api" }
+icpswap_swap_calculator_canister_c2c_client = { path = "../external_canisters/icpswap_swap_calculator/c2c_client" }

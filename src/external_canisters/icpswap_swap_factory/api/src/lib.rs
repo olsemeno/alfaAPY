@@ -1,23 +1,32 @@
 pub mod queries;
-pub mod updates;
 
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
-pub use updates::*;
+use types::ResultLowercase;
 pub use queries::*;
 
+pub type ICPSwapSwapFactoryResult<T> = ResultLowercase<T, ICPSwapSwapFactoryError>;
+
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct Token {
+pub enum ICPSwapSwapFactoryError {
+    CommonError,
+    InternalError(String),
+    UnsupportedToken(String),
+    InsufficientFunds,
+}
+
+#[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
+pub struct ICPSwapToken {
     pub address: String,
     pub standard: String,
 }
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-pub struct Pool {
+pub struct ICPSwapPool {
     pub fee: Nat,
     pub key: String,
-    pub tickSpacing: i32,
-    pub token0: Token,
-    pub token1: Token,
-    pub canisterId: String,
+    pub tickSpacing: i128,
+    pub token0: ICPSwapToken,
+    pub token1: ICPSwapToken,
+    pub canisterId: candid::Principal,
 }

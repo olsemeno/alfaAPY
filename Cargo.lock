@@ -309,6 +309,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "icpswap_swap_calculator_canister"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "serde",
+ "types",
+]
+
+[[package]]
+name = "icpswap_swap_calculator_canister_c2c_client"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "canister_client",
+ "ic-cdk",
+ "icpswap_swap_calculator_canister",
+ "types",
+]
+
+[[package]]
+name = "icpswap_swap_factory_canister"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "serde",
+ "types",
+]
+
+[[package]]
+name = "icpswap_swap_factory_canister_c2c_client"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "canister_client",
+ "ic-cdk",
+ "icpswap_swap_factory_canister",
+ "types",
+]
+
+[[package]]
 name = "icpswap_swap_pool_canister"
 version = "0.1.0"
 dependencies = [
@@ -840,6 +880,10 @@ dependencies = [
  "ic-ledger-types",
  "ic-response-codes",
  "ic-stable-structures",
+ "icpswap_swap_calculator_canister",
+ "icpswap_swap_calculator_canister_c2c_client",
+ "icpswap_swap_factory_canister",
+ "icpswap_swap_factory_canister_c2c_client",
  "icpswap_swap_pool_canister",
  "icpswap_swap_pool_canister_c2c_client",
  "icrc-ledger-types",
@@ -848,6 +892,8 @@ dependencies = [
  "kongswap_canister",
  "kongswap_canister_c2c_client",
  "lazy_static",
+ "num-traits",
+ "once_cell",
  "serde",
  "serde_bytes",
  "serde_json",
