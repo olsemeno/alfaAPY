@@ -2,13 +2,13 @@
 mod tests {
     use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
-    use crate::types::types::{AddLiquidityResponse, DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use types::liquidity::AddLiquidityResponse;
     use crate::pools::pool::Pool;
     use candid::{Nat, Principal};
     use std::collections::HashMap;
     use async_trait::async_trait;
     use ic_cdk::trap;
-    use kongswap_canister::PoolReply;
     use crate::strategies::calculator::Calculator;
     use crate::strategies::strategy::IStrategy;
     use crate::strategies::strategy_candid::StrategyCandid;

@@ -13,7 +13,11 @@ members = [
     "src/libraries/canister_client_macros",
     "src/libraries/canister_client",
     "src/libraries/candid_gen",
-    "src/libraries/types"
+    "src/libraries/types",
+    "src/libraries/utils",
+    "src/libraries/liquidity_clients",
+    "src/libraries/providers",
+    "src/libraries/swap"
 ]
 
 

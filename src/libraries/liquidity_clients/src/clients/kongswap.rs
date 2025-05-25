@@ -3,16 +3,15 @@ use ic_cdk::trap;
 use candid::{Nat, Principal};
 use std::ops::{Div, Mul};
 
-use crate::liquidity::liquidity_client::LiquidityClient;
 use types::CanisterId;
-use kongswap_canister::PoolReply;
-use crate::providers::kong::kong::{add_liquidity, add_liquidity_amounts, pools, remove_liquidity, swap_amounts, user_balances};
-use kongswap_canister::user_balances::UserBalancesReply;
-use crate::util::util::nat_to_f64;
-use crate::strategies::calculator::Calculator;
-use crate::swap::swap_service::swap_icrc2_kong;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::exchanges::TokenInfo;
+use providers::kongswap::{add_liquidity, add_liquidity_amounts, remove_liquidity, swap_amounts, user_balances};
+use kongswap_canister::user_balances::UserBalancesReply;
+use crate::liquidity_client::LiquidityClient;
+use utils::util::nat_to_f64;
+use crate::liquidity_calculator::LiquidityCalculator;
+use swap::swap_service::swap_icrc2_kong;
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
@@ -58,7 +57,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let swap_price = nat_to_f64(&swap_amounts_resp.receive_amount) / nat_to_f64(&swap_amounts_resp.pay_amount);
         // Calculate how much token_0 and token_1 to swap and add to pool
         //TODO visibility
-        let calculator_response = Calculator::calculate_pool_liquidity_amounts(
+        let calculator_response = LiquidityCalculator::calculate_pool_liquidity_amounts(
             nat_to_f64(&amount),
             pool_ratio.clone(),
             swap_price.clone(),

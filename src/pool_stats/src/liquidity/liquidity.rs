@@ -3,7 +3,7 @@ use candid::Nat;
 // Adds/removes testing liquidity to/from a pool
 
 // TODO: implement add_liquidity
-pub fn add_liquidity(pool_id: &str, amount0: Nat, amount1: Nat) {
+pub fn add_liquidity(pool_id: &str, amount: Nat) {
     todo!("add_liquidity logic");
 }
 

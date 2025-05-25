@@ -4,11 +4,11 @@ use candid::{Nat,Int};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 
-use crate::util::util::{nat_to_u64};
-use crate::liquidity::liquidity_client::LiquidityClient;
+use utils::util::{nat_to_u64};
+use crate::liquidity_client::LiquidityClient;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee};
 use types::CanisterId;
-use crate::providers::icpswap::icpswap::{
+use providers::icpswap::{
     metadata,
     get_token_meta,
     get_price,

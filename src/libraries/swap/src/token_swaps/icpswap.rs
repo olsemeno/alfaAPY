@@ -1,5 +1,6 @@
 use super::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 use serde::{Deserialize, Serialize};
+use utils::util::nat_to_u128;
 use async_trait::async_trait;
 use ic_cdk::trap;
 use candid::Nat;
@@ -7,12 +8,12 @@ use candid::Nat;
 use ic_response_codes::RejectCode;
 use types::exchanges::TokenInfo;
 use types::CanisterId;
+
+use providers::icpswap::{get_pool, get_token_meta, deposit_from, withdraw, quote, swap};
 use icpswap_swap_factory_canister::ICPSwapPool;
+use icpswap_swap_pool_canister::ICPSwapSwapPoolResult;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use types::liquidity::TokensFee;
-
-use crate::providers::icpswap::icpswap::{get_pool, get_token_meta, deposit_from, withdraw, quote, swap};
-use crate::swap::token_swaps::nat_to_u128;
 
 pub const SLIPPAGE_TOLERANCE: u128 = 50; // 5%
 
@@ -174,7 +175,7 @@ impl SwapClient for ICPSwapClient {
         };
 
         // 3. Swap
-        let expected_out_u128 = nat_to_u128(expected_out);
+        let expected_out_u128 = nat_to_u128(&expected_out);
         let amount_out_minimum = Nat::from(expected_out_u128 * (1000 - SLIPPAGE_TOLERANCE) / 1000u128);
 
         let amount_out = match self.swap(deposited_amount.clone(), self.is_zero_for_one_swap_direction(), amount_out_minimum).await {
@@ -197,7 +198,7 @@ impl SwapClient for ICPSwapClient {
         };
 
         Ok(Ok(SwapSuccess {
-            amount_out: nat_to_u128(withdrawn_amount),
+            amount_out: nat_to_u128(&withdrawn_amount),
             withdrawal_success: Some(true),
         }))
     }
@@ -205,7 +206,7 @@ impl SwapClient for ICPSwapClient {
     async fn quote(&self, amount: u128) -> Result<Result<QuoteSuccess, String>, (RejectCode, String)> {
         match self.quote(Nat::from(amount as u128)).await {
             Ok(quote_amount) => Ok(Ok(QuoteSuccess {
-                amount_out: nat_to_u128(quote_amount),
+                amount_out: nat_to_u128(&quote_amount),
             })),
             Err(e) => Err((RejectCode::CanisterError, format!("Failed to quote (ICPSWAP): {}", e))),
         }

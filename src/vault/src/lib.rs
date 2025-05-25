@@ -1,7 +1,7 @@
 mod swap;
 mod providers;
 mod strategies;
-mod liquidity;
+pub mod liquidity;
 mod repository;
 mod user;
 mod util;
@@ -19,6 +19,7 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
 use kongswap_canister::user_balances::UserBalancesReply;
 use ::types::exchanges::TokenInfo;
+use ::types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
 use crate::providers::kong::kong::user_balances;
@@ -35,7 +36,6 @@ use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool_kong,
     withdraw_from_pool_kong
 };
-use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
 
 
 use crate::types::types::{

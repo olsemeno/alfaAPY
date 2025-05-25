@@ -3,11 +3,10 @@ use ic_cdk::trap;
 
 use crate::liquidity::clients::kongswap::KongSwapLiquidityClient;
 use crate::liquidity::clients::icpswap::ICPSwapLiquidityClient;
-use crate::types::types::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use crate::pools::pool_data::PoolData;
 use crate::pools::pool::Pool;
 use types::exchanges::{TokenInfo};
-use types::exchange_id::ExchangeId;
 use crate::swap::swap_service::KONG_BE_CANISTER;
 use crate::liquidity::liquidity_client::LiquidityClient;
 use crate::liquidity::liquidity_router::get_liquidity_client;

@@ -487,6 +487,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
+name = "liquidity_clients"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "candid",
+ "ic-cdk",
+ "icpswap_swap_factory_canister",
+ "icpswap_swap_pool_canister",
+ "icrc-ledger-types",
+ "icrc_ledger_canister",
+ "icrc_ledger_canister_c2c_client",
+ "kongswap_canister",
+ "num-traits",
+ "providers",
+ "swap",
+ "types",
+ "utils",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -591,12 +611,15 @@ dependencies = [
  "kongswap_canister",
  "kongswap_canister_c2c_client",
  "lazy_static",
+ "liquidity_clients",
  "num-traits",
  "once_cell",
+ "providers",
  "serde",
  "serde_bytes",
  "serde_json",
  "types",
+ "utils",
 ]
 
 [[package]]
@@ -623,6 +646,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "providers"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ic-cdk",
+ "ic-response-codes",
+ "icpswap_swap_calculator_canister",
+ "icpswap_swap_calculator_canister_c2c_client",
+ "icpswap_swap_factory_canister",
+ "icpswap_swap_factory_canister_c2c_client",
+ "icpswap_swap_pool_canister",
+ "icpswap_swap_pool_canister_c2c_client",
+ "icrc-ledger-types",
+ "icrc_ledger_canister",
+ "icrc_ledger_canister_c2c_client",
+ "kongswap_canister",
+ "kongswap_canister_c2c_client",
+ "once_cell",
+ "types",
+ "utils",
 ]
 
 [[package]]
@@ -758,6 +804,28 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 2.0.99",
+]
+
+[[package]]
+name = "swap"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "candid",
+ "ic-cdk",
+ "ic-response-codes",
+ "icpswap_swap_factory_canister",
+ "icpswap_swap_pool_canister",
+ "icrc-ledger-types",
+ "icrc_ledger_canister",
+ "icrc_ledger_canister_c2c_client",
+ "kongswap_canister",
+ "kongswap_canister_c2c_client",
+ "num-traits",
+ "providers",
+ "serde",
+ "types",
+ "utils",
 ]
 
 [[package]]
@@ -901,6 +969,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
+name = "utils"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "types",
+]
+
+[[package]]
 name = "vault"
 version = "0.1.0"
 dependencies = [
@@ -927,6 +1003,7 @@ dependencies = [
  "lazy_static",
  "num-traits",
  "once_cell",
+ "providers",
  "serde",
  "serde_bytes",
  "serde_json",
