@@ -567,6 +567,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
 
 [[package]]
+name = "pool_stats"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "candid",
+ "canister_client_macros",
+ "ic-cdk",
+ "ic-cdk-macros",
+ "ic-ledger-types",
+ "ic-response-codes",
+ "ic-stable-structures",
+ "icpswap_swap_calculator_canister",
+ "icpswap_swap_calculator_canister_c2c_client",
+ "icpswap_swap_factory_canister",
+ "icpswap_swap_factory_canister_c2c_client",
+ "icpswap_swap_pool_canister",
+ "icpswap_swap_pool_canister_c2c_client",
+ "icrc-ledger-types",
+ "icrc_ledger_canister",
+ "icrc_ledger_canister_c2c_client",
+ "kongswap_canister",
+ "kongswap_canister_c2c_client",
+ "lazy_static",
+ "num-traits",
+ "once_cell",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "types",
+]
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

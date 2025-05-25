@@ -9,6 +9,7 @@ members = [
     "src/external_canisters/icpswap_swap_calculator/api",
     "src/external_canisters/kongswap/api",
     "src/vault",
+    "src/pool_stats",
     "src/libraries/canister_client_macros",
     "src/libraries/canister_client",
     "src/libraries/candid_gen",
