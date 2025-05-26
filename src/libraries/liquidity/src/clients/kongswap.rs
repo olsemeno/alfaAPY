@@ -96,7 +96,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         }
     }
 
-    async fn withdraw_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
+    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
         // trap("Not implemented yet");
         let canister_id = ic_cdk::id();
     

@@ -15,7 +15,7 @@ use crate::events::event_service::{create_system_event, create_user_event};
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool,
     get_pools_data,
-    withdraw_from_pool,
+    withdraw_liquidity_from_pool,
 };
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
@@ -199,7 +199,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // trap(format!("shares: {:?}, total: {:?}", shares, self.get_total_shares()).as_str());
             // Remove liquidity from pool
-            let withdraw_response = withdraw_from_pool(
+            let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 shares.clone(),
                 current_pool.clone(),
@@ -363,7 +363,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let token1 = current_pool.token1.clone();
 
             // Remove liquidity from current pool
-            let withdraw_response = withdraw_from_pool(
+            let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),

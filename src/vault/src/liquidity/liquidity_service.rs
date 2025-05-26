@@ -50,14 +50,14 @@ pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityRespo
     }
 }
 
-pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
+pub async fn withdraw_liquidity_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
     let liquidity_client = get_liquidity_client(
         pool.token0.clone(),
         pool.token1.clone(),
         pool.provider.clone()
     ).await;
 
-    match liquidity_client.withdraw_from_pool(total_shares, shares).await {
+    match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
         Ok(response) => response,
         Err(error) => {
             trap(error.as_str());
@@ -90,7 +90,7 @@ pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: Tok
         ExchangeId::KongSwap
     ).await;
 
-    match liquidity_client.withdraw_from_pool(total_shares, shares).await {
+    match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
         Ok(response) => response,
         Err(error) => {
             trap(error.as_str());
@@ -120,7 +120,7 @@ pub async fn withdraw_from_pool_icpswap(total_shares: Nat, shares: Nat, token0: 
         ExchangeId::ICPSwap
     ).await;
 
-    match liquidity_client.withdraw_from_pool(total_shares, shares).await {
+    match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
         Ok(response) => response,
         Err(error) => {
             trap(error.as_str());

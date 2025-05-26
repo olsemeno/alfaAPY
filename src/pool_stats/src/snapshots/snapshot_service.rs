@@ -2,6 +2,7 @@ use std::cell::RefCell;
 
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::repository::pools_repo;
+use crate::pools::pool_data_service::{get_current_data, get_current_lp_position};
 
 thread_local! {
     pub static HEARTBEAT: RefCell<u64> = RefCell::new(0);
@@ -19,11 +20,11 @@ async fn heartbeat() {
     });
 }
 
-pub fn take_snapshots_for_pools() {
+pub async fn take_snapshots_for_pools() {
     let pools = pools_repo::get_pools();
     for pool in pools {
-        let pool_current_data = pool.get_current_data();
-        let current_lp_position = pool.get_current_lp_position().unwrap();
+        let pool_current_data = get_current_data(&pool).await;
+        let current_lp_position = get_current_lp_position(&pool).await.unwrap();
 
         // TODO: implement apy calculation
         let apy = 0.0;

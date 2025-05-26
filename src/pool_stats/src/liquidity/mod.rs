@@ -1,1 +1,1 @@
-pub mod liquidity;
+pub mod liquidity_service;

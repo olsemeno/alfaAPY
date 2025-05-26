@@ -457,7 +457,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // TODO: Withdraw remaining token0 and token1 from canister after adding liquidity
     }
 
-    async fn withdraw_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
+    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
         // Flow:
         // 1. Get user position ids
         // 2. Get token meta

@@ -1,7 +1,7 @@
 use candid::{CandidType, Deserialize};
 use serde::Serialize;
 
-use crate::pools::pool::{CurrentLpPosition, PoolCurrentData};
+use crate::pools::pool_data_service::{CurrentLpPosition, PoolCurrentData};
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PoolSnapshot {
