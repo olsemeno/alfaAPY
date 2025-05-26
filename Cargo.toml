@@ -15,7 +15,7 @@ members = [
     "src/libraries/candid_gen",
     "src/libraries/types",
     "src/libraries/utils",
-    "src/libraries/liquidity_clients",
+    "src/libraries/liquidity",
     "src/libraries/providers",
     "src/libraries/swap"
 ]

@@ -487,7 +487,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
-name = "liquidity_clients"
+name = "liquidity"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -611,7 +611,7 @@ dependencies = [
  "kongswap_canister",
  "kongswap_canister_c2c_client",
  "lazy_static",
- "liquidity_clients",
+ "liquidity",
  "num-traits",
  "once_cell",
  "providers",
@@ -1001,13 +1001,16 @@ dependencies = [
  "kongswap_canister",
  "kongswap_canister_c2c_client",
  "lazy_static",
+ "liquidity",
  "num-traits",
  "once_cell",
  "providers",
  "serde",
  "serde_bytes",
  "serde_json",
+ "swap",
  "types",
+ "utils",
 ]
 
 [[package]]

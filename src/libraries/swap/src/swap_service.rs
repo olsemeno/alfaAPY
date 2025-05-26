@@ -1,17 +1,15 @@
 use candid::Nat;
-use ic_cdk::api::management_canister::main::CanisterId;
 use ic_cdk::trap;
-use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 
+use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
 use types::swap_tokens::SuccessResult;
 use types::exchange_id::ExchangeId;
+use providers::kongswap::KONG_BE_CANISTER;
 
 use crate::token_swaps::kongswap::KongSwapClient;
 use crate::token_swaps::icpswap::ICPSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
-
-pub const KONG_BE_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 2, 48, 2, 23, 1, 1]);
 
 // Temporary functions for testing
 

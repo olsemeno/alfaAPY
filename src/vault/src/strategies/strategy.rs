@@ -7,20 +7,22 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 
+use swap::swap_service::swap_icrc2_kong;
+use swap::token_swaps::nat_to_u128;
+use utils::util::nat_to_f64;
 use crate::enums::{SystemEventParams, UserEventParams};
 use crate::events::event_service::{create_system_event, create_user_event};
 use crate::liquidity::liquidity_service::{
-    add_liquidity_to_pool, get_pools_data, withdraw_from_pool,
+    add_liquidity_to_pool,
+    get_pools_data,
+    withdraw_from_pool,
 };
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::calculator::Calculator;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::swap::swap_service::swap_icrc2_kong;
-use crate::swap::token_swaps::nat_to_u128;
 use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
 use crate::pools::pool::Pool;
-use crate::util::util::nat_to_f64;
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {

@@ -1,5 +1,5 @@
 [package]
-name = "liquidity_clients"
+name = "liquidity"
 version = "0.1.0"
 edition = "2018"
 

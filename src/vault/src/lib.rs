@@ -1,10 +1,7 @@
-mod swap;
-mod providers;
 mod strategies;
 pub mod liquidity;
 mod repository;
 mod user;
-mod util;
 mod types;
 mod events;
 mod enums;
@@ -17,17 +14,18 @@ use candid::{export_service, Principal};
 use ic_cdk::{caller, id, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
+pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
 use ::types::exchanges::TokenInfo;
 use ::types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
-pub use kongswap_canister::pools::{PoolsReply, Response};
-use crate::swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
-use crate::providers::kong::kong::user_balances;
+use swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
+use providers::kongswap::user_balances;
+use providers::icpswap::{withdraw as withdraw_icpswap};
+
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
-use crate::providers::icpswap::icpswap::{withdraw as withdraw_icpswap};
 
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool_icpswap,

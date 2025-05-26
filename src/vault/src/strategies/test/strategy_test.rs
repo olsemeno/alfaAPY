@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
     use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
     use types::liquidity::AddLiquidityResponse;
@@ -12,7 +11,7 @@ mod tests {
     use crate::strategies::calculator::Calculator;
     use crate::strategies::strategy::IStrategy;
     use crate::strategies::strategy_candid::StrategyCandid;
-    use crate::util::util::nat_to_f64;
+    use utils::util::nat_to_f64;
     use types::exchanges::TokenInfo;
     use types::exchange_id::ExchangeId;
 

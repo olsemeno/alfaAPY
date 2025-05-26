@@ -1,20 +1,16 @@
 use candid::Nat;
 use ic_cdk::trap;
 
-use crate::liquidity::clients::kongswap::KongSwapLiquidityClient;
-use crate::liquidity::clients::icpswap::ICPSwapLiquidityClient;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::exchanges::TokenInfo;
+use types::exchange_id::ExchangeId;
+use liquidity::liquidity_router::get_liquidity_client;
+
 use crate::pools::pool_data::PoolData;
 use crate::pools::pool::Pool;
-use types::exchanges::{TokenInfo};
-use crate::swap::swap_service::KONG_BE_CANISTER;
-use crate::liquidity::liquidity_client::LiquidityClient;
-use crate::liquidity::liquidity_router::get_liquidity_client;
 
 pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
     // TODO: return APY for pools
-
-
 
     // match pools().await {
     //     Ok(response) => {
@@ -36,12 +32,15 @@ pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
     //     }
     // }
 
-
     vec![]
 }
 
 pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
-    let liquidity_client = get_liquidity_client(&pool).await;
+    let liquidity_client = get_liquidity_client(
+        pool.token0.clone(),
+        pool.token1.clone(),
+        pool.provider.clone()
+    ).await;
 
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,
@@ -52,7 +51,11 @@ pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityRespo
 }
 
 pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
-    let liquidity_client = get_liquidity_client(&pool).await;
+    let liquidity_client = get_liquidity_client(
+        pool.token0.clone(),
+        pool.token1.clone(),
+        pool.provider.clone()
+    ).await;
 
     match liquidity_client.withdraw_from_pool(total_shares, shares).await {
         Ok(response) => response,
@@ -62,10 +65,15 @@ pub async fn withdraw_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> W
     }
 }
 
-// TODO: remove this test methods
+
+// TODO: remove this test methods below
 
 pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
-    let liquidity_client = kong_liquidity_client(token0, token1);
+    let liquidity_client = get_liquidity_client(
+        token0.clone(), 
+        token1.clone(), 
+        ExchangeId::KongSwap
+    ).await;
 
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,
@@ -76,7 +84,11 @@ pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: 
 }
 
 pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    let liquidity_client = kong_liquidity_client(token0, token1);
+    let liquidity_client = get_liquidity_client(
+        token0.clone(), 
+        token1.clone(), 
+        ExchangeId::KongSwap
+    ).await;
 
     match liquidity_client.withdraw_from_pool(total_shares, shares).await {
         Ok(response) => response,
@@ -87,7 +99,11 @@ pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: Tok
 }
 
 pub async fn add_liquidity_to_pool_icpswap(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
-    let liquidity_client = icpswap_liquidity_client(token0, token1).await;
+    let liquidity_client = get_liquidity_client(
+        token0.clone(), 
+        token1.clone(), 
+        ExchangeId::ICPSwap
+    ).await;
 
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,
@@ -98,7 +114,11 @@ pub async fn add_liquidity_to_pool_icpswap(amount: Nat, token0: TokenInfo, token
 }
 
 pub async fn withdraw_from_pool_icpswap(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    let liquidity_client = icpswap_liquidity_client(token0, token1).await;
+    let liquidity_client = get_liquidity_client(
+        token0.clone(), 
+        token1.clone(), 
+        ExchangeId::ICPSwap
+    ).await;
 
     match liquidity_client.withdraw_from_pool(total_shares, shares).await {
         Ok(response) => response,
@@ -106,25 +126,6 @@ pub async fn withdraw_from_pool_icpswap(total_shares: Nat, shares: Nat, token0: 
             trap(error.as_str());
         }
     }
-}
-
-async fn icpswap_liquidity_client(token0: TokenInfo, token1: TokenInfo) -> Box<dyn LiquidityClient> {
-    Box::new(
-        ICPSwapLiquidityClient::new(
-            token0,
-            token1,
-        ).await
-    )
-}
-
-fn kong_liquidity_client(token0: TokenInfo, token1: TokenInfo) -> Box<dyn LiquidityClient> {
-    Box::new(
-        KongSwapLiquidityClient::new(
-            KONG_BE_CANISTER,
-            token0,
-            token1,
-        )
-    )
 }
 
 // End of test methods

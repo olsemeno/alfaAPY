@@ -8,7 +8,7 @@ use kongswap_canister::queries::add_liquidity_amounts::Response as AddLiquidityA
 use kongswap_canister::swap_amounts::Response as SwapAmountsResponse;
 use kongswap_canister::user_balances::UserBalancesReply;
 
-const KONG_BE_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
+pub const KONG_BE_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
 
 pub async fn pools() -> PoolsResponse {
     kongswap_canister_c2c_client::pools(KONG_BE_CANISTER).await.unwrap_or_else(|(code, msg)| {

@@ -36,4 +36,4 @@ icpswap_swap_calculator_canister = { path = "../external_canisters/icpswap_swap_
 icpswap_swap_calculator_canister_c2c_client = { path = "../external_canisters/icpswap_swap_calculator/c2c_client" }
 utils = { path = "../libraries/utils" }
 providers = { path = "../libraries/providers" }
-liquidity_clients = { path = "../libraries/liquidity_clients" }
+liquidity = { path = "../libraries/liquidity" }
