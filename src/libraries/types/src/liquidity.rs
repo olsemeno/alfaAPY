@@ -25,4 +25,6 @@ pub struct GetPositionByIdResponse {
     pub position_id: Nat,
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
+    pub usd_amount_0: Nat,
+    pub usd_amount_1: Nat,
 }

@@ -4,10 +4,9 @@ type AddLiquidityResponse = record {
   token_1_amount : nat;
 };
 
-type CurrentPosition = record {
-  id : nat;
-  current_amount0 : nat;
-  current_amount1 : nat;
+type ApyValue = record {
+  tokens_apy : float64;
+  usd_apy : float64;
 };
 
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
@@ -20,7 +19,13 @@ type Pool = record {
   position : opt Position;
 };
 
-type PoolCurrentData = record {
+type PoolApy = record {
+  month : ApyValue;
+  week : ApyValue;
+  year : ApyValue;
+};
+
+type PoolData = record {
   lp_fee_0 : nat;
   lp_fee_1 : nat;
   balance0 : nat;
@@ -30,7 +35,7 @@ type PoolCurrentData = record {
 type PoolMetrics = record {
   pool : Pool;
   snapshots : vec PoolSnapshot;
-  avg_apy : float64;
+  avg_apy : PoolApy;
 };
 
 type PoolMetricsArgs = record {
@@ -40,17 +45,24 @@ type PoolMetricsArgs = record {
 };
 
 type PoolSnapshot = record {
-  apy : float64;
-  pool_data : opt PoolCurrentData;
+  pool_data : opt PoolData;
   timestamp : nat64;
   pool_id : text;
-  position : CurrentPosition;
+  position_data : PositionData;
 };
 
 type Position = record {
   id : nat;
   initial_amount0 : nat;
   initial_amount1 : nat;
+};
+
+type PositionData = record {
+  id : nat;
+  usd_amount0 : nat;
+  usd_amount1 : nat;
+  amount0 : nat;
+  amount1 : nat;
 };
 
 type Result = variant { Ok : AddLiquidityResponse; Err : text };
@@ -72,5 +84,5 @@ service : () -> {
   get_pool_metrics : (vec PoolMetricsArgs) -> (vec opt PoolMetrics);
   get_pools : () -> (vec Pool);
   remove_liquidity_from_pool : (text) -> (Result_1);
-  set_admin : (principal) -> ();
+  set_operator : (principal) -> ();
 }

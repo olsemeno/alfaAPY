@@ -179,6 +179,8 @@ impl LiquidityClient for KongSwapLiquidityClient {
             position_id: position_id,
             token_0_amount: Nat::from(user_balance.amount_0 as u128),
             token_1_amount: Nat::from(user_balance.amount_1 as u128),
+            usd_amount_0: Nat::from(user_balance.usd_amount_0 as u128),
+            usd_amount_1: Nat::from(user_balance.usd_amount_1 as u128),
         })
     }
 }

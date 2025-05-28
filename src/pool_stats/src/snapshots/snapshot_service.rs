@@ -39,22 +39,16 @@ pub fn stop_pool_snapshots_timer() {
 
 pub async fn take_pool_snapshots() {
     let pools = pools_repo::get_pools();
-    for pool in pools {
+    // Iterate over pools with liquidity position
+    for pool in pools.into_iter().filter(|p| p.position.is_some()) {
         let pool_current_data = get_current_data(&pool).await;
         let current_position = get_current_position(&pool).await.unwrap();
-
-        // TODO: implement apy calculation
-        // Get last snapshot
-        // Compare amount0 and amount1 with last snapshot
-        // Calculate apy
-        let apy = 0.0;
 
         let snapshot = PoolSnapshot::new(
             pool.id, 
             ic_cdk::api::time(),
             current_position,
             Some(pool_current_data),
-            apy
         );
         pools_repo::save_pool_snapshot(snapshot);
     }

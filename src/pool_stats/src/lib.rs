@@ -113,9 +113,9 @@ fn post_upgrade() {
     start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
-// Sets the admin principal.
+// Sets the operator principal.
 #[update]
-async fn set_admin(operator: Principal) {
+async fn set_operator(operator: Principal) {
     let controllers = get_controllers().await;
     if !controllers.contains(&ic_cdk::caller()) {
         trap("Unauthorized: caller is not a controller");

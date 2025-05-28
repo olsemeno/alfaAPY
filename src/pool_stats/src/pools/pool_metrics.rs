@@ -4,11 +4,25 @@ use serde::Serialize;
 use crate::pools::pool::Pool;
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::repository::pools_repo;
+use crate::snapshots::apy_service;
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+pub struct ApyValue {
+    pub tokens_apy: f64,
+    pub usd_apy: f64,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+pub struct PoolApy {
+    pub week: ApyValue,
+    pub month: ApyValue,
+    pub year: ApyValue,
+}
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PoolMetrics {
     pub pool: Pool,
-    pub avg_apy: f64,
+    pub avg_apy: PoolApy,
     pub snapshots: Vec<PoolSnapshot>,
     // pub tvl: u128,
 }
@@ -16,7 +30,8 @@ pub struct PoolMetrics {
 impl PoolMetrics {
     pub fn build(pool: Pool) -> Self {
         let snapshots = pools_repo::get_pool_snapshots(pool.id.clone()).unwrap_or_default();
-        let avg_apy = snapshots.iter().map(|snapshot| snapshot.apy).sum::<f64>() / snapshots.len() as f64;
+        let now = ic_cdk::api::time();
+        let avg_apy = apy_service::calculate_pool_apy(&snapshots, now);
         Self { pool, avg_apy, snapshots }
     }
 }

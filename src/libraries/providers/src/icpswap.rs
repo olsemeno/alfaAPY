@@ -13,7 +13,7 @@ use icpswap_swap_pool_canister::claim::ClaimResponse;
 use icpswap_swap_pool_canister::getUserUnusedBalance::UserUnusedBalance;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
-
+use icpswap_node_index_canister::getAllTokens::TokenData;
 
 use utils::util::principal_to_canister_id;
 
@@ -21,6 +21,7 @@ use utils::util::principal_to_canister_id;
 
 pub static SWAP_FACTORY_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("4mmnk-kiaaa-aaaag-qbllq-cai"));
 pub static SWAP_CALCULATOR_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("phr2m-oyaaa-aaaag-qjuoq-cai"));
+pub static NODE_INDEX_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("ggzvv-5qaaa-aaaag-qck7a-cai"));
 
 pub const SWAP_FEE: u128 = 3000;
 pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
@@ -443,6 +444,19 @@ pub async fn get_token_amount_by_liquidity(
         }
         Err(error) => {
             Err(format!("Get token amount by liquidity error (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+// Node Index canister
+
+pub async fn get_all_tokens() -> Result<Vec<TokenData>, String> {
+    match icpswap_node_index_canister_c2c_client::getAllTokens(*NODE_INDEX_CANISTER).await {
+        Ok(response) => {
+            Ok(response)
+        }
+        Err(error) => {
+            Err(format!("Get all tokens error (ICPSWAP) : {:?}", error))
         }
     }
 }

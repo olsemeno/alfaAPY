@@ -26,6 +26,7 @@ use providers::icpswap::{
     swap,
     get_user_positions_by_principal,
     get_token_amount_by_liquidity,
+    get_all_tokens,
 };
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
 use icpswap_swap_pool_canister::metadata::Metadata;
@@ -36,6 +37,7 @@ use icpswap_swap_pool_canister::claim::ClaimResponse;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
+use icpswap_node_index_canister::getAllTokens::TokenData;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
 
@@ -319,6 +321,15 @@ impl ICPSwapLiquidityClient {
             Ok(token_amount) => Ok(token_amount),
             Err(error) => {
                 return Err(format!("Get token amount by liquidity error (ICPSWAP) : {:?}", error));
+            }
+        }
+    }
+
+    async fn get_all_tokens(&self) -> Result<Vec<TokenData>, String> {
+        match get_all_tokens().await {
+            Ok(tokens) => Ok(tokens),
+            Err(error) => {
+                return Err(format!("Get all tokens error (ICPSWAP) : {:?}", error));
             }
         }
     }
@@ -647,10 +658,36 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let token0_amount = token_amounts.amount0 + token0_owed;
         let token1_amount = token_amounts.amount1 + token1_owed;
 
+        let all_tokens = match self.get_all_tokens().await {
+            Ok(tokens) => tokens,
+            Err(error) => {
+                return Err(format!("Get all tokens error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let mut token0_price = 0.0;
+        let mut token1_price = 0.0;
+
+        for token in &all_tokens {
+            match token.address.as_str() {
+                addr if addr == self.token0.ledger.to_string() => token0_price = token.priceUSD,
+                addr if addr == self.token1.ledger.to_string() => token1_price = token.priceUSD,
+                _ => {}
+            }
+            if token0_price != 0.0 && token1_price != 0.0 {
+                break;
+            }
+        }
+
+        let token0_usd_amount = token0_amount.clone().mul(Nat::from(token0_price as u128));
+        let token1_usd_amount = token1_amount.clone().mul(Nat::from(token1_price as u128));
+
         Ok(GetPositionByIdResponse {
             position_id: position_id,
             token_0_amount: token0_amount,
             token_1_amount: token1_amount,
+            usd_amount_0: token0_usd_amount,
+            usd_amount_1: token1_usd_amount,
         })
     }
 }
