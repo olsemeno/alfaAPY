@@ -12,6 +12,8 @@ use icpswap_swap_pool_canister::decreaseLiquidity::DecreaseLiquidityResponse;
 use icpswap_swap_pool_canister::claim::ClaimResponse;
 use icpswap_swap_pool_canister::getUserUnusedBalance::UserUnusedBalance;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
+use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
+
 
 use utils::util::principal_to_canister_id;
 
@@ -422,6 +424,25 @@ pub async fn get_price(sqrt_price_x96: Nat, token_0_decimals: Nat, token_1_decim
         }
         Err(error) => {
             Err(format!("Get price error (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+pub async fn get_token_amount_by_liquidity(
+    sqrt_price_x96: Nat,
+    tick_lower: Int,
+    tick_upper: Int,
+    liquidity: Nat
+) -> Result<GetTokenAmountByLiquidityResponse, String> {
+    match icpswap_swap_calculator_canister_c2c_client::getTokenAmountByLiquidity(
+        *SWAP_CALCULATOR_CANISTER,
+        (sqrt_price_x96, tick_lower, tick_upper, liquidity)
+    ).await {
+        Ok(response) => {
+            Ok(response.0)
+        }
+        Err(error) => {
+            Err(format!("Get token amount by liquidity error (ICPSWAP) : {:?}", error))
         }
     }
 }

@@ -108,6 +108,7 @@ pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amou
     }
     )
 }
+
 pub async fn user_balances(principal_id: String) -> (Result<Vec<UserBalancesReply>, String>,) {
     kongswap_canister_c2c_client::user_balances(KONG_BE_CANISTER, (principal_id,)).await.unwrap_or_else(|(code, msg)| {
         trap(format!(

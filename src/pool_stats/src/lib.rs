@@ -12,7 +12,7 @@ pub mod service;
 pub mod repository;
 pub mod snapshots;
 
-const SNAPSHOT_INTERVAL: u64 = 3600; // 1 hour
+const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
 #[derive(CandidType, Debug, Clone, Deserialize)]
 pub struct CanisterIdRequest {
@@ -35,7 +35,7 @@ thread_local! {
 
 #[ic_cdk::init]
 async fn init() {
-    start_pool_snapshots_timer(SNAPSHOT_INTERVAL);
+    start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 #[ic_cdk::pre_upgrade]
@@ -45,7 +45,7 @@ fn pre_upgrade() {
 
 #[ic_cdk::post_upgrade]
 fn post_upgrade() {
-    start_pool_snapshots_timer(SNAPSHOT_INTERVAL);
+    start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 // Sets the admin principal.

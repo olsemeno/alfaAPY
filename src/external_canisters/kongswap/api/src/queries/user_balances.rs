@@ -26,5 +26,5 @@ pub struct LPReply {
     pub amount_1: f64,
     pub usd_amount_1: f64,
     pub ts: u64,
+    pub lp_token_id: u64,
 }
-

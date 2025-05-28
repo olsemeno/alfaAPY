@@ -4,9 +4,10 @@ use candid::{Nat,Int};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 
-use utils::util::{nat_to_u64};
 use crate::liquidity_client::LiquidityClient;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee};
+
+use utils::util::{nat_to_u64};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee, GetPositionByIdResponse};
 use types::CanisterId;
 use providers::icpswap::{
     metadata,
@@ -24,6 +25,7 @@ use providers::icpswap::{
     claim,
     swap,
     get_user_positions_by_principal,
+    get_token_amount_by_liquidity,
 };
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
 use icpswap_swap_pool_canister::metadata::Metadata;
@@ -33,6 +35,7 @@ use icpswap_swap_pool_canister::getUserPosition::UserPosition;
 use icpswap_swap_pool_canister::claim::ClaimResponse;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_factory_canister::ICPSwapPool;
+use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
 
@@ -301,6 +304,21 @@ impl ICPSwapLiquidityClient {
             Ok(user_position) => Ok(user_position),
             Err(error) => {
                 return Err(format!("Get user position error (ICPSWAP) : {:?}", error));
+            }
+        }
+    }
+
+    async fn get_token_amount_by_liquidity(
+        &self,
+        sqrt_price_x96: Nat,
+        tick_lower: Int,
+        tick_upper: Int,
+        liquidity: Nat
+    ) -> Result<GetTokenAmountByLiquidityResponse, String> {
+        match get_token_amount_by_liquidity(sqrt_price_x96, tick_lower, tick_upper, liquidity).await {
+            Ok(token_amount) => Ok(token_amount),
+            Err(error) => {
+                return Err(format!("Get token amount by liquidity error (ICPSWAP) : {:?}", error));
             }
         }
     }
@@ -586,6 +604,53 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         Ok(WithdrawFromPoolResponse {
             token_0_amount: token_0_amount_out,
             token_1_amount: token_1_amount_out,
+        })
+    }
+
+    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
+        // 3. Get metadata
+        let metadata = match self.metadata().await {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                return Err(format!("Metadata error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let sqrt_price_x96 = metadata.sqrtPriceX96;
+
+        // 3. Get user position
+        let user_position = match self.get_user_position(position_id.clone()).await {
+            Ok(user_position) => user_position,
+            Err(error) => {
+                return Err(format!("Get user position error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let token0_owed = user_position.tokensOwed0; // Amount of token0 from fees
+        let token1_owed = user_position.tokensOwed1; // Amount of token1 from fees
+        let liquidity = user_position.liquidity;
+        let tick_lower = user_position.tickLower;
+        let tick_upper = user_position.tickUpper;
+
+        let token_amounts = match self.get_token_amount_by_liquidity(
+            sqrt_price_x96,
+            tick_lower,
+            tick_upper,
+            liquidity
+        ).await {
+            Ok(token_amount) => token_amount,
+            Err(error) => {
+                return Err(format!("Get token amount by liquidity error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let token0_amount = token_amounts.amount0 + token0_owed;
+        let token1_amount = token_amounts.amount1 + token1_owed;
+
+        Ok(GetPositionByIdResponse {
+            position_id: position_id,
+            token_0_amount: token0_amount,
+            token_1_amount: token1_amount,
         })
     }
 }

@@ -11,11 +11,18 @@ pub struct WithdrawFromPoolResponse {
 pub struct AddLiquidityResponse {
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
-    pub request_id: u64,
+    pub request_id: u64, // TODO: rename to position_id
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct TokensFee {
     pub token0_fee: Option<Nat>,
     pub token1_fee: Option<Nat>,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct GetPositionByIdResponse {
+    pub position_id: Nat,
+    pub token_0_amount: Nat,
+    pub token_1_amount: Nat,
 }

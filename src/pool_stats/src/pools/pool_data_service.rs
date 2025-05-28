@@ -4,11 +4,11 @@ use candid::Nat;
 
 use crate::pools::pool::Pool;
 
+use liquidity::liquidity_router::get_liquidity_client;
+
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
-pub struct CurrentLpPosition {
+pub struct CurrentPosition {
     pub id: Nat,
-    pub initial_amount0: Nat,
-    pub initial_amount1: Nat,
     pub current_amount0: Nat,
     pub current_amount1: Nat,
 }
@@ -21,10 +21,30 @@ pub struct PoolCurrentData {
     pub lp_fee_1: Nat,
 }
 
-// TODO: implement get_current_lp_position
-pub async fn get_current_lp_position(pool: &Pool) -> Option<CurrentLpPosition> {
-    // Call liquidity service to get current lp position
-    None
+pub async fn get_current_position(pool: &Pool) -> Option<CurrentPosition> {
+    let liquidity_client = get_liquidity_client(
+        pool.token0.clone(),
+        pool.token1.clone(),
+        pool.provider.clone()
+    ).await;
+
+    let position_id = pool.position.as_ref().unwrap().id.clone();
+
+    let position = liquidity_client.get_position_by_id(position_id).await;
+
+    match position {
+        Ok(position) => {
+            let current_position = CurrentPosition {
+                id: position.position_id,
+                current_amount0: position.token_0_amount,
+                current_amount1: position.token_1_amount,
+            };
+            Some(current_position)
+        }
+        Err(_error) => {
+            None
+        }
+    }
 }
 
 // TODO: implement get_current_data

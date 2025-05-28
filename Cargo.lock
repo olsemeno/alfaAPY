@@ -630,6 +630,7 @@ dependencies = [
  "async-trait",
  "candid",
  "ic-cdk 0.17.1",
+ "icpswap_swap_calculator_canister",
  "icpswap_swap_factory_canister",
  "icpswap_swap_pool_canister",
  "icrc-ledger-types",

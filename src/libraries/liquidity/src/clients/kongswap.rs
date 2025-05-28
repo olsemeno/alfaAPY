@@ -7,11 +7,12 @@ use types::CanisterId;
 use types::exchanges::TokenInfo;
 use providers::kongswap::{add_liquidity, add_liquidity_amounts, remove_liquidity, swap_amounts, user_balances};
 use kongswap_canister::user_balances::UserBalancesReply;
-use crate::liquidity_client::LiquidityClient;
-use utils::util::nat_to_f64;
-use crate::liquidity_calculator::LiquidityCalculator;
+use utils::util::{nat_to_f64, nat_to_u64};
 use swap::swap_service::swap_icrc2_kong;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse};
+
+use crate::liquidity_client::LiquidityClient;
+use crate::liquidity_calculator::LiquidityCalculator;
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
@@ -100,7 +101,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         // trap("Not implemented yet");
         let canister_id = ic_cdk::id();
     
-        // Fetch LP tokens amount in pool
+        // Fetch LP positions in pool
         let user_balances_response = match user_balances(canister_id.to_string()).await.0 {
             Ok(reply) => reply,
             Err(err) => {
@@ -109,7 +110,8 @@ impl LiquidityClient for KongSwapLiquidityClient {
         };
     
         // Get user balance in pool
-        let user_balance_reply = user_balances_response.into_iter()
+        let user_balance = user_balances_response
+            .into_iter()
             .filter_map(|reply| match reply {
                 UserBalancesReply::LP(lp) => Some(lp),
             })
@@ -119,7 +121,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             )
             .unwrap_or_else(|| trap("Expected LP balance"));
     
-        let balance = user_balance_reply.balance;
+        let balance = user_balance.balance;
     
         // Calculate how much LP tokens to withdraw
         let lp_tokens_to_withdraw: f64 = balance.mul(nat_to_f64(&shares)).div(nat_to_f64(&total_shares)).mul(100000000.0);
@@ -139,6 +141,44 @@ impl LiquidityClient for KongSwapLiquidityClient {
         Ok(WithdrawFromPoolResponse {
             token_0_amount: remove_liquidity_response.amount_0,
             token_1_amount: remove_liquidity_response.amount_1,
+        })
+    }
+
+    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
+        let canister_id = ic_cdk::id();
+
+        // Fetch LP positions in pool
+        let user_balances_response = match user_balances(canister_id.to_string()).await.0 {
+            Ok(reply) => reply,
+            Err(err) => {
+                trap(format!("Error user_balances_response: {}", err).as_str());
+            }
+        };
+
+        let user_balance = user_balances_response
+            .into_iter()
+            .filter_map(|reply| match reply {
+                UserBalancesReply::LP(lp) => Some(lp),
+            })
+            .find(|balance|
+                balance.lp_token_id == nat_to_u64(&position_id) &&
+                (
+                    (
+                        balance.address_0 == self.token0.ledger.to_string() &&
+                        balance.address_1 == self.token1.ledger.to_string()
+                    ) ||
+                    (
+                        balance.address_0 == self.token1.ledger.to_string() &&
+                        balance.address_1 == self.token0.ledger.to_string()
+                    )
+                )
+            )
+            .unwrap_or_else(|| trap("Expected LP balance"));
+
+        Ok(GetPositionByIdResponse {
+            position_id: position_id,
+            token_0_amount: Nat::from(user_balance.amount_0 as u128),
+            token_1_amount: Nat::from(user_balance.amount_1 as u128),
         })
     }
 }

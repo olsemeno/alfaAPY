@@ -4,7 +4,7 @@ use ic_cdk_timers::TimerId;
 
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::repository::pools_repo;
-use crate::pools::pool_data_service::{get_current_data, get_current_lp_position};
+use crate::pools::pool_data_service::{get_current_data, get_current_position};
 
 thread_local! {
     static POOL_SNAPSHOT_TIMER_ID: RefCell<Option<TimerId>> = RefCell::new(None);
@@ -41,16 +41,19 @@ pub async fn take_pool_snapshots() {
     let pools = pools_repo::get_pools();
     for pool in pools {
         let pool_current_data = get_current_data(&pool).await;
-        let current_lp_position = get_current_lp_position(&pool).await.unwrap();
+        let current_position = get_current_position(&pool).await.unwrap();
 
         // TODO: implement apy calculation
+        // Get last snapshot
+        // Compare amount0 and amount1 with last snapshot
+        // Calculate apy
         let apy = 0.0;
 
         let snapshot = PoolSnapshot::new(
             pool.id, 
-            ic_cdk::api::time(), 
-            current_lp_position, 
-            pool_current_data, 
+            ic_cdk::api::time(),
+            current_position,
+            Some(pool_current_data),
             apy
         );
         pools_repo::save_pool_snapshot(snapshot);

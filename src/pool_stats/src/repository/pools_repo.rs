@@ -41,6 +41,13 @@ pub fn get_pool_by_id(pool_id: &str) -> Option<Pool> {
     POOLS.with(|pools| pools.borrow().get(pool_id).cloned())
 }
 
+pub fn update_pool(pool_id: &str, pool: Pool) {
+    POOLS.with(|pools| {
+        let mut pools = pools.borrow_mut();
+        pools.insert(pool_id.to_string(), pool);
+    });
+}
+
 pub fn get_pool_count() -> u64 {
     POOLS.with(|pools| pools.borrow().len() as u64)
 }
