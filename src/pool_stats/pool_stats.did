@@ -26,10 +26,7 @@ type PoolApy = record {
 };
 
 type PoolData = record {
-  lp_fee_0 : nat;
-  lp_fee_1 : nat;
-  balance0 : nat;
-  balance1 : nat;
+  tvl : nat;
 };
 
 type PoolMetrics = record {
@@ -48,7 +45,7 @@ type PoolSnapshot = record {
   pool_data : opt PoolData;
   timestamp : nat64;
   pool_id : text;
-  position_data : PositionData;
+  position_data : opt PositionData;
 };
 
 type Position = record {

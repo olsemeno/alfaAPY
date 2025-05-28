@@ -16,6 +16,7 @@ icpswap_swap_pool_canister = { path = "../../external_canisters/icpswap_swap_poo
 icpswap_swap_factory_canister = { path = "../../external_canisters/icpswap_swap_factory/api" }
 icpswap_swap_calculator_canister = { path = "../../external_canisters/icpswap_swap_calculator/api" }
 icpswap_node_index_canister = { path = "../../external_canisters/icpswap_node_index/api" }
+icpswap_tvl_storage_canister = { path = "../../external_canisters/icpswap_tvl_storage/api" }
 kongswap_canister = { path = "../../external_canisters/kongswap/api" } 
 providers = { path = "../providers" }
 utils = { path = "../utils" }

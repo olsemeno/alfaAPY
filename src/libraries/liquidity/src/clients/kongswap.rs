@@ -5,14 +5,16 @@ use std::ops::{Div, Mul};
 
 use types::CanisterId;
 use types::exchanges::TokenInfo;
-use providers::kongswap::{add_liquidity, add_liquidity_amounts, remove_liquidity, swap_amounts, user_balances};
+use providers::kongswap::{add_liquidity, add_liquidity_amounts, remove_liquidity, swap_amounts, user_balances, pools};
 use kongswap_canister::user_balances::UserBalancesReply;
 use utils::util::{nat_to_f64, nat_to_u64};
 use swap::swap_service::swap_icrc2_kong;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolData};
 
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
+
+const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
@@ -181,6 +183,56 @@ impl LiquidityClient for KongSwapLiquidityClient {
             token_1_amount: Nat::from(user_balance.amount_1 as u128),
             usd_amount_0: Nat::from(user_balance.usd_amount_0 as u128),
             usd_amount_1: Nat::from(user_balance.usd_amount_1 as u128),
+        })
+    }
+
+    async fn get_pool_data(&self) -> Result<GetPoolData, String> {
+        let pools_response = match pools().await {
+            Ok(reply) => reply,
+            Err(err) => {
+                trap(format!("Error pools_response: {}", err).as_str());
+            }
+        };
+
+        let pool_data = pools_response.pools
+            .iter()
+            .find(|pool|
+                (
+                    pool.address_0 == self.token0.ledger.to_string() && pool.address_1 == self.token1.ledger.to_string()
+                ) ||
+                (
+                    pool.address_0 == self.token1.ledger.to_string() && pool.address_1 == self.token0.ledger.to_string()
+                )
+            )
+            .unwrap_or_else(|| trap("Expected pool"));
+
+        let balance0 = pool_data.balance_0.clone() + pool_data.lp_fee_0.clone();
+        let balance1 = pool_data.balance_1.clone() + pool_data.lp_fee_1.clone();
+
+        // Get USD amount of token0 pool
+        let usd_token0_amount = match swap_amounts(
+            self.token0.symbol.clone(),
+            balance0.clone(),
+            CKUSDT_CANISTER_ID.to_string()
+        ).await {
+            (Ok(swap_amounts_reply), ) => swap_amounts_reply.receive_amount,
+            (Err(e), ) => trap(format!("swap_amounts error for {} and {} and {}: {}", self.token0.symbol, CKUSDT_CANISTER_ID.to_string(), balance0, e).as_str()),
+        };
+
+        // Get USD amount of token1 pool
+        let usd_token1_amount = match swap_amounts(
+            self.token1.symbol.clone(),
+            balance1.clone(),
+            CKUSDT_CANISTER_ID.to_string()
+        ).await {
+            (Ok(swap_amounts_reply), ) => swap_amounts_reply.receive_amount,
+            (Err(e), ) => trap(format!("swap_amounts error for {} and {} and {}: {}", self.token1.symbol, CKUSDT_CANISTER_ID.to_string(), balance1, e).as_str()),
+        };
+
+        let tvl = usd_token0_amount + usd_token1_amount;
+
+        Ok(GetPoolData {
+            tvl: tvl,
         })
     }
 }

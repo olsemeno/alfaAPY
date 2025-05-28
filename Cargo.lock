@@ -526,6 +526,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "icpswap_tvl_storage_canister"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "serde",
+ "types",
+]
+
+[[package]]
+name = "icpswap_tvl_storage_canister_c2c_client"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "canister_client",
+ "ic-cdk 0.17.1",
+ "icpswap_tvl_storage_canister",
+ "types",
+]
+
+[[package]]
 name = "icrc-cbor"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -654,6 +674,7 @@ dependencies = [
  "icpswap_swap_calculator_canister",
  "icpswap_swap_factory_canister",
  "icpswap_swap_pool_canister",
+ "icpswap_tvl_storage_canister",
  "icrc-ledger-types",
  "icrc_ledger_canister",
  "icrc_ledger_canister_c2c_client",
@@ -829,6 +850,8 @@ dependencies = [
  "icpswap_swap_factory_canister_c2c_client",
  "icpswap_swap_pool_canister",
  "icpswap_swap_pool_canister_c2c_client",
+ "icpswap_tvl_storage_canister",
+ "icpswap_tvl_storage_canister_c2c_client",
  "icrc-ledger-types",
  "icrc_ledger_canister",
  "icrc_ledger_canister_c2c_client",

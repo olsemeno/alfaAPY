@@ -67,9 +67,38 @@ type StrategyResponse = record {
 
 type SupportedStandard = record { url : text; name : text };
 
+type SystemEvent = record {
+  id : nat64;
+  timestamp : nat64;
+  details : SystemEventDetails;
+  event_type : SystemEventType;
+};
+
+type SystemEventDetails = variant {
+  Swap;
+  Rebalance : record { old_pool : text; new_pool : text };
+};
+
+type SystemEventType = variant { Swap; Rebalance };
+
 type TokenInfo = record { ledger : principal; symbol : text };
 
 type UserBalancesReply = variant { LP : LPReply };
+
+type UserEvent = record {
+  id : nat64;
+  user : principal;
+  timestamp : nat64;
+  details : UserEventDetails;
+  event_type : UserEventType;
+};
+
+type UserEventDetails = variant {
+  AddLiquidity : record { token : text; amount : nat; symbol : text };
+  RemoveLiquidity : record { token : text; amount : nat; symbol : text };
+};
+
+type UserEventType = variant { AddLiquidity; RemoveLiquidity };
 
 type UserStrategyResponse = record {
   strategy_current_pool : PoolResponse;
@@ -78,6 +107,7 @@ type UserStrategyResponse = record {
   initial_deposit : nat;
   user_shares : nat;
   strategy_name : text;
+  users_count : nat32;
 };
 
 type WithdrawArgs = record {
@@ -99,6 +129,8 @@ service : (opt Conf) -> {
   get_icpswap_quote : (TokenInfo, TokenInfo, nat) -> (nat);
   get_kongswap_quote : (TokenInfo, TokenInfo, nat) -> (nat);
   get_strategies : () -> (vec StrategyResponse) query;
+  get_system_events : (nat64, nat64) -> (vec SystemEvent);
+  get_user_events : (principal, nat64, nat64) -> (vec UserEvent);
   icpswap_add_liquidity : (nat, TokenInfo, TokenInfo) -> (AddLiquidityResponse);
   icpswap_withdraw : (TokenInfo, nat, nat) -> (nat);
   icpswap_withdraw_from_pool : (nat, nat, TokenInfo, TokenInfo) -> (WithdrawFromPoolResponse);

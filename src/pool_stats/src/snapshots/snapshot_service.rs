@@ -42,13 +42,13 @@ pub async fn take_pool_snapshots() {
     // Iterate over pools with liquidity position
     for pool in pools.into_iter().filter(|p| p.position.is_some()) {
         let pool_current_data = get_current_data(&pool).await;
-        let current_position = get_current_position(&pool).await.unwrap();
+        let current_position = get_current_position(&pool).await;
 
         let snapshot = PoolSnapshot::new(
             pool.id, 
             ic_cdk::api::time(),
             current_position,
-            Some(pool_current_data),
+            pool_current_data,
         );
         pools_repo::save_pool_snapshot(snapshot);
     }

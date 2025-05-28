@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use ic_cdk::trap;
-use candid::{Nat,Int};
+use candid::{Nat, Int, Principal};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 
 use crate::liquidity_client::LiquidityClient;
 
 use utils::util::{nat_to_u64};
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee, GetPositionByIdResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee, GetPositionByIdResponse, GetPoolData};
 use types::CanisterId;
 use providers::icpswap::{
     metadata,
@@ -27,6 +27,8 @@ use providers::icpswap::{
     get_user_positions_by_principal,
     get_token_amount_by_liquidity,
     get_all_tokens,
+    get_tvl_storage_canister,
+    get_pool_chart_tvl,
 };
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
 use icpswap_swap_pool_canister::metadata::Metadata;
@@ -39,6 +41,7 @@ use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
+use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use types::exchanges::TokenInfo;
 
 const TICK_LOWER: i32 = -887220;
@@ -330,6 +333,32 @@ impl ICPSwapLiquidityClient {
             Ok(tokens) => Ok(tokens),
             Err(error) => {
                 return Err(format!("Get all tokens error (ICPSWAP) : {:?}", error));
+            }
+        }
+    }
+
+    async fn get_tvl_storage_canister(&self) -> Result<String, String> {
+        match get_tvl_storage_canister().await {
+            Ok(tvl_storage_canister_response) => Ok(tvl_storage_canister_response[0].clone()),
+            Err(error) => {
+                return Err(format!("Get tvl storage canister error (ICPSWAP) : {:?}", error));
+            }
+        }
+    }
+
+    async fn get_pool_chart_tvl(&self, tvl_storage_canister_id: Principal) -> Result<Vec<PoolChartTvl>, String> {
+        let offset = Nat::from(0u128);
+        let limit = Nat::from(0u128);
+
+        match get_pool_chart_tvl(
+            tvl_storage_canister_id,
+            self.canister_id.to_string(),
+            offset,
+            limit
+        ).await {
+            Ok(pool_chart_tvl) => Ok(pool_chart_tvl),
+            Err(error) => {
+                return Err(format!("Get pool chart tvl error (ICPSWAP) : {:?}", error));
             }
         }
     }
@@ -688,6 +717,28 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             token_1_amount: token1_amount,
             usd_amount_0: token0_usd_amount,
             usd_amount_1: token1_usd_amount,
+        })
+    }
+
+    async fn get_pool_data(&self) -> Result<GetPoolData, String> {
+        let tvl_storage_canister_id  = match self.get_tvl_storage_canister().await {
+            Ok(tvl_storage_canister_id) => Principal::from_text(tvl_storage_canister_id).unwrap(),
+            Err(error) => {
+                return Err(format!("Get tvl storage canister error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let pool_chart_tvl_response = match self.get_pool_chart_tvl(tvl_storage_canister_id).await {
+            Ok(pool_chart_tvl) => pool_chart_tvl,
+            Err(error) => {
+                return Err(format!("Get pool chart tvl error (ICPSWAP) : {:?}", error));
+            }
+        };
+
+        let tvl = Nat::from(pool_chart_tvl_response.last().unwrap().tvlUSD as u128);
+
+        Ok(GetPoolData {
+            tvl: tvl,
         })
     }
 }

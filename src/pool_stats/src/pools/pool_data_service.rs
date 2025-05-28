@@ -4,7 +4,8 @@ use candid::Nat;
 
 use crate::pools::pool::Pool;
 
-use liquidity::liquidity_router::get_liquidity_client;
+use liquidity::liquidity_router;
+use liquidity::liquidity_client::LiquidityClient;
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PositionData {
@@ -17,24 +18,18 @@ pub struct PositionData {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PoolData {
-    pub balance0: Nat,
-    pub balance1: Nat,
-    pub lp_fee_0: Nat,
-    pub lp_fee_1: Nat,
+    pub tvl: Nat,
+    // pub balance0: Nat,
+    // pub balance1: Nat,
+    // pub lp_fee_0: Nat,
+    // pub lp_fee_1: Nat,
 }
 
 pub async fn get_current_position(pool: &Pool) -> Option<PositionData> {
-    let liquidity_client = get_liquidity_client(
-        pool.token0.clone(),
-        pool.token1.clone(),
-        pool.provider.clone()
-    ).await;
-
+    let liquidity_client = get_liquidity_client(pool).await;
     let position_id = pool.position.as_ref().unwrap().id.clone();
 
-    let position = liquidity_client.get_position_by_id(position_id).await;
-
-    match position {
+    match liquidity_client.get_position_by_id(position_id).await {
         Ok(position) => {
             let current_position = PositionData {
                 id: position.position_id,
@@ -51,13 +46,27 @@ pub async fn get_current_position(pool: &Pool) -> Option<PositionData> {
     }
 }
 
-// TODO: implement get_current_data
-pub async fn get_current_data(pool: &Pool) -> PoolData {
-    // Call liquidity service to get current data
-    PoolData {
-        balance0: Nat::from(0 as u64),
-        balance1: Nat::from(0 as u64),
-        lp_fee_0: Nat::from(0 as u64),
-        lp_fee_1: Nat::from(0 as u64),
+pub async fn get_current_data(pool: &Pool) -> Option<PoolData> {
+    let liquidity_client = get_liquidity_client(pool).await;
+
+    match liquidity_client.get_pool_data().await {
+        Ok(pool_data) => {
+            let pool_data = PoolData {
+                tvl: pool_data.tvl,
+            };
+
+            Some(pool_data)
+        }
+        Err(_error) => {
+            None
+        }
     }
+}
+
+async fn get_liquidity_client(pool: &Pool) -> Box<dyn LiquidityClient> {
+    liquidity_router::get_liquidity_client(
+        pool.token0.clone(),
+        pool.token1.clone(),
+        pool.provider.clone()
+    ).await
 }

@@ -28,3 +28,8 @@ pub struct GetPositionByIdResponse {
     pub usd_amount_0: Nat,
     pub usd_amount_1: Nat,
 }
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct GetPoolData {
+    pub tvl: Nat,
+}

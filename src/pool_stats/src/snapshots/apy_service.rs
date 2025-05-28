@@ -38,8 +38,14 @@ where
 }
 
 fn calculate_tokens_apy(snapshots: &[&PoolSnapshot]) -> f64 {
-    let apy0 = calculate_apy_for_period(snapshots, |snap| nat_to_f64(&snap.position_data.amount0));
-    let apy1 = calculate_apy_for_period(snapshots, |snap| nat_to_f64(&snap.position_data.amount1));
+    let apy0 = calculate_apy_for_period(
+        snapshots,
+        |snap| nat_to_f64(&snap.position_data.as_ref().unwrap().amount0)
+    );
+    let apy1 = calculate_apy_for_period(
+        snapshots,
+        |snap| nat_to_f64(&snap.position_data.as_ref().unwrap().amount1)
+    );
 
     // If both tokens are present, take the average APY, if only one is present, take its value
     match (apy0.is_normal(), apy1.is_normal()) {
@@ -73,8 +79,8 @@ pub fn calculate_pool_apy(snapshots: &[PoolSnapshot], now: u64) -> PoolApy {
         .collect();
 
     // APY по USD
-    let usd_value = |snap: &PoolSnapshot| {
-        nat_to_f64(&snap.position_data.usd_amount0) + nat_to_f64(&snap.position_data.usd_amount1)
+    let usd_value = |snapshot: &PoolSnapshot| {
+        nat_to_f64(&snapshot.position_data.as_ref().unwrap().usd_amount0) + nat_to_f64(&snapshot.position_data.as_ref().unwrap().usd_amount1)
     };
 
     PoolApy {

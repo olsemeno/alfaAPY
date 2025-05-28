@@ -14,7 +14,7 @@ use icpswap_swap_pool_canister::getUserUnusedBalance::UserUnusedBalance;
 use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
 use icpswap_node_index_canister::getAllTokens::TokenData;
-
+use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use utils::util::principal_to_canister_id;
 
 // pub const SWAP_FACTORY_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
@@ -457,6 +457,38 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, String> {
         }
         Err(error) => {
             Err(format!("Get all tokens error (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+pub async fn get_tvl_storage_canister() -> Result<Vec<String>, String> {
+    match icpswap_node_index_canister_c2c_client::tvlStorageCanister(*NODE_INDEX_CANISTER).await {
+        Ok(response) => {
+            Ok(response)
+        }
+        Err(error) => {
+            Err(format!("Get tvl storage canister error (ICPSWAP) : {:?}", error))
+        }
+    }
+}
+
+// TVL Storage canister
+
+pub async fn get_pool_chart_tvl(
+    canister_id: CanisterId,
+    pool_canister_id: String,
+    offset: Nat,
+    limit: Nat
+) -> Result<Vec<PoolChartTvl>, String> {
+    match icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl(
+        canister_id,
+        (pool_canister_id, offset, limit)
+    ).await {
+        Ok(response) => {
+            Ok(response.0)
+        }
+        Err(error) => {
+            Err(format!("Get pool chart tvl error (ICPSWAP) : {:?}", error))
         }
     }
 }

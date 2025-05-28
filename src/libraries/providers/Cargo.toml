@@ -22,4 +22,6 @@ icpswap_swap_calculator_canister = { path = "../../external_canisters/icpswap_sw
 icpswap_swap_calculator_canister_c2c_client = { path = "../../external_canisters/icpswap_swap_calculator/c2c_client" }
 icpswap_node_index_canister = { path = "../../external_canisters/icpswap_node_index/api" }
 icpswap_node_index_canister_c2c_client = { path = "../../external_canisters/icpswap_node_index/c2c_client" }
+icpswap_tvl_storage_canister = { path = "../../external_canisters/icpswap_tvl_storage/api" }
+icpswap_tvl_storage_canister_c2c_client = { path = "../../external_canisters/icpswap_tvl_storage/c2c_client" }
 utils = { path = "../utils" }
