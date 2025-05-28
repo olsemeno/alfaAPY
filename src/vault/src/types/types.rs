@@ -53,6 +53,7 @@ pub struct UserStrategyResponse {
     pub total_shares: Nat,
     pub user_shares: Nat,
     pub initial_deposit: Nat,
+    pub users_count: u32,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]

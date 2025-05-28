@@ -153,6 +153,10 @@ mod tests {
         fn set_initial_deposit(&mut self, deposit: HashMap<Principal, Nat>) {
             self.initial_deposit = deposit;
         }
+
+        fn get_users_count(&self) -> u32 {
+            self.user_shares.len() as u32
+        }
     }
 
     // Test implementation of IStrategy
@@ -325,6 +329,10 @@ mod tests {
         
         fn set_initial_deposit(&mut self, deposit: HashMap<Principal, Nat>) {
             self.mock.set_initial_deposit(deposit)
+        }
+
+        fn get_users_count(&self) -> u32 {
+            self.mock.get_users_count()
         }
     }
 

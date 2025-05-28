@@ -251,8 +251,9 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                     strategy_name: strategy.get_name(),
                     strategy_current_pool: pool.to_response(),
                     total_shares: strategy.get_total_shares(),
-                    user_shares: user_shares,
-                    initial_deposit: initial_deposit,
+                    user_shares,
+                    initial_deposit,
+                    users_count: strategy.get_users_count(),
                 });
             }
         }
