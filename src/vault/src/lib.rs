@@ -26,6 +26,8 @@ use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
+use crate::events::event_service;
+use crate::events::event::{SystemEvent, UserEvent};
 
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool_icpswap,
@@ -88,8 +90,7 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
-// Temporary functions for testing
-
+// TODO remove test function
 #[update]
 async fn icpswap_withdraw_from_pool(total_shares: Nat, shares: Nat, token_in: TokenInfo, token_out: TokenInfo) -> WithdrawFromPoolResponse {
     let icpswap_quote_result = withdraw_from_pool_icpswap(
@@ -99,7 +100,7 @@ async fn icpswap_withdraw_from_pool(total_shares: Nat, shares: Nat, token_in: To
     ).await;
     icpswap_quote_result
 }
-
+// TODO remove test function
 #[update]
 async fn icpswap_add_liquidity(amount: Nat, token_in: TokenInfo, token_out: TokenInfo) -> AddLiquidityResponse {
     // let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
@@ -111,7 +112,7 @@ async fn icpswap_add_liquidity(amount: Nat, token_in: TokenInfo, token_out: Toke
 
     icpswap_quote_result
 }
-
+// TODO remove test function
 #[update]
 async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
@@ -125,42 +126,50 @@ async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> 
 
     icpswap_quote_result.unwrap()
 }
-
+// TODO remove test function
 #[update]
 async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
     icpswap_quote(input_token, output_token, amount).await
 }
-
+// TODO remove test function
 #[update]
 async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
     swap_icrc2_icpswap(input_token, output_token, amount).await.amount_out
 }
-
-
-
+// TODO remove test function
 #[update]
 async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
     kongswap_quote(input_token, output_token, amount).await
 }
-
+// TODO remove test function
 #[update]
 async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
     swap_icrc2_kong(input_token, output_token, amount).await.amount_out
 }
-
+// TODO remove test function
 #[update]
 async fn kong_add_liquidity(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
     add_liquidity_to_pool_kong(amount, token0, token1).await
 }
-
+// TODO remove test function
 #[update]
 async fn kong_withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
     withdraw_from_pool_kong(total_shares, shares, token0, token1).await
 }
 
 
+// Events
 
-// End of temporary functions for testing
+#[update]
+async fn get_system_events(offset: u64, limit: u64) -> Vec<SystemEvent> {
+    event_service::get_system_events(offset as usize, limit as usize)
+}
+
+#[update]
+async fn get_user_events(user: Principal, offset: u64, limit: u64) -> Vec<UserEvent> {
+    event_service::get_user_events(user, offset as usize, limit as usize)
+}
+
 
 /// Accepts an investment into a specified strategy.
 ///
@@ -286,6 +295,9 @@ async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
         current_shares: response.current_shares,
     }
 }
+
+
+
 
 /// Retrieves the current configuration.
 ///
