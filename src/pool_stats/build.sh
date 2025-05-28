@@ -19,5 +19,5 @@ cargo build "${cargo_build_args[@]}"
 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$REPO_DIR/../../target/}"
 
 ic-wasm\
-  "$CARGO_TARGET_DIR/$TARGET/release/vault.wasm" \
-  -o "$REPO_DIR/../../vault.wasm" shrink
+  "$CARGO_TARGET_DIR/$TARGET/release/pool_stats.wasm" \
+  -o "$REPO_DIR/../../pool_stats.wasm" shrink

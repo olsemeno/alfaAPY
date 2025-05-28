@@ -1,0 +1,53 @@
+type CurrentPosition = record {
+  id : nat;
+  current_amount0 : nat;
+  current_amount1 : nat;
+};
+
+type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
+
+type Pool = record {
+  id : text;
+  provider : ExchangeId;
+  token0 : TokenInfo;
+  token1 : TokenInfo;
+  position : opt Position;
+};
+
+type PoolCurrentData = record {
+  lp_fee_0 : nat;
+  lp_fee_1 : nat;
+  balance0 : nat;
+  balance1 : nat;
+};
+
+type PoolMetrics = record {
+  pool : Pool;
+  snapshots : vec PoolSnapshot;
+  avg_apy : float64;
+};
+
+type PoolSnapshot = record {
+  apy : float64;
+  pool_data : opt PoolCurrentData;
+  timestamp : nat64;
+  pool_id : text;
+  position : CurrentPosition;
+};
+
+type Position = record {
+  id : nat;
+  initial_amount0 : nat;
+  initial_amount1 : nat;
+};
+
+type TokenInfo = record { ledger : principal; symbol : text };
+
+service : () -> {
+  add_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
+  delete_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
+  get_pool_by_tokens : (TokenInfo, TokenInfo, ExchangeId) -> (opt Pool);
+  get_pool_metrics : (TokenInfo, TokenInfo, ExchangeId) -> (opt PoolMetrics);
+  get_pools : () -> (vec Pool);
+  set_admin : (principal) -> ();
+}

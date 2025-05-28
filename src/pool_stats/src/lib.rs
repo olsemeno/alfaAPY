@@ -3,12 +3,25 @@ use serde::Serialize;
 use std::cell::RefCell;
 use ic_cdk::{call, id, trap, update};
 use ic_cdk::api::call::CallResult;
+use candid::{candid_method, export_service};
 
 use crate::snapshots::snapshot_service::{start_pool_snapshots_timer, stop_pool_snapshots_timer};
 
+
+use candid::Nat;
+
+use types::exchanges::TokenInfo;
+use types::exchange_id::ExchangeId;
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+
+use crate::pools::pool::Pool;
+use crate::pools::pool_metrics::PoolMetrics;
+use crate::repository::pools_repo;
+use crate::liquidity::liquidity_service;
+
 pub mod pools;
 pub mod liquidity;
-pub mod service;
+// pub mod service;
 pub mod repository;
 pub mod snapshots;
 
@@ -32,6 +45,57 @@ thread_local! {
         },
     );
 }
+
+
+#[update]
+pub fn add_pool(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) {
+    Pool::new(
+        pools_repo::get_pool_count().to_string(),
+        token0,
+        token1,
+        provider,
+    ).save();
+}
+
+#[update]
+pub fn delete_pool(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) {
+    if let Some(pool) = pools_repo::get_pool_by_tokens(token0, token1, provider) {
+        pool.delete();
+    }
+}
+
+#[update]
+pub fn get_pools() -> Vec<Pool> {
+    pools_repo::get_pools()
+}
+
+#[update]
+pub fn get_pool_by_tokens(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Option<Pool> {
+    pools_repo::get_pool_by_tokens(token0, token1, provider)
+}
+
+#[update]
+pub fn get_pool_metrics(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Option<PoolMetrics> {
+    let pool = pools_repo::get_pool_by_tokens(token0, token1, provider);
+
+    if let Some(pool) = pool {
+        Some(PoolMetrics::build(pool))
+    } else {
+        None
+    }
+}
+
+pub async fn add_liquidity_to_pool(pool_id: &str, amount: Nat) -> Result<AddLiquidityResponse, String> {
+    liquidity_service::add_liquidity_to_pool(pool_id, amount).await
+}
+
+
+pub async fn remove_liquidity_from_pool(pool_id: &str) -> Result<WithdrawFromPoolResponse, String> {
+    liquidity_service::remove_liquidity_from_pool(pool_id).await
+}
+
+
+
 
 #[ic_cdk::init]
 async fn init() {
@@ -71,4 +135,11 @@ async fn get_controllers() -> Vec<Principal> {
     res
         .expect("Get controllers function exited unexpectedly: inter-canister call to management canister for canister_status returned an empty result.")
         .0.settings.controllers
+}
+
+export_service!();
+
+#[ic_cdk_macros::query(name = "export_candid")]
+fn export_candid() -> String {
+    __export_service()
 }
