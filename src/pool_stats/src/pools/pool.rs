@@ -35,6 +35,6 @@ impl Pool {
     }
 
     pub fn delete(&self) {
-        pools_repo::delete_pool(&self.id);
+        pools_repo::delete_pool(self.id.clone());
     }
 }

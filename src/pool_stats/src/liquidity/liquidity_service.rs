@@ -6,8 +6,8 @@ use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use crate::repository::pools_repo;
 use crate::pools::pool::Position;
 
-pub async fn add_liquidity_to_pool(pool_id: &str, amount: Nat) -> Result<AddLiquidityResponse, String> {
-    let pool = pools_repo::get_pool_by_id(pool_id);
+pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, String> {
+    let pool = pools_repo::get_pool_by_id(pool_id.clone());
     if let Some(mut pool) = pool {
         let liquidity_client = get_liquidity_client(
             pool.token0.clone(), 
@@ -23,7 +23,7 @@ pub async fn add_liquidity_to_pool(pool_id: &str, amount: Nat) -> Result<AddLiqu
                     initial_amount0: response.token_0_amount.clone(),
                     initial_amount1: response.token_1_amount.clone(),
                 });
-                pools_repo::update_pool(&pool.id, pool.clone());
+                pools_repo::update_pool(pool.id.clone(), pool.clone());
                 Ok(response)
             }
             Err(error) => {
@@ -35,8 +35,8 @@ pub async fn add_liquidity_to_pool(pool_id: &str, amount: Nat) -> Result<AddLiqu
     }
 }
 
-pub async fn remove_liquidity_from_pool(pool_id: &str) -> Result<WithdrawFromPoolResponse, String> {
-    let pool = pools_repo::get_pool_by_id(pool_id);
+pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, String> {
+    let pool = pools_repo::get_pool_by_id(pool_id.clone());
     if let Some(mut pool) = pool {
         let liquidity_client = get_liquidity_client(
             pool.token0.clone(), 
@@ -52,7 +52,7 @@ pub async fn remove_liquidity_from_pool(pool_id: &str) -> Result<WithdrawFromPoo
             Ok(response) => {
                 // Update pool position
                 pool.position = None;
-                pools_repo::update_pool(&pool.id, pool.clone());
+                pools_repo::update_pool(pool.id.clone(), pool.clone());
                 Ok(response)
             }
             Err(error) => {

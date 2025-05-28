@@ -15,7 +15,7 @@ pub struct PoolMetrics {
 
 impl PoolMetrics {
     pub fn build(pool: Pool) -> Self {
-        let snapshots = pools_repo::get_pool_snapshots(&pool.id).unwrap_or_default();
+        let snapshots = pools_repo::get_pool_snapshots(pool.id.clone()).unwrap_or_default();
         let avg_apy = snapshots.iter().map(|snapshot| snapshot.apy).sum::<f64>() / snapshots.len() as f64;
         Self { pool, avg_apy, snapshots }
     }

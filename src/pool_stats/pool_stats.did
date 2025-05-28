@@ -1,3 +1,9 @@
+type AddLiquidityResponse = record {
+  request_id : nat64;
+  token_0_amount : nat;
+  token_1_amount : nat;
+};
+
 type CurrentPosition = record {
   id : nat;
   current_amount0 : nat;
@@ -27,6 +33,12 @@ type PoolMetrics = record {
   avg_apy : float64;
 };
 
+type PoolMetricsArgs = record {
+  provider : ExchangeId;
+  token0 : TokenInfo;
+  token1 : TokenInfo;
+};
+
 type PoolSnapshot = record {
   apy : float64;
   pool_data : opt PoolCurrentData;
@@ -41,13 +53,24 @@ type Position = record {
   initial_amount1 : nat;
 };
 
+type Result = variant { Ok : AddLiquidityResponse; Err : text };
+
+type Result_1 = variant { Ok : WithdrawFromPoolResponse; Err : text };
+
 type TokenInfo = record { ledger : principal; symbol : text };
 
+type WithdrawFromPoolResponse = record {
+  token_0_amount : nat;
+  token_1_amount : nat;
+};
+
 service : () -> {
+  add_liquidity_to_pool : (text, nat) -> (Result);
   add_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
   delete_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
   get_pool_by_tokens : (TokenInfo, TokenInfo, ExchangeId) -> (opt Pool);
-  get_pool_metrics : (TokenInfo, TokenInfo, ExchangeId) -> (opt PoolMetrics);
+  get_pool_metrics : (vec PoolMetricsArgs) -> (vec opt PoolMetrics);
   get_pools : () -> (vec Pool);
+  remove_liquidity_from_pool : (text) -> (Result_1);
   set_admin : (principal) -> ();
 }

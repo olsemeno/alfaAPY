@@ -1,19 +1,14 @@
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Deserialize, Principal, Nat};
 use serde::Serialize;
 use std::cell::RefCell;
 use ic_cdk::{call, id, trap, update};
 use ic_cdk::api::call::CallResult;
-use candid::{candid_method, export_service};
-
-use crate::snapshots::snapshot_service::{start_pool_snapshots_timer, stop_pool_snapshots_timer};
-
-
-use candid::Nat;
-
+use candid::export_service;
 use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 
+use crate::snapshots::snapshot_service::{start_pool_snapshots_timer, stop_pool_snapshots_timer};
 use crate::pools::pool::Pool;
 use crate::pools::pool_metrics::PoolMetrics;
 use crate::repository::pools_repo;
@@ -21,7 +16,6 @@ use crate::liquidity::liquidity_service;
 
 pub mod pools;
 pub mod liquidity;
-// pub mod service;
 pub mod repository;
 pub mod snapshots;
 
@@ -31,6 +25,13 @@ const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 pub struct CanisterIdRequest {
     #[serde(rename = "canister_id")]
     pub canister_id: Principal,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+pub struct PoolMetricsArgs {
+    token0: TokenInfo,
+    token1: TokenInfo,
+    provider: ExchangeId,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
@@ -46,6 +47,7 @@ thread_local! {
     );
 }
 
+// Pools management
 
 #[update]
 pub fn add_pool(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) {
@@ -74,28 +76,27 @@ pub fn get_pool_by_tokens(token0: TokenInfo, token1: TokenInfo, provider: Exchan
     pools_repo::get_pool_by_tokens(token0, token1, provider)
 }
 
-#[update]
-pub fn get_pool_metrics(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Option<PoolMetrics> {
-    let pool = pools_repo::get_pool_by_tokens(token0, token1, provider);
+// Pool metrics
 
-    if let Some(pool) = pool {
-        Some(PoolMetrics::build(pool))
-    } else {
-        None
-    }
+#[update]
+pub fn get_pool_metrics(args: Vec<PoolMetricsArgs>) -> Vec<Option<PoolMetrics>> {
+    args.into_iter().map(|arg| {
+        let pool = pools_repo::get_pool_by_tokens(arg.token0, arg.token1, arg.provider);
+        pool.map(PoolMetrics::build)
+    }).collect()
 }
 
-pub async fn add_liquidity_to_pool(pool_id: &str, amount: Nat) -> Result<AddLiquidityResponse, String> {
+// Liquidity management
+
+#[update]
+pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, String> {
     liquidity_service::add_liquidity_to_pool(pool_id, amount).await
 }
 
-
-pub async fn remove_liquidity_from_pool(pool_id: &str) -> Result<WithdrawFromPoolResponse, String> {
+#[update]
+pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, String> {
     liquidity_service::remove_liquidity_from_pool(pool_id).await
 }
-
-
-
 
 #[ic_cdk::init]
 async fn init() {

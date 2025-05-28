@@ -18,8 +18,8 @@ pub fn save_pool(pool: Pool) {
     POOLS.with(|pools| pools.borrow_mut().insert(pool.id.clone(), pool));
 }
 
-pub fn delete_pool(pool_id: &str) {
-    POOLS.with(|pools| pools.borrow_mut().remove(pool_id));
+pub fn delete_pool(pool_id: String) {
+    POOLS.with(|pools| pools.borrow_mut().remove(&pool_id));
 }
 
 pub fn get_pools() -> Vec<Pool> {
@@ -37,11 +37,11 @@ pub fn get_pool_by_tokens(token0: TokenInfo, token1: TokenInfo, provider: Exchan
     }).cloned())
 }
 
-pub fn get_pool_by_id(pool_id: &str) -> Option<Pool> {
-    POOLS.with(|pools| pools.borrow().get(pool_id).cloned())
+pub fn get_pool_by_id(pool_id: String) -> Option<Pool> {
+    POOLS.with(|pools| pools.borrow().get(&pool_id).cloned())
 }
 
-pub fn update_pool(pool_id: &str, pool: Pool) {
+pub fn update_pool(pool_id: String, pool: Pool) {
     POOLS.with(|pools| {
         let mut pools = pools.borrow_mut();
         pools.insert(pool_id.to_string(), pool);
@@ -54,8 +54,8 @@ pub fn get_pool_count() -> u64 {
 
 // Pool Snapshots
 
-pub fn get_pool_snapshots(pool_id: &str) -> Option<Vec<PoolSnapshot>> {
-    POOLS_SNAPSHOTS.with(|snapshots| snapshots.borrow().get(pool_id).cloned())
+pub fn get_pool_snapshots(pool_id: String) -> Option<Vec<PoolSnapshot>> {
+    POOLS_SNAPSHOTS.with(|snapshots| snapshots.borrow().get(&pool_id).cloned())
 }
 
 pub fn save_pool_snapshot(snapshot: PoolSnapshot) {
