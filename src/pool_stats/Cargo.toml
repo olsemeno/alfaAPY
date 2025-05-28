@@ -20,6 +20,7 @@ num-traits = "0.2"
 once_cell = "1.19.0"
 async-trait = "0.1.87"
 lazy_static = "1.5.0"
+ic-cdk-timers = "0.9.0"
 canister_client_macros = { path = "../libraries/canister_client_macros" }
 types = { path = "../libraries/types" }
 ic-response-codes = { workspace = true }
