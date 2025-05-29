@@ -32,10 +32,10 @@ type PoolData = record {
 type PoolMetrics = record {
   pool : Pool;
   snapshots : vec PoolSnapshot;
-  avg_apy : PoolApy;
+  apy : PoolApy;
 };
 
-type PoolMetricsArgs = record {
+type GetPoolMetricsArgs = record {
   provider : ExchangeId;
   token0 : TokenInfo;
   token1 : TokenInfo;
@@ -78,7 +78,7 @@ service : () -> {
   add_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
   delete_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
   get_pool_by_tokens : (TokenInfo, TokenInfo, ExchangeId) -> (opt Pool);
-  get_pool_metrics : (vec PoolMetricsArgs) -> (vec opt PoolMetrics);
+  get_pool_metrics : (vec GetPoolMetricsArgs) -> (vec opt PoolMetrics);
   get_pools : () -> (vec Pool);
   remove_liquidity_from_pool : (text) -> (Result_1);
   set_operator : (principal) -> ();

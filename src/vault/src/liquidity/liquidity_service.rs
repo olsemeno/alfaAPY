@@ -8,31 +8,24 @@ use liquidity::liquidity_router::get_liquidity_client;
 
 use crate::pools::pool_data::PoolData;
 use crate::pools::pool::Pool;
+use crate::pool_stats::pool_stats_service;
 
-pub async fn get_pools_data(required_pools: Vec<Pool>) -> Vec<PoolData> {
-    // TODO: return APY for pools
+pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
+    let pool_metrics = pool_stats_service::get_pool_metrics(pools.clone()).await;
 
-    // match pools().await {
-    //     Ok(response) => {
-    //         let pools = response.pools;
-    //         let mut pool_data = Vec::new();
-    //         for pool in required_pools {
-    //             match pools.iter().find(|&x| x.symbol == pool.pool_symbol)
-    //             {
-    //                 None => {}
-    //                 Some(x) => {
-    //                     pool_data.push(x.to_owned());
-    //                 }
-    //             }
-    //         }
-    //         pool_data
-    //     }
-    //     Err(error) => {
-    //         trap(error.as_str());
-    //     }
-    // }
+    let pool_data: Vec<PoolData> = pools
+        .into_iter()
+        .zip(pool_metrics.into_iter())
+        .map(|(pool, pool_metric)| PoolData {
+            pool: pool.clone(),
+            apy: pool_metric
+                .as_ref()
+                .map(|x| x.apy.month.tokens_apy) // Change if needed
+                .unwrap_or(0.0),
+        })
+        .collect();
 
-    vec![]
+    pool_data
 }
 
 pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
@@ -65,9 +58,7 @@ pub async fn withdraw_liquidity_from_pool(total_shares: Nat, shares: Nat, pool: 
     }
 }
 
-
-// TODO: remove this test methods below
-
+// TODO: Remove this test method below
 pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
     let liquidity_client = get_liquidity_client(
         token0.clone(), 
@@ -82,7 +73,7 @@ pub async fn add_liquidity_to_pool_kong(amount: Nat, token0: TokenInfo, token1: 
         }
     }
 }
-
+// TODO: Remove this test method below
 pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
     let liquidity_client = get_liquidity_client(
         token0.clone(), 
@@ -97,7 +88,7 @@ pub async fn withdraw_from_pool_kong(total_shares: Nat, shares: Nat, token0: Tok
         }
     }
 }
-
+// TODO: Remove this test method below
 pub async fn add_liquidity_to_pool_icpswap(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
     let liquidity_client = get_liquidity_client(
         token0.clone(), 
@@ -112,7 +103,7 @@ pub async fn add_liquidity_to_pool_icpswap(amount: Nat, token0: TokenInfo, token
         }
     }
 }
-
+// TODO: Remove this test method below
 pub async fn withdraw_from_pool_icpswap(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
     let liquidity_client = get_liquidity_client(
         token0.clone(), 
@@ -127,5 +118,3 @@ pub async fn withdraw_from_pool_icpswap(total_shares: Nat, shares: Nat, token0: 
         }
     }
 }
-
-// End of test methods

@@ -33,6 +33,7 @@ icpswap_swap_factory_canister = { path = "../external_canisters/icpswap_swap_fac
 icpswap_swap_factory_canister_c2c_client = { path = "../external_canisters/icpswap_swap_factory/c2c_client" }
 icpswap_swap_calculator_canister = { path = "../external_canisters/icpswap_swap_calculator/api" }
 icpswap_swap_calculator_canister_c2c_client = { path = "../external_canisters/icpswap_swap_calculator/c2c_client" }
+pool_stats = { path = "../pool_stats" }
 providers = { path = "../libraries/providers" }
 swap = { path = "../libraries/swap" }
 liquidity = { path = "../libraries/liquidity" }

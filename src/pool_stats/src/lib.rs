@@ -7,6 +7,7 @@ use candid::export_service;
 use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::pool_stats::GetPoolMetricsArgs;
 
 use crate::snapshots::snapshot_service::{start_pool_snapshots_timer, stop_pool_snapshots_timer};
 use crate::pools::pool::Pool;
@@ -25,13 +26,6 @@ const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 pub struct CanisterIdRequest {
     #[serde(rename = "canister_id")]
     pub canister_id: Principal,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
-pub struct PoolMetricsArgs {
-    token0: TokenInfo,
-    token1: TokenInfo,
-    provider: ExchangeId,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
@@ -79,7 +73,7 @@ pub fn get_pool_by_tokens(token0: TokenInfo, token1: TokenInfo, provider: Exchan
 // Pool metrics
 
 #[update]
-pub fn get_pool_metrics(args: Vec<PoolMetricsArgs>) -> Vec<Option<PoolMetrics>> {
+pub fn get_pool_metrics(args: Vec<GetPoolMetricsArgs>) -> Vec<Option<PoolMetrics>> {
     args.into_iter().map(|arg| {
         let pool = pools_repo::get_pool_by_tokens(arg.token0, arg.token1, arg.provider);
         pool.map(PoolMetrics::build)

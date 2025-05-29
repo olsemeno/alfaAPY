@@ -22,7 +22,7 @@ pub struct PoolApy {
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PoolMetrics {
     pub pool: Pool,
-    pub avg_apy: PoolApy,
+    pub apy: PoolApy,
     pub snapshots: Vec<PoolSnapshot>,
     // pub tvl: u128,
 }
@@ -31,7 +31,7 @@ impl PoolMetrics {
     pub fn build(pool: Pool) -> Self {
         let snapshots = pools_repo::get_pool_snapshots(pool.id.clone()).unwrap_or_default();
         let now = ic_cdk::api::time();
-        let avg_apy = apy_service::calculate_pool_apy(&snapshots, now);
-        Self { pool, avg_apy, snapshots }
+        let apy = apy_service::calculate_pool_apy(&snapshots, now);
+        Self { pool, apy, snapshots }
     }
 }

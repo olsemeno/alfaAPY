@@ -1213,6 +1213,7 @@ dependencies = [
  "liquidity",
  "num-traits",
  "once_cell",
+ "pool_stats",
  "providers",
  "serde",
  "serde_bytes",

@@ -6,6 +6,7 @@ mod types;
 mod events;
 mod enums;
 mod pools;
+mod pool_stats;
 
 use serde::Serialize;
 use std::cell::RefCell;
