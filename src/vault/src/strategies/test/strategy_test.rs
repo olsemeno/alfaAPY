@@ -1,18 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::strategies::basic_strategy::BasicStrategy;
-    use crate::types::types::{AddLiquidityResponse, DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use types::liquidity::AddLiquidityResponse;
     use crate::pools::pool::Pool;
     use candid::{Nat, Principal};
     use std::collections::HashMap;
     use async_trait::async_trait;
     use ic_cdk::trap;
-    use kongswap_canister::PoolReply;
     use crate::strategies::calculator::Calculator;
     use crate::strategies::strategy::IStrategy;
     use crate::strategies::strategy_candid::StrategyCandid;
-    use crate::util::util::nat_to_f64;
+    use utils::util::nat_to_f64;
     use types::exchanges::TokenInfo;
     use types::exchange_id::ExchangeId;
 
@@ -153,6 +152,10 @@ mod tests {
         
         fn set_initial_deposit(&mut self, deposit: HashMap<Principal, Nat>) {
             self.initial_deposit = deposit;
+        }
+
+        fn get_users_count(&self) -> u32 {
+            self.user_shares.len() as u32
         }
     }
 
@@ -326,6 +329,10 @@ mod tests {
         
         fn set_initial_deposit(&mut self, deposit: HashMap<Principal, Nat>) {
             self.mock.set_initial_deposit(deposit)
+        }
+
+        fn get_users_count(&self) -> u32 {
+            self.mock.get_users_count()
         }
     }
 

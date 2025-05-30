@@ -5,14 +5,27 @@ members = [
     "src/external_canisters/icrc_ledger/c2c_client",
     "src/external_canisters/icrc_ledger/api",
     "src/external_canisters/icpswap_swap_pool/api",
+    "src/external_canisters/icpswap_swap_pool/c2c_client",
     "src/external_canisters/icpswap_swap_factory/api",
+    "src/external_canisters/icpswap_swap_factory/c2c_client",
     "src/external_canisters/icpswap_swap_calculator/api",
+    "src/external_canisters/icpswap_swap_calculator/c2c_client",
+    "src/external_canisters/icpswap_node_index/api",
+    "src/external_canisters/icpswap_node_index/c2c_client",
     "src/external_canisters/kongswap/api",
+    "src/external_canisters/kongswap/c2c_client",
+    "src/external_canisters/icpswap_tvl_storage/api",
+    "src/external_canisters/icpswap_tvl_storage/c2c_client",
     "src/vault",
+    "src/pool_stats",
     "src/libraries/canister_client_macros",
     "src/libraries/canister_client",
     "src/libraries/candid_gen",
-    "src/libraries/types"
+    "src/libraries/types",
+    "src/libraries/utils",
+    "src/libraries/liquidity",
+    "src/libraries/providers",
+    "src/libraries/swap"
 ]
 
 

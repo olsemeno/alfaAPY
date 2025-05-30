@@ -4,5 +4,8 @@
   },
   "vault": {
     "dev": "ownab-uaaaa-aaaap-qp2na-cai"
+  },
+  "pool_stats": {
+    "dev": "oxawg-7aaaa-aaaag-aub6q-cai"
   }
 }

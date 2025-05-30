@@ -7,20 +7,22 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 
+use swap::swap_service::swap_icrc2_kong;
+use swap::token_swaps::nat_to_u128;
+use utils::util::nat_to_f64;
 use crate::enums::{SystemEventParams, UserEventParams};
 use crate::events::event_service::{create_system_event, create_user_event};
 use crate::liquidity::liquidity_service::{
-    add_liquidity_to_pool, get_pools_data, withdraw_from_pool,
+    add_liquidity_to_pool,
+    get_pools_data,
+    withdraw_liquidity_from_pool,
 };
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::calculator::Calculator;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::swap::swap_service::swap_icrc2_kong;
-use crate::swap::token_swaps::nat_to_u128;
 use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
 use crate::pools::pool::Pool;
-use crate::util::util::nat_to_f64;
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
@@ -197,7 +199,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // trap(format!("shares: {:?}, total: {:?}", shares, self.get_total_shares()).as_str());
             // Remove liquidity from pool
-            let withdraw_response = withdraw_from_pool(
+            let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 shares.clone(),
                 current_pool.clone(),
@@ -361,7 +363,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let token1 = current_pool.token1.clone();
 
             // Remove liquidity from current pool
-            let withdraw_response = withdraw_from_pool(
+            let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),

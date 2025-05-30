@@ -1,0 +1,85 @@
+type AddLiquidityResponse = record {
+  request_id : nat64;
+  token_0_amount : nat;
+  token_1_amount : nat;
+};
+
+type ApyValue = record {
+  tokens_apy : float64;
+  usd_apy : float64;
+};
+
+type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
+
+type Pool = record {
+  id : text;
+  provider : ExchangeId;
+  token0 : TokenInfo;
+  token1 : TokenInfo;
+  position : opt Position;
+};
+
+type PoolApy = record {
+  month : ApyValue;
+  week : ApyValue;
+  year : ApyValue;
+};
+
+type PoolData = record {
+  tvl : nat;
+};
+
+type PoolMetrics = record {
+  pool : Pool;
+  snapshots : vec PoolSnapshot;
+  apy : PoolApy;
+};
+
+type GetPoolMetricsArgs = record {
+  provider : ExchangeId;
+  token0 : TokenInfo;
+  token1 : TokenInfo;
+};
+
+type PoolSnapshot = record {
+  pool_data : opt PoolData;
+  timestamp : nat64;
+  pool_id : text;
+  position_data : opt PositionData;
+};
+
+type Position = record {
+  id : nat;
+  initial_amount0 : nat;
+  initial_amount1 : nat;
+};
+
+type PositionData = record {
+  id : nat;
+  usd_amount0 : nat;
+  usd_amount1 : nat;
+  amount0 : nat;
+  amount1 : nat;
+};
+
+type Result = variant { Ok : AddLiquidityResponse; Err : text };
+
+type Result_1 = variant { Ok : WithdrawFromPoolResponse; Err : text };
+
+type TokenInfo = record { ledger : principal; symbol : text };
+
+type WithdrawFromPoolResponse = record {
+  token_0_amount : nat;
+  token_1_amount : nat;
+};
+
+service : () -> {
+  add_liquidity_to_pool : (text, nat) -> (Result);
+  add_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
+  delete_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
+  get_pool_by_tokens : (TokenInfo, TokenInfo, ExchangeId) -> (opt Pool);
+  get_pool_metrics : (vec GetPoolMetricsArgs) -> (vec opt PoolMetrics);
+  get_pools : () -> (vec Pool);
+  remove_liquidity_from_pool : (text) -> (Result_1);
+  set_operator : (principal) -> ();
+}

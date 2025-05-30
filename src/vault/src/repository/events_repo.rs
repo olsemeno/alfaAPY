@@ -29,10 +29,12 @@ pub fn get_system_events_count() -> u64 {
 }
 
 
-pub fn get_user_events(user: Principal) -> Vec<UserEvent> {
+pub fn get_user_events(user: Principal, offset: usize, limit: usize) -> Vec<UserEvent> {
     USER_EVENTS.with(|events| {
         events.borrow()
             .iter()
+            .skip(offset)
+            .take(limit)
             .map(|event| match event.to_candid() {
                 EventCandid::User(user_event) => user_event,
                 _ => unreachable!(),
@@ -42,10 +44,12 @@ pub fn get_user_events(user: Principal) -> Vec<UserEvent> {
     })
 }
 
-pub fn get_system_events() -> Vec<SystemEvent> {
+pub fn get_system_events(offset: usize, limit: usize) -> Vec<SystemEvent> {
     SYSTEM_EVENTS.with(|events| {
         events.borrow()
             .iter()
+            .skip(offset)
+            .take(limit)
             .map(|event| match event.to_candid() {
                 EventCandid::System(system_event) => system_event,
                 _ => unreachable!(),

@@ -16,6 +16,17 @@
       "type": "custom",
       "candid": "ledger.did",
       "wasm": "ledger.wasm"
+    },
+    "pool_stats": {
+      "type": "custom",
+      "candid": "src/pool_stats/pool_stats.did",
+      "wasm": "pool_stats.wasm",
+      "build": "src/pool_stats/build.sh",
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ]
     }
   },
   "defaults": {

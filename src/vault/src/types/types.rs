@@ -53,12 +53,7 @@ pub struct UserStrategyResponse {
     pub total_shares: Nat,
     pub user_shares: Nat,
     pub initial_deposit: Nat,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct TokensFee {
-    pub token0_fee: Option<Nat>,
-    pub token1_fee: Option<Nat>,
+    pub users_count: u32,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
@@ -73,19 +68,6 @@ pub struct DepositResponse {
 pub struct WithdrawResponse {
     pub amount: Nat,
     pub current_shares: Nat,
-}
-
-#[derive(CandidType, Deserialize, Clone, Debug, Serialize)]
-pub struct WithdrawFromPoolResponse {
-    pub token_0_amount: Nat,
-    pub token_1_amount: Nat,
-}
-
-#[derive(CandidType, Deserialize, Clone, Debug, Serialize)]
-pub struct AddLiquidityResponse {
-    pub token_0_amount: Nat,
-    pub token_1_amount: Nat,
-    pub request_id: u64,
 }
 
 pub struct RebalanceResponse {

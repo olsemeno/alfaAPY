@@ -18,6 +18,7 @@ pub trait BasicStrategy {
     fn set_user_shares(&mut self, user_shares: HashMap<Principal, Nat>);
     fn get_initial_deposit(&self) -> HashMap<Principal, Nat>;
     fn set_initial_deposit(&mut self, map: HashMap<Principal, Nat>);
+    fn get_users_count(&self) -> u32;
 }
 
 #[macro_export]
@@ -79,6 +80,10 @@ macro_rules! impl_strategy_methods {
 
             fn set_initial_deposit(&mut self, map: HashMap<Principal, Nat>) {
                 self.initial_deposit = map;
+            }
+
+            fn get_users_count(&self) -> u32 {
+                self.user_shares.len() as u32
             }
         }
     };

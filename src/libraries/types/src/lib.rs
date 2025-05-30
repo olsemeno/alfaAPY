@@ -4,6 +4,8 @@ pub mod user;
 pub mod swap_tokens;
 pub mod pin_number;
 pub mod exchange_id;
+pub mod liquidity;
+pub mod pool_stats;
 
 use candid::{CandidType, Principal};
 use ic_ledger_types::Tokens;
