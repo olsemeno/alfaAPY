@@ -7,7 +7,7 @@ use crate::pools::pool::Pool;
 use liquidity::liquidity_router;
 use liquidity::liquidity_client::LiquidityClient;
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PositionData {
     pub id: Nat,
     pub amount0: Nat,
@@ -16,7 +16,7 @@ pub struct PositionData {
     pub usd_amount1: Nat,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolData {
     pub tvl: Nat,
     // pub balance0: Nat,

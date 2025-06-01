@@ -6,7 +6,7 @@ use crate::exchange_id::ExchangeId;
 
 // Pool
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct Pool {
     pub id: String,
     pub token0: TokenInfo,
@@ -15,7 +15,7 @@ pub struct Pool {
     pub position: Option<Position>,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct Position {
     pub id: Nat,
     pub initial_amount0: Nat,
@@ -24,7 +24,7 @@ pub struct Position {
 
 // Pool Snapshots
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshot {
     pub pool_id: String,
     pub timestamp: u64,
@@ -32,7 +32,7 @@ pub struct PoolSnapshot {
     pub pool_data: Option<PoolData>,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PositionData {
     pub id: Nat,
     pub amount0: Nat,
@@ -41,7 +41,7 @@ pub struct PositionData {
     pub usd_amount1: Nat,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolData {
     pub tvl: Nat,
     // pub balance0: Nat,
@@ -52,29 +52,28 @@ pub struct PoolData {
 
 // Pool Metrics
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolMetrics {
     pub pool: Pool,
     pub apy: PoolApy,
-    pub snapshots: Vec<PoolSnapshot>,
-    // pub tvl: u128,
+    pub tvl: Nat,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct ApyValue {
-    pub tokens_apy: f64,
-    pub usd_apy: f64,
+    pub tokens_apy: u128,
+    pub usd_apy: u128,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolApy {
     pub week: ApyValue,
     pub month: ApyValue,
     pub year: ApyValue,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
-pub struct GetPoolMetricsArgs {
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
+pub struct PoolByTokens {
     pub token0: TokenInfo,
     pub token1: TokenInfo,
     pub provider: ExchangeId,

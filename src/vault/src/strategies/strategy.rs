@@ -331,7 +331,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///
     async fn rebalance(&mut self) -> RebalanceResponse {
         let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
-        let mut max_apy = 0.0;
+        let mut max_apy = 0;
         let mut max_apy_pool = None;
 
         // Find pool with highest APY

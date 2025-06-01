@@ -21,7 +21,7 @@ pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
             apy: pool_metric
                 .as_ref()
                 .map(|x| x.apy.month.tokens_apy) // Change if needed
-                .unwrap_or(0.0),
+                .unwrap_or(0),
         })
         .collect();
 

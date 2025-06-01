@@ -5,7 +5,7 @@ use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
 use crate::repository::pools_repo;
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct Pool {
     pub id: String,
     pub token0: TokenInfo,
@@ -14,7 +14,7 @@ pub struct Pool {
     pub position: Option<Position>,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct Position {
     pub id: Nat,
     pub initial_amount0: Nat,

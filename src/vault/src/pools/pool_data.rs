@@ -6,5 +6,5 @@ use crate::pools::pool::Pool;
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct PoolData {
     pub pool: Pool,
-    pub apy: f64,
+    pub apy: u128,
 }
