@@ -259,7 +259,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                 user_strategies.push(UserStrategyResponse {
                     strategy_id: strategy.get_id(),
                     strategy_name: strategy.get_name(),
-                    strategy_current_pool: pool.to_response(),
+                    strategy_current_pool: pool,
                     total_shares: strategy.get_total_shares(),
                     user_shares,
                     initial_deposit,

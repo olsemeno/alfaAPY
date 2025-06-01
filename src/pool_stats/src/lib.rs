@@ -106,6 +106,13 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
     liquidity_service::remove_liquidity_from_pool(pool_id).await
 }
 
+#[update]
+pub fn add_pool_snapshot(snapshot: PoolSnapshot) {
+    pools_repo::save_pool_snapshot(snapshot);
+}
+
+// Vault management
+
 #[ic_cdk::init]
 async fn init() {
     start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);

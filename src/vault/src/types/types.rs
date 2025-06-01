@@ -49,7 +49,7 @@ pub struct SupportedStandard {
 pub struct UserStrategyResponse {
     pub strategy_id: StrategyId,
     pub strategy_name: String,
-    pub strategy_current_pool: PoolResponse,
+    pub strategy_current_pool: Pool,
     pub total_shares: Nat,
     pub user_shares: Nat,
     pub initial_deposit: Nat,
@@ -74,12 +74,6 @@ pub struct RebalanceResponse {
     pub pool: Pool,
 }
 
-pub struct TokensInfo {
-    pub token_0: TokenInfo,
-    pub token_1: TokenInfo,
-}
-
-pub type PoolSymbol = String;
 pub type StrategyId = u16;
 
 pub enum EventResponse {
