@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use types::exchanges::TokenInfo;
-use types::exchange_id::ExchangeId;
+use types::pool_stats::PoolByTokens;
 
 use crate::pools::pool::Pool;
 use crate::pools::pool_snapshot::PoolSnapshot;
+
 
 thread_local! {
     pub static POOLS: RefCell<HashMap<String, Pool>> = RefCell::new(HashMap::new());
@@ -26,14 +26,14 @@ pub fn get_pools() -> Vec<Pool> {
     POOLS.with(|pools| pools.borrow().values().cloned().collect())
 }
 
-pub fn get_pool_by_tokens(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Option<Pool> {
+pub fn get_pool_by_tokens(pool_by_tokens: PoolByTokens) -> Option<Pool> {
     POOLS.with(|pools| pools.borrow().values().find(|pool| {
-        let direct = pool.token0.symbol == token0.symbol
-            && pool.token1.symbol == token1.symbol;
-        let reverse = pool.token0.symbol == token1.symbol
-            && pool.token1.symbol == token0.symbol;
+        let direct = pool.token0.symbol == pool_by_tokens.token0.symbol
+            && pool.token1.symbol == pool_by_tokens.token1.symbol;
+        let reverse = pool.token0.symbol == pool_by_tokens.token1.symbol
+            && pool.token1.symbol == pool_by_tokens.token0.symbol;
 
-        (direct || reverse) && pool.provider == provider
+        (direct || reverse) && pool.provider == pool_by_tokens.provider
     }).cloned())
 }
 

@@ -5,8 +5,8 @@ type AddLiquidityResponse = record {
 };
 
 type ApyValue = record {
-  tokens_apy : float64;
-  usd_apy : float64;
+  tokens_apy : nat;
+  usd_apy : nat;
 };
 
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
@@ -25,20 +25,20 @@ type PoolApy = record {
   year : ApyValue;
 };
 
+type PoolByTokens = record {
+  provider : ExchangeId;
+  token0 : TokenInfo;
+  token1 : TokenInfo;
+};
+
 type PoolData = record {
   tvl : nat;
 };
 
 type PoolMetrics = record {
-  pool : Pool;
-  snapshots : vec PoolSnapshot;
   apy : PoolApy;
-};
-
-type GetPoolMetricsArgs = record {
-  provider : ExchangeId;
-  token0 : TokenInfo;
-  token1 : TokenInfo;
+  tvl : nat;
+  pool : Pool;
 };
 
 type PoolSnapshot = record {
@@ -75,11 +75,12 @@ type WithdrawFromPoolResponse = record {
 
 service : () -> {
   add_liquidity_to_pool : (text, nat) -> (Result);
-  add_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
-  delete_pool : (TokenInfo, TokenInfo, ExchangeId) -> ();
-  get_pool_by_tokens : (TokenInfo, TokenInfo, ExchangeId) -> (opt Pool);
-  get_pool_metrics : (vec GetPoolMetricsArgs) -> (vec opt PoolMetrics);
+  add_pool : (PoolByTokens) -> ();
+  delete_pool : (PoolByTokens) -> ();
+  get_pool_by_tokens : (PoolByTokens) -> (opt Pool);
+  get_pool_metrics : (vec PoolByTokens) -> (vec record { PoolByTokens; PoolMetrics });
   get_pools : () -> (vec Pool);
+  get_pools_snapshots : (vec PoolByTokens) -> (vec record { PoolByTokens; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
   set_operator : (principal) -> ();
 }

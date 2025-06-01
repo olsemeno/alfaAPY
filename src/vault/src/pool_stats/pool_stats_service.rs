@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use candid::Principal;
 use ic_cdk::call;
 
-use types::pool_stats::{PoolMetrics, GetPoolMetricsArgs};
+use types::pool_stats::{PoolMetrics, PoolByTokens};
 use utils::util::principal_to_canister_id;
 
 use crate::pools::pool::Pool;
@@ -10,8 +10,8 @@ use crate::pools::pool::Pool;
 pub static POOL_STATS_CANISTER_ID: Lazy<Principal> = Lazy::new(|| principal_to_canister_id("oxawg-7aaaa-aaaag-aub6q-cai"));
 
 pub async fn get_pool_metrics(pools: Vec<Pool>) -> Vec<Option<PoolMetrics>> {
-    let args: Vec<GetPoolMetricsArgs> = pools.iter().map(|pool| 
-        GetPoolMetricsArgs {
+    let args: Vec<PoolByTokens> = pools.iter().map(|pool|
+        PoolByTokens {
             token0: pool.token0.clone(),
             token1: pool.token1.clone(),
             provider: pool.provider.clone()

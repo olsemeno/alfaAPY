@@ -25,17 +25,17 @@ type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
 
 type LPReply = record {
   ts : nat64;
-  usd_balance : float64;
-  balance : float64;
+  usd_balance : nat;
+  balance : nat;
   name : text;
-  amount_0 : float64;
-  amount_1 : float64;
+  amount_0 : nat;
+  amount_1 : nat;
   address_0 : text;
   address_1 : text;
   symbol_0 : text;
   symbol_1 : text;
-  usd_amount_0 : float64;
-  usd_amount_1 : float64;
+  usd_amount_0 : nat;
+  usd_amount_1 : nat;
   chain_0 : text;
   chain_1 : text;
   symbol : text;

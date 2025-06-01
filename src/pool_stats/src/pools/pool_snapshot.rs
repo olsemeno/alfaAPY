@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use crate::pools::pool_data_service::{PositionData, PoolData};
 
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshot {
     pub pool_id: String,
     pub timestamp: u64,
