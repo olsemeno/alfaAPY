@@ -108,10 +108,31 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
     liquidity_service::remove_liquidity_from_pool(pool_id).await
 }
 
+
+// TODO: remove test method
+use crate::pools::pool_data_service::{PositionData, PoolData};
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
+pub struct PoolSnapshotArgs {
+    pub pool_id: String,
+    pub timestamp: u64,
+    pub position_data: Option<PositionData>,
+    pub pool_data: Option<PoolData>,
+}
+
 #[update]
-pub fn add_pool_snapshot(snapshot: PoolSnapshot) {
+pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
+    let snapshot = PoolSnapshot::new(
+        (pools_repo::get_pool_snapshots_count(args.pool_id.clone()) + 1).to_string(),
+        args.pool_id,
+        args.timestamp,
+        args.position_data,
+        args.pool_data,
+    );
     pools_repo::save_pool_snapshot(snapshot);
 }
+// End of test method
+
 
 // Vault management
 

@@ -73,6 +73,13 @@ type WithdrawFromPoolResponse = record {
   token_1_amount : nat;
 };
 
+type PoolSnapshotArgs = record {
+  pool_id : text;
+  timestamp : nat64;
+  position_data : opt PositionData;
+  pool_data : opt PoolData;
+};
+
 service : () -> {
   add_liquidity_to_pool : (text, nat) -> (Result);
   add_pool : (PoolByTokens) -> ();
@@ -82,6 +89,6 @@ service : () -> {
   get_pools : () -> (vec Pool);
   get_pools_snapshots : (vec PoolByTokens) -> (vec record { PoolByTokens; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
-  add_pool_snapshot : (PoolSnapshot) -> ();
+  add_pool_snapshot : (PoolSnapshotArgs) -> ();
   set_operator : (principal) -> ();
 }
