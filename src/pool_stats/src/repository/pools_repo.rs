@@ -58,6 +58,13 @@ pub fn get_pool_snapshots(pool_id: String) -> Option<Vec<PoolSnapshot>> {
     POOLS_SNAPSHOTS.with(|snapshots| snapshots.borrow().get(&pool_id).cloned())
 }
 
+pub fn get_pool_snapshots_count(pool_id: String) -> u32 {
+    POOLS_SNAPSHOTS.with(|snapshots| {
+        snapshots.borrow().get(&pool_id).map(|snapshots| snapshots.len() as u32).unwrap_or(0)
+    })
+}
+
+// TODO: remove test method
 pub fn save_pool_snapshot(snapshot: PoolSnapshot) {
     POOLS_SNAPSHOTS.with(|snapshots| {
         let mut snapshots = snapshots.borrow_mut();

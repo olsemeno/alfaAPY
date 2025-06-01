@@ -47,8 +47,10 @@ thread_local! {
 
 #[update]
 pub fn add_pool(pool_by_tokens: PoolByTokens) {
+    let id = (pools_repo::get_pool_count() + 1).to_string();
+
     Pool::new(
-        pools_repo::get_pool_count().to_string(),
+        id,
         pool_by_tokens.token0,
         pool_by_tokens.token1,
         pool_by_tokens.provider,

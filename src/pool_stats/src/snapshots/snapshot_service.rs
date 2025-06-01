@@ -43,8 +43,10 @@ pub async fn take_pool_snapshots() {
     for pool in pools.into_iter().filter(|p| p.position.is_some()) {
         let pool_current_data = get_current_data(&pool).await;
         let current_position = get_current_position(&pool).await;
+        let id = (pools_repo::get_pool_snapshots_count(pool.id.clone()) + 1).to_string();
 
         let snapshot = PoolSnapshot::new(
+            id,
             pool.id, 
             ic_cdk::api::time(),
             current_position,
