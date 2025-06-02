@@ -10,7 +10,7 @@ use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::pool_stats::PoolByTokens;
 use crate::pools::pool_snapshot::PoolSnapshot;
 
-use crate::snapshots::snapshot_service::{start_pool_snapshots_timer, stop_pool_snapshots_timer};
+use crate::snapshots::snapshot_service;
 use crate::pools::pool::Pool;
 use crate::pools::pool_metrics::PoolMetrics;
 use crate::pools::pool_metrics_service;
@@ -109,7 +109,7 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
 }
 
 
-// TODO: remove test method
+// TODO: remove test methods
 use crate::pools::pool_data_service::{PositionData, PoolData};
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
@@ -131,6 +131,17 @@ pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
     );
     pools_repo::save_pool_snapshot(snapshot);
 }
+
+#[update]
+pub fn delete_pool_snapshots(pool_id: String) {
+    pools_repo::delete_pool_snapshots(pool_id);
+}
+
+#[update]
+pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
+    pools_repo::delete_pool_snapshot(pool_id, snapshot_id);
+}
+
 // End of test method
 
 
@@ -138,17 +149,19 @@ pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
 
 #[ic_cdk::init]
 async fn init() {
-    start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
+    snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 #[ic_cdk::pre_upgrade]
 fn pre_upgrade() {
-    stop_pool_snapshots_timer();
+    pools_repo::stable_save();
+    snapshot_service::stop_pool_snapshots_timer();
 }
 
 #[ic_cdk::post_upgrade]
 fn post_upgrade() {
-    start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
+    pools_repo::stable_restore();
+    snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 // Sets the operator principal.

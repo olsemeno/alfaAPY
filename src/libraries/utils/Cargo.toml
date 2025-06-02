@@ -5,4 +5,5 @@ edition = "2018"
 
 [dependencies]
 candid = "0.10.13"
+ic-cdk = "0.17.1"
 types = { path = "../types" }

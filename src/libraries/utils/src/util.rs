@@ -20,3 +20,7 @@ pub fn principal_to_canister_id(principal_str: &str) -> CanisterId {
     let principal = Principal::from_text(principal_str).unwrap();
     CanisterId::from_slice(principal.as_slice())
 }
+
+pub fn current_timestamp() -> u64 {
+    ic_cdk::api::time() / 1_000_000_000 // convert to seconds
+}

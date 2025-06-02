@@ -1,8 +1,6 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
-use crate::pools::pool::Pool;
-
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct ApyValue {
     pub tokens_apy: u128,
@@ -18,7 +16,6 @@ pub struct PoolApy {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolMetrics {
-    pub pool: Pool,
     pub apy: PoolApy,
     pub tvl: Nat,
 }

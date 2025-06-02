@@ -5,6 +5,7 @@ use ic_cdk_timers::TimerId;
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::repository::pools_repo;
 use crate::pools::pool_data_service::{get_current_data, get_current_position};
+use utils::util::current_timestamp;
 
 thread_local! {
     static POOL_SNAPSHOT_TIMER_ID: RefCell<Option<TimerId>> = RefCell::new(None);
@@ -48,7 +49,7 @@ pub async fn take_pool_snapshots() {
         let snapshot = PoolSnapshot::new(
             id,
             pool.id, 
-            ic_cdk::api::time(),
+            current_timestamp(),
             current_position,
             pool_current_data,
         );

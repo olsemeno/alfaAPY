@@ -38,10 +38,17 @@ type PoolData = record {
 type PoolMetrics = record {
   apy : PoolApy;
   tvl : nat;
-  pool : Pool;
 };
 
 type PoolSnapshot = record {
+  id : text;
+  pool_data : opt PoolData;
+  timestamp : nat64;
+  pool_id : text;
+  position_data : opt PositionData;
+};
+
+type PoolSnapshotArgs = record {
   pool_data : opt PoolData;
   timestamp : nat64;
   pool_id : text;
@@ -73,22 +80,17 @@ type WithdrawFromPoolResponse = record {
   token_1_amount : nat;
 };
 
-type PoolSnapshotArgs = record {
-  pool_id : text;
-  timestamp : nat64;
-  position_data : opt PositionData;
-  pool_data : opt PoolData;
-};
-
 service : () -> {
   add_liquidity_to_pool : (text, nat) -> (Result);
   add_pool : (PoolByTokens) -> ();
+  add_pool_snapshot : (PoolSnapshotArgs) -> ();
   delete_pool : (PoolByTokens) -> ();
+  delete_pool_snapshot : (text, text) -> ();
+  delete_pool_snapshots : (text) -> ();
   get_pool_by_tokens : (PoolByTokens) -> (opt Pool);
   get_pool_metrics : (vec PoolByTokens) -> (vec record { PoolByTokens; PoolMetrics });
   get_pools : () -> (vec Pool);
   get_pools_snapshots : (vec PoolByTokens) -> (vec record { PoolByTokens; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
-  add_pool_snapshot : (PoolSnapshotArgs) -> ();
   set_operator : (principal) -> ();
 }

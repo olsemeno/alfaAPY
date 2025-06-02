@@ -101,7 +101,7 @@ type UserEventDetails = variant {
 type UserEventType = variant { AddLiquidity; RemoveLiquidity };
 
 type UserStrategyResponse = record {
-  strategy_current_pool : PoolResponse;
+  strategy_current_pool : Pool;
   total_shares : nat;
   strategy_id : nat16;
   initial_deposit : nat;

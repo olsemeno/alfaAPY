@@ -1,11 +1,20 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use candid::{CandidType, Deserialize};
+use serde::Serialize;
+use ic_cdk::storage;
 
 use types::pool_stats::PoolByTokens;
 
 use crate::pools::pool::Pool;
 use crate::pools::pool_snapshot::PoolSnapshot;
 
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct StableState {
+    pub pools: HashMap<String, Pool>,
+    pub pool_snapshots: HashMap<String, Vec<PoolSnapshot>>,
+}
 
 thread_local! {
     pub static POOLS: RefCell<HashMap<String, Pool>> = RefCell::new(HashMap::new());
@@ -64,10 +73,58 @@ pub fn get_pool_snapshots_count(pool_id: String) -> u32 {
     })
 }
 
-// TODO: remove test method
 pub fn save_pool_snapshot(snapshot: PoolSnapshot) {
     POOLS_SNAPSHOTS.with(|snapshots| {
         let mut snapshots = snapshots.borrow_mut();
-        snapshots.insert(snapshot.pool_id.clone(), vec![snapshot]);
+        if let Some(entry) = snapshots.get_mut(&snapshot.pool_id) {
+            let index = entry.iter().position(|s| s.id == snapshot.id);
+            if let Some(index) = index {
+                entry[index] = snapshot;
+            } else {
+                entry.push(snapshot);
+            }
+        } else {
+            snapshots.insert(snapshot.pool_id.clone(), vec![snapshot]);
+        }
+    });
+}
+
+// TODO: remove test method
+pub fn delete_pool_snapshots(pool_id: String) {
+    POOLS_SNAPSHOTS.with(|snapshots| {
+        snapshots.borrow_mut().remove(&pool_id);
+    });
+}
+
+// TODO: remove test method
+pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
+    POOLS_SNAPSHOTS.with(|snapshots| {
+        let mut snapshots = snapshots.borrow_mut();
+        snapshots.get_mut(&pool_id)
+            .map(|snapshots| snapshots.retain(|snapshot| snapshot.id != snapshot_id));
+    });
+}
+
+// Stable storage
+
+pub fn stable_save() {
+    let pools = POOLS.with(|pools| pools.borrow().clone());
+    let pool_snapshots = POOLS_SNAPSHOTS.with(|snapshots| snapshots.borrow().clone());
+    let state = StableState { pools, pool_snapshots };
+
+    storage::stable_save((state,)).expect("failed to save stable state");
+}
+
+pub fn stable_restore() {
+    let (state,): (StableState,) = storage::stable_restore().expect("failed to restore stable state");
+
+    POOLS.with(|pools| {
+        pools.borrow_mut();
+        pools.replace(state.pools.clone())
+    });
+
+    POOLS_SNAPSHOTS.with(|snapshots| {
+        snapshots.borrow_mut();
+        snapshots.replace(state.pool_snapshots)
     });
 }

@@ -26,6 +26,7 @@ pub struct Position {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshot {
+    pub id: String,
     pub pool_id: String,
     pub timestamp: u64,
     pub position_data: Option<PositionData>,
@@ -54,7 +55,6 @@ pub struct PoolData {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolMetrics {
-    pub pool: Pool,
     pub apy: PoolApy,
     pub tvl: Nat,
 }

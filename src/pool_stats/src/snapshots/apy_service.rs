@@ -5,36 +5,41 @@ use utils::util::nat_to_u128;
 const DAYS_PER_WEEK: u64 = 7;
 const DAYS_PER_MONTH: u64 = 30;
 const DAYS_PER_YEAR: u64 = 365;
-const MILLISECONDS_PER_DAY: u64 = 1000 * 60 * 60 * 24;
-const MILLISECONDS_PER_WEEK: u64 = MILLISECONDS_PER_DAY * DAYS_PER_WEEK;
-const MILLISECONDS_PER_MONTH: u64 = MILLISECONDS_PER_DAY * DAYS_PER_MONTH;
-const MILLISECONDS_PER_YEAR: u64 = MILLISECONDS_PER_DAY * DAYS_PER_YEAR;
+const SECONDS_PER_DAY: u64 = 60 * 60 * 24; // 86_400
+const SECONDS_PER_WEEK: u64 = SECONDS_PER_DAY * DAYS_PER_WEEK; // 604_800
+const SECONDS_PER_MONTH: u64 = SECONDS_PER_DAY * DAYS_PER_MONTH; // 2_592_000
+const SECONDS_PER_YEAR: u64 = SECONDS_PER_DAY * DAYS_PER_YEAR; // 31_536_000
 
 fn calculate_apy_for_period<F>(snapshots: &[&PoolSnapshot], extract_metric: F) -> u128
 where
     F: Fn(&PoolSnapshot) -> u128,
 {
-    if snapshots.len() < 2 { return 0; }
+    if snapshots.len() < 2 {
+        return 0;
+    }
 
     let mut sorted_snapshots = snapshots.to_vec();
     sorted_snapshots.sort_by_key(|s| s.timestamp);
 
     let first_snapshot = sorted_snapshots.first().unwrap();
     let last_snapshot = sorted_snapshots.last().unwrap();
-    let initial_value = extract_metric(first_snapshot);
-    let final_value = extract_metric(last_snapshot);
+    let initial_value = extract_metric(first_snapshot) as f64;
+    let final_value = extract_metric(last_snapshot) as f64;
 
-    if initial_value == 0 { return 0; }
+    let period_days = (last_snapshot.timestamp - first_snapshot.timestamp) as f64 / SECONDS_PER_DAY as f64;
 
-    let gain = final_value / initial_value - 1;
-    let period_days = (last_snapshot.timestamp - first_snapshot.timestamp) as u128 / MILLISECONDS_PER_DAY as u128;
+    if initial_value <= 0.0 || period_days <= 0.0 {
+        return 0;
+    }
 
-    if period_days <= 0 { return 0; }
+    let gain = final_value / initial_value - 1.0;
+    let apy = ((1.0 + gain).powf(365.0 / period_days) - 1.0) * 10000.0;
 
-    // Converts the period yield to annual percentage yield (APY) with compounding:
-    // (1 + gain) ^ (365 / period_days) - 1 extrapolates the gain to a year, as if it repeated every such period
-    // * 10000 converts the result to basis points (100% = 10000 basis points)
-    ((1 + gain).pow(DAYS_PER_YEAR as u32 / period_days as u32) - 1) * 10000
+    if !apy.is_finite() || apy < 0.0 {
+        return 0;
+    }
+
+    apy as u128
 }
 
 fn calculate_tokens_apy(snapshots: &[&PoolSnapshot]) -> u128 {
@@ -57,9 +62,9 @@ fn calculate_tokens_apy(snapshots: &[&PoolSnapshot]) -> u128 {
 }
 
 pub fn calculate_pool_apy(snapshots: &[PoolSnapshot], now: u64) -> PoolApy {
-    let week_ago = now.saturating_sub(MILLISECONDS_PER_WEEK);
-    let month_ago = now.saturating_sub(MILLISECONDS_PER_MONTH);
-    let year_ago = now.saturating_sub(MILLISECONDS_PER_YEAR);
+    let week_ago = now.saturating_sub(SECONDS_PER_WEEK);
+    let month_ago = now.saturating_sub(SECONDS_PER_MONTH);
+    let year_ago = now.saturating_sub(SECONDS_PER_YEAR);
 
     let year_snapshots: Vec<&PoolSnapshot> = snapshots
         .iter()
