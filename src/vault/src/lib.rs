@@ -18,8 +18,6 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
 use ::types::exchanges::TokenInfo;
-use ::types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
-use swap::swap_service::{icpswap_quote, kongswap_quote, swap_icrc2_icpswap, swap_icrc2_kong};
 use providers::kongswap::user_balances;
 use providers::icpswap::{withdraw as withdraw_icpswap};
 
@@ -29,16 +27,6 @@ use crate::strategies::strategy_service::{get_actual_strategies, init_strategies
 use crate::user::user_service::accept_deposit;
 use crate::events::event_service;
 use crate::events::event::{SystemEvent, UserEvent};
-
-use crate::liquidity::liquidity_service::{
-    add_liquidity_to_pool_icpswap,
-    get_pools_data,
-    withdraw_from_pool_icpswap,
-    add_liquidity_to_pool_kong,
-    withdraw_from_pool_kong
-};
-
-
 use crate::types::types::{
     AcceptInvestmentArgs,
     DepositResponse,
@@ -93,28 +81,6 @@ fn init(conf: Option<Conf>) {
 
 // TODO remove test function
 #[update]
-async fn icpswap_withdraw_from_pool(total_shares: Nat, shares: Nat, token_in: TokenInfo, token_out: TokenInfo) -> WithdrawFromPoolResponse {
-    let icpswap_quote_result = withdraw_from_pool_icpswap(
-        total_shares, shares,
-        token_in,
-        token_out
-    ).await;
-    icpswap_quote_result
-}
-// TODO remove test function
-#[update]
-async fn icpswap_add_liquidity(amount: Nat, token_in: TokenInfo, token_out: TokenInfo) -> AddLiquidityResponse {
-    // let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
-    let icpswap_quote_result = add_liquidity_to_pool_icpswap(
-        amount,
-        token_in,
-        token_out
-    ).await;
-
-    icpswap_quote_result
-}
-// TODO remove test function
-#[update]
 async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
 
@@ -126,36 +92,6 @@ async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> 
     ).await;
 
     icpswap_quote_result.unwrap()
-}
-// TODO remove test function
-#[update]
-async fn get_icpswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    icpswap_quote(input_token, output_token, amount).await
-}
-// TODO remove test function
-#[update]
-async fn swap_icpswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    swap_icrc2_icpswap(input_token, output_token, amount).await.amount_out
-}
-// TODO remove test function
-#[update]
-async fn get_kongswap_quote(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    kongswap_quote(input_token, output_token, amount).await
-}
-// TODO remove test function
-#[update]
-async fn swap_kongswap(input_token: TokenInfo, output_token: TokenInfo, amount: u128) -> u128 {
-    swap_icrc2_kong(input_token, output_token, amount).await.amount_out
-}
-// TODO remove test function
-#[update]
-async fn kong_add_liquidity(amount: Nat, token0: TokenInfo, token1: TokenInfo) -> AddLiquidityResponse {
-    add_liquidity_to_pool_kong(amount, token0, token1).await
-}
-// TODO remove test function
-#[update]
-async fn kong_withdraw_from_pool(total_shares: Nat, shares: Nat, token0: TokenInfo, token1: TokenInfo) -> WithdrawFromPoolResponse {
-    withdraw_from_pool_kong(total_shares, shares, token0, token1).await
 }
 
 
@@ -273,6 +209,12 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
 }
 
 
+#[query]
+fn get_strategies() -> Vec<StrategyResponse> {
+    get_actual_strategies()
+}
+
+
 /// Withdraws an amount from a specified strategy.
 ///
 /// # Arguments
@@ -308,11 +250,6 @@ async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
 #[query]
 fn get_config() -> Conf {
     CONF.with(|c| c.borrow().clone())
-}
-
-#[query]
-fn get_strategies() -> Vec<StrategyResponse> {
-    get_actual_strategies()
 }
 
 #[pre_upgrade]

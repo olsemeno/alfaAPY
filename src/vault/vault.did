@@ -4,12 +4,6 @@ type AcceptInvestmentArgs = record {
   amount : nat;
 };
 
-type AddLiquidityResponse = record {
-  request_id : nat64;
-  token_0_amount : nat;
-  token_1_amount : nat;
-};
-
 type Conf = record { controllers : opt vec principal };
 
 type DepositResponse = record {
@@ -25,17 +19,17 @@ type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
 
 type LPReply = record {
   ts : nat64;
-  usd_balance : nat;
-  balance : nat;
+  usd_balance : float64;
+  balance : float64;
   name : text;
-  amount_0 : nat;
-  amount_1 : nat;
+  amount_0 : float64;
+  amount_1 : float64;
   address_0 : text;
   address_1 : text;
   symbol_0 : text;
   symbol_1 : text;
-  usd_amount_0 : nat;
-  usd_amount_1 : nat;
+  usd_amount_0 : float64;
+  usd_amount_1 : float64;
   chain_0 : text;
   chain_1 : text;
   symbol : text;
@@ -116,30 +110,17 @@ type WithdrawArgs = record {
   amount : nat;
 };
 
-type WithdrawFromPoolResponse = record {
-  token_0_amount : nat;
-  token_1_amount : nat;
-};
-
 type WithdrawResponse = record { current_shares : nat; amount : nat };
 
 service : (opt Conf) -> {
   accept_investment : (AcceptInvestmentArgs) -> (DepositResponse);
   get_config : () -> (Conf) query;
-  get_icpswap_quote : (TokenInfo, TokenInfo, nat) -> (nat);
-  get_kongswap_quote : (TokenInfo, TokenInfo, nat) -> (nat);
   get_strategies : () -> (vec StrategyResponse) query;
   get_system_events : (nat64, nat64) -> (vec SystemEvent);
   get_user_events : (principal, nat64, nat64) -> (vec UserEvent);
-  icpswap_add_liquidity : (nat, TokenInfo, TokenInfo) -> (AddLiquidityResponse);
   icpswap_withdraw : (TokenInfo, nat, nat) -> (nat);
-  icpswap_withdraw_from_pool : (nat, nat, TokenInfo, TokenInfo) -> (WithdrawFromPoolResponse);
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
-  kong_add_liquidity : (nat, TokenInfo, TokenInfo) -> (AddLiquidityResponse);
-  kong_withdraw_from_pool : (nat, nat, TokenInfo, TokenInfo) -> (WithdrawFromPoolResponse);
-  swap_icpswap : (TokenInfo, TokenInfo, nat) -> (nat);
-  swap_kongswap : (TokenInfo, TokenInfo, nat) -> (nat);
   user_balance_all : () -> (vec UserBalancesReply);
   user_strategies : (principal) -> (vec UserStrategyResponse);
   withdraw : (WithdrawArgs) -> (WithdrawResponse);

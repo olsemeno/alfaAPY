@@ -2,9 +2,7 @@ use std::collections::HashMap;
 use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 
-use kongswap_canister::PoolReply;
 use types::CanisterId;
-use types::exchanges::TokenInfo;
 use crate::events::event::{UserEvent, SystemEvent};
 use crate::pools::pool::{Pool, PoolResponse};
 
@@ -18,6 +16,17 @@ pub struct StrategyResponse {
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>,
     pub initial_deposit: HashMap<Principal, Nat>,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct UserStrategyResponse {
+    pub strategy_id: StrategyId,
+    pub strategy_name: String,
+    pub strategy_current_pool: Pool,
+    pub total_shares: Nat,
+    pub user_shares: Nat,
+    pub initial_deposit: Nat,
+    pub users_count: u32,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
@@ -43,17 +52,6 @@ pub struct WithdrawArgs {
 pub struct SupportedStandard {
     pub url: String,
     pub name: String,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct UserStrategyResponse {
-    pub strategy_id: StrategyId,
-    pub strategy_name: String,
-    pub strategy_current_pool: Pool,
-    pub total_shares: Nat,
-    pub user_shares: Nat,
-    pub initial_deposit: Nat,
-    pub users_count: u32,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]

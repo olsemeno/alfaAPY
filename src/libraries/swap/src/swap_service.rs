@@ -11,53 +11,6 @@ use crate::token_swaps::kongswap::KongSwapClient;
 use crate::token_swaps::icpswap::ICPSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
 
-// Temporary functions for testing
-
-pub async fn icpswap_quote(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
-    amount: u128,
-) -> u128 {
-    let icpswap_client = Box::new(
-        ICPSwapClient::new(
-            input_token.clone(),
-            output_token.clone()
-        ).await
-    );
-
-    match icpswap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => quote.amount_out,
-            Err(e) => trap(format!("ICPSwap quote error: {:?}", e).as_str()),
-        },
-        Err(e) => trap(format!("ICPSwap quote failed: {:?}", e).as_str()),
-    }
-}
-
-pub async fn kongswap_quote(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
-    amount: u128,
-) -> u128 {
-    let kongswap_client = Box::new(
-        KongSwapClient::new(
-            KONG_BE_CANISTER,
-            input_token.clone(),
-            output_token.clone()
-        )
-    );
-
-    match kongswap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => quote.amount_out,
-            Err(e) => trap(format!("KongSwap quote error: {:?}", e).as_str()),
-        },
-        Err(e) => trap(format!("KongSwap quote failed: {:?}", e).as_str()),
-    }
-}
-
-// End of temporary functions for testing
-
 pub async fn swap_icrc2(
     input_token: TokenInfo,
     output_token: TokenInfo,
