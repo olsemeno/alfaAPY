@@ -109,7 +109,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if self.get_current_pool().is_none() {
             let best_apy_pool = pools_data
                 .iter()
-                .filter(|x| x.pool.provider == ExchangeId::ICPSwap)
+                .filter(|x| x.pool.provider == ExchangeId::KongSwap)
                 // .max_by_key(|x| x.apy)
                 .map(|x| x.pool.clone())
                 .next();

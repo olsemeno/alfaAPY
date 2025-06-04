@@ -22,7 +22,7 @@ use providers::{kongswap as kongswap_provider};
 use providers::{icpswap as icpswap_provider};
 
 use crate::repository::repo::{stable_restore, stable_save};
-use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id};
+use crate::repository::strategies_repo;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
 use crate::events::event_service;
@@ -152,7 +152,7 @@ async fn get_user_events(user: Principal, offset: u64, limit: u64) -> Vec<UserEv
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
     match accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await {
         Ok(_) => {
-            let mut strategy = get_strategy_by_id(args.strategy_id).unwrap();
+            let mut strategy = strategies_repo::get_strategy_by_id(args.strategy_id).unwrap();
             strategy.deposit(caller(), args.amount).await
         }
         Err(e) => {
@@ -176,7 +176,7 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
 /// This function will trap if the strategy ID is not found.
 #[update]
 async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
-    let mut strategy = get_strategy_by_id(args.strategy_id).unwrap();
+    let mut strategy = strategies_repo::get_strategy_by_id(args.strategy_id).unwrap();
     let withdraw_response = strategy.withdraw(args.amount).await;
 
     WithdrawResponse {
@@ -216,7 +216,7 @@ async fn user_balance_all() -> Vec<UserBalancesReply> {
 /// A vector of `UserStrategyResponse` containing the strategies information for the user.
 #[update]
 async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
-    let strategies = get_all_strategies();
+    let strategies = strategies_repo::get_user_strategies(user);
     let mut user_strategies = Vec::new();
 
     for strategy in strategies {

@@ -14,6 +14,7 @@ pub fn init_strategies() {
     add_or_update_strategy(Box::new(IcpCkUSDTStrategy::new()));
 }
 
+// TODO: move to repo
 pub fn get_actual_strategies() -> Vec<StrategyResponse> {
     let strategies: Vec<StrategyResponse> = STRATEGIES.with(|trss| {
         let a = trss.borrow();

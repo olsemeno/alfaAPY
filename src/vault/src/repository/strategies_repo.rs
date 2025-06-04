@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use candid::Principal;
 
 use crate::strategies::strategy::{IStrategy, StrategyIterator};
 
@@ -8,18 +9,25 @@ thread_local! {
 
 pub fn get_all_strategies() -> Vec<Box<dyn IStrategy>> {
     STRATEGIES.with(|strategies| {
-        let a = strategies.borrow_mut();
-        let trs = StrategyIterator::new(a);
-        trs.into_iter()
+        StrategyIterator::new(strategies.borrow_mut())
+            .into_iter()
+            .collect()
+    })
+}
+
+pub fn get_user_strategies(user: Principal) -> Vec<Box<dyn IStrategy>> {
+    STRATEGIES.with(|strategies| {
+        StrategyIterator::new(strategies.borrow_mut())
+            .into_iter()
+            .filter(|s| s.get_user_shares().contains_key(&user))
             .collect()
     })
 }
 
 pub fn get_strategy_by_id(id: u16) -> Option<Box<dyn IStrategy>> {
     STRATEGIES.with(|strategies| {
-        let a = strategies.borrow_mut();
-        let trs = StrategyIterator::new(a);
-        trs.into_iter()
+        StrategyIterator::new(strategies.borrow_mut())
+            .into_iter()
             .find(|s| s.get_id() == id)
     })
 }

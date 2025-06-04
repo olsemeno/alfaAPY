@@ -138,14 +138,14 @@ describe("VR Test PROD", () => {
                 let user_balance = await actorVault.user_balance_all();
 
                 console.log("User balance before withdraw:", user_balance);
-
-
                 console.log("Withdraw starting...");
+
                 let withdrawResp: WithdrawResponse = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
+
                 // @ts-ignore
                 console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
                 user_balance = await actorVault.user_balance_all();
