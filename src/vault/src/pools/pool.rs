@@ -21,12 +21,12 @@ pub struct PoolResponse {
 impl Pool {
     /// Check if two pools are the same
     pub fn is_same_pool(&self, compared_pool: &Pool) -> bool {
-        let direct = self.token0.symbol == compared_pool.token0.symbol
-            && self.token1.symbol == compared_pool.token1.symbol;
-        let reverse = self.token0.symbol == compared_pool.token1.symbol
-            && self.token1.symbol == compared_pool.token0.symbol;
+        let direct_match = self.token0.ledger == compared_pool.token0.ledger
+            && self.token1.ledger == compared_pool.token1.ledger;
+        let reverse_match = self.token0.ledger == compared_pool.token1.ledger
+            && self.token1.ledger == compared_pool.token0.ledger;
 
-        (direct || reverse) && self.provider == compared_pool.provider
+        (direct_match || reverse_match) && self.provider == compared_pool.provider
     }
 
     pub fn to_response(&self) -> PoolResponse {
@@ -37,4 +37,3 @@ impl Pool {
         }
     }
 }
-

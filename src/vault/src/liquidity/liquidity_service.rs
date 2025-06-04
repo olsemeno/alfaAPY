@@ -16,10 +16,7 @@ pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
         .zip(pool_metrics.into_iter())
         .map(|(pool, pool_metric)| PoolData {
             pool: pool.clone(),
-            apy: pool_metric
-                .as_ref()
-                .map(|x| x.apy.month.tokens_apy) // Change if needed
-                .unwrap_or(0),
+            apy: pool_metric.1.apy.month.tokens_apy,
         })
         .collect();
 
@@ -32,6 +29,8 @@ pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityRespo
         pool.token1.clone(),
         pool.provider.clone()
     ).await;
+
+    // panic!("amount {:?}, pool {:?}", amount, pool);
 
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,

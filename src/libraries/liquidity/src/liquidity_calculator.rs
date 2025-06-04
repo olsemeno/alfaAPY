@@ -1,5 +1,6 @@
-use std::ops::{Mul};
+use std::ops::Mul;
 
+// TODO: remove this struct
 pub struct LiquidityCalculator;
 
 pub struct CalculatePoolLiquidityAmountsResponse {
@@ -9,7 +10,6 @@ pub struct CalculatePoolLiquidityAmountsResponse {
 }
 
 impl LiquidityCalculator {
-
     pub fn calculate_shares(amount: f64, total_balance: f64, total_shares: f64) -> f64 {
         let zero =0f64;
         let one = 1f64;
@@ -26,7 +26,6 @@ impl LiquidityCalculator {
             amount / share_price
         }
     }
-
 
     pub fn calculate_pool_liquidity_amounts(
         amount: f64,

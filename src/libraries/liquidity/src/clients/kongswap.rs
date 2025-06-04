@@ -7,8 +7,8 @@ use types::CanisterId;
 use types::exchanges::TokenInfo;
 use providers::kongswap::{add_liquidity, add_liquidity_amounts, remove_liquidity, swap_amounts, user_balances, pools};
 use kongswap_canister::user_balances::UserBalancesReply;
-use utils::util::{nat_to_f64, nat_to_u64};
-use swap::swap_service::swap_icrc2_kong;
+use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128};
+use swap::swap_service::{swap_icrc2_kongswap, quote_swap_icrc2_optimal, swap_icrc2};
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolData};
 
 use crate::liquidity_client::LiquidityClient;
@@ -39,62 +39,88 @@ impl LiquidityClient for KongSwapLiquidityClient {
     }
 
     async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, String> {
-        let token_0 = self.token0.symbol.clone();
-        let token_1 = self.token1.symbol.clone();
-        let address_0 = self.token0.ledger.to_string();
-        let address_1 = self.token1.ledger.to_string();
+        let token_0_symbol = self.token0.symbol.clone();
+        let token_1_symbol = self.token1.symbol.clone();
     
         // Get amounts of token_0 and token1 to add to pool
-        let add_liq_amounts_resp = match add_liquidity_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-            (Ok(x), ) => x,
-            (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
+        let add_liq_amounts_response = match add_liquidity_amounts(
+            token_0_symbol.clone(),
+            amount.clone(),
+            token_1_symbol.clone(),
+        ).await {
+            (Ok(add_liq_amounts_response), ) => add_liq_amounts_response,
+            (Err(e), ) => trap(
+                format!(
+                    "KongSwapLiquidityClient.add_liquidity_to_pool: \
+                    add_liquidity_amounts error for {} and {} and {}: {}",
+                    token_0_symbol.clone(),
+                    token_1_symbol.clone(),
+                    amount,
+                    e
+                ).as_str()
+            ),
         };
+
         // Get amounts of token_0 and token1 to swap
-        let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-            (Ok(x), ) => x,
-            (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
-        };
+        // let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
+        //     (Ok(x), ) => x,
+        //     (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
+        // };
+
+        let quote_result = quote_swap_icrc2_optimal(
+            self.token0.clone(),
+            self.token1.clone(),
+            nat_to_u128(&amount),
+        ).await;
+
+        let amount_out = quote_result.amount_out;
+        let swap_provider = quote_result.provider;
     
-        // Calculate pool ratio and swap price
-        let pool_ratio = nat_to_f64(&add_liq_amounts_resp.amount_1) / nat_to_f64(&add_liq_amounts_resp.amount_0);
-        let swap_price = nat_to_f64(&swap_amounts_resp.receive_amount) / nat_to_f64(&swap_amounts_resp.pay_amount);
+        // Calculate pool ratio and swap price for better swap proposition 
+        // to make equal amount of token0 and token1 in pool
+        let pool_ratio = nat_to_f64(&add_liq_amounts_response.amount_1) / nat_to_f64(&add_liq_amounts_response.amount_0);
+        let swap_price = (amount_out as f64) / (nat_to_f64(&amount) as f64);
+
         // Calculate how much token_0 and token_1 to swap and add to pool
-        //TODO visibility
         let calculator_response = LiquidityCalculator::calculate_pool_liquidity_amounts(
             nat_to_f64(&amount),
             pool_ratio.clone(),
             swap_price.clone(),
         );
     
-        let token_0_for_swap = calculator_response.token_0_for_swap;
-        let token_0_for_pool = calculator_response.token_0_for_pool;
-        let token_1_for_pool = calculator_response.token_1_for_pool;
-        let _ = swap_icrc2_kong(
+        let token_0_for_swap_amount = calculator_response.token_0_for_swap;
+        let token_0_for_pool_amount = calculator_response.token_0_for_pool;
+
+        // Swap token0 for token1 with the best exchange provider
+        let swap_response = swap_icrc2(
             self.token0.clone(),
             self.token1.clone(),
-            token_0_for_swap as u128,
+            token_0_for_swap_amount as u128,
+            swap_provider,
         ).await;
+
+        let token_1_for_pool_amount = swap_response.amount_out;
+
+        // panic!("token_0_for_swap_amount {:?}, token_0_for_pool_amount {:?}, token_1_for_pool_amount {:?}", token_0_for_swap_amount, token_0_for_pool_amount, token_1_for_pool_amount);
     
-        // Add liquidity to pool with token0 and token1
-        let response = add_liquidity(
-            token_0,
-            Nat::from(token_0_for_pool as u128),
-            token_1,
-            Nat::from(token_1_for_pool as u128),
-            Principal::from_text(address_0).unwrap(),
-            Principal::from_text(address_1).unwrap(),
-        ).await;
-    
-        match response {
-            Ok(r) => {
+        // Add token0 and token1 liquidity to pool
+        match add_liquidity(
+            token_0_symbol,
+            Nat::from(token_0_for_pool_amount as u128),
+            token_1_symbol,
+            Nat::from(token_1_for_pool_amount as u128),
+            self.token0.ledger,
+            self.token1.ledger,
+        ).await {
+            Ok(response) => {
                 Ok(AddLiquidityResponse {
-                    token_0_amount: Nat::from(token_0_for_pool as u128),
-                    token_1_amount: Nat::from(token_1_for_pool as u128),
-                    request_id: r.request_id,
+                    token_0_amount: Nat::from(token_0_for_pool_amount as u128),
+                    token_1_amount: Nat::from(token_1_for_pool_amount as u128),
+                    request_id: response.request_id,
                 })
             },
             Err(e) => {
-                Err(format!("Error: {}", e))
+                Err(format!("KongSwapLiquidityClient.add_liquidity_to_pool: add_liquidity error: {}", e))
             }
         }
     }
@@ -107,7 +133,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let user_balances_response = match user_balances(canister_id.to_string()).await.0 {
             Ok(reply) => reply,
             Err(err) => {
-                trap(format!("Error user_balances_response: {}", err).as_str());
+                trap(format!("KongSwapLiquidityClient.withdraw_liquidity_from_pool: user_balances error: {}", err).as_str());
             }
         };
     
@@ -121,7 +147,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 (balance.address_0 == self.token0.ledger.to_string() && balance.address_1 == self.token1.ledger.to_string()) ||
                 (balance.address_0 == self.token1.ledger.to_string() && balance.address_1 == self.token0.ledger.to_string())
             )
-            .unwrap_or_else(|| trap("Expected LP balance"));
+            .unwrap_or_else(|| trap("KongSwapLiquidityClient.withdraw_liquidity_from_pool: no user LP balance"));
     
         let balance = user_balance.balance;
     
@@ -136,7 +162,13 @@ impl LiquidityClient for KongSwapLiquidityClient {
         ).await {
             Ok(r) => { r }
             Err(e) => {
-                trap(format!("Error: {} with balance {} and lp_tokens_to_withdraw {}", e, balance, Nat::from(lp_tokens_to_withdraw.round() as u128)).as_str());
+                trap(format!(
+                    "KongSwapLiquidityClient.withdraw_liquidity_from_pool: \
+                    remove_liquidity error: {} with balance {} and lp_tokens_to_withdraw {}",
+                    e,
+                    balance,
+                    Nat::from(lp_tokens_to_withdraw.round() as u128)
+                ).as_str());
             },
         };
     
@@ -153,7 +185,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let user_balances_response = match user_balances(canister_id.to_string()).await.0 {
             Ok(reply) => reply,
             Err(err) => {
-                trap(format!("Error user_balances_response: {}", err).as_str());
+                trap(format!("KongSwapLiquidityClient.get_position_by_id: user_balances error: {}", err).as_str());
             }
         };
 
@@ -175,7 +207,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
                     )
                 )
             )
-            .unwrap_or_else(|| trap("Expected LP balance"));
+            .unwrap_or_else(|| trap("KongSwapLiquidityClient.get_position_by_id: no user LP balance"));
 
         Ok(GetPositionByIdResponse {
             position_id: position_id,
@@ -190,7 +222,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let pools_response = match pools().await {
             Ok(reply) => reply,
             Err(err) => {
-                trap(format!("Error pools_response: {}", err).as_str());
+                trap(format!("KongSwapLiquidityClient.get_pool_data: pools error: {}", err).as_str());
             }
         };
 
@@ -204,7 +236,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
                     pool.address_0 == self.token1.ledger.to_string() && pool.address_1 == self.token0.ledger.to_string()
                 )
             )
-            .unwrap_or_else(|| trap("Expected pool"));
+            .unwrap_or_else(|| trap("KongSwapLiquidityClient.get_pool_data: no pool"));
 
         let balance0 = pool_data.balance_0.clone() + pool_data.lp_fee_0.clone();
         let balance1 = pool_data.balance_1.clone() + pool_data.lp_fee_1.clone();
@@ -216,7 +248,14 @@ impl LiquidityClient for KongSwapLiquidityClient {
             CKUSDT_CANISTER_ID.to_string()
         ).await {
             (Ok(swap_amounts_reply), ) => swap_amounts_reply.receive_amount,
-            (Err(e), ) => trap(format!("swap_amounts error for {} and {} and {}: {}", self.token0.symbol, CKUSDT_CANISTER_ID.to_string(), balance0, e).as_str()),
+            (Err(e), ) => trap(format!(
+                "KongSwapLiquidityClient.get_pool_data: \
+                swap_amounts error for {} and {} and {}: {}",
+                self.token0.symbol,
+                CKUSDT_CANISTER_ID.to_string(),
+                balance0,
+                e
+            ).as_str()),
         };
 
         // Get USD amount of token1 pool
@@ -226,7 +265,14 @@ impl LiquidityClient for KongSwapLiquidityClient {
             CKUSDT_CANISTER_ID.to_string()
         ).await {
             (Ok(swap_amounts_reply), ) => swap_amounts_reply.receive_amount,
-            (Err(e), ) => trap(format!("swap_amounts error for {} and {} and {}: {}", self.token1.symbol, CKUSDT_CANISTER_ID.to_string(), balance1, e).as_str()),
+            (Err(e), ) => trap(format!(
+                "KongSwapLiquidityClient.get_pool_data: \
+                swap_amounts error for {} and {} and {}: {}",
+                self.token1.symbol,
+                CKUSDT_CANISTER_ID.to_string(),
+                balance1,
+                e
+            ).as_str()),
         };
 
         let tvl = usd_token0_amount + usd_token1_amount;

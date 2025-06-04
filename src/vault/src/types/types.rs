@@ -54,7 +54,7 @@ pub struct SupportedStandard {
     pub name: String,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct DepositResponse {
     pub amount: Nat,
     pub shares: Nat,
@@ -69,7 +69,9 @@ pub struct WithdrawResponse {
 }
 
 pub struct RebalanceResponse {
-    pub pool: Pool,
+    pub previous_pool: Pool,
+    pub current_pool: Pool,
+    pub is_rebalanced: bool,
 }
 
 pub type StrategyId = u16;

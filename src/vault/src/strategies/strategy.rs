@@ -7,11 +7,14 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 
-use swap::swap_service::swap_icrc2_kong;
+use swap::swap_service;
 use swap::token_swaps::nat_to_u128;
 use utils::util::nat_to_f64;
+use liquidity::liquidity_calculator::LiquidityCalculator;
+use types::exchange_id::ExchangeId;
+
 use crate::enums::{SystemEventParams, UserEventParams};
-use crate::events::event_service::{create_system_event, create_user_event};
+use crate::events::event_service;
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool,
     get_pools_data,
@@ -19,10 +22,8 @@ use crate::liquidity::liquidity_service::{
 };
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
-use crate::strategies::calculator::Calculator;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-use crate::pools::pool::Pool;
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
@@ -99,26 +100,30 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves the updated strategy state
     ///
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
-        // TODO: remove this (added to setting current pool)
         let pools_data = get_pools_data(self.get_pools()).await;
 
-        //TODO fixme temp approach to run the pool
-        if self.get_current_pool().is_none() {
-            let pool: Option<Pool> = pools_data
-                .iter()
-                .find(|&x| x.pool.is_same_pool(&self.get_pools()[0]))
-                .map(|x| x.pool.clone());
+        // TODO: remove this
+        self.set_current_pool(None);
 
-            if let Some(pool) = pool {
+        // Set current pool to the best APY pool if not set
+        if self.get_current_pool().is_none() {
+            let best_apy_pool = pools_data
+                .iter()
+                .filter(|x| x.pool.provider == ExchangeId::ICPSwap)
+                // .max_by_key(|x| x.apy)
+                .map(|x| x.pool.clone())
+                .next();
+
+            if let Some(pool) = best_apy_pool {
                 self.set_current_pool(Some(pool));
             } else {
-                trap("No pool found");
+                trap("No pool found to deposit");
             }
         }
 
         if let Some(ref current_pool) = self.get_current_pool() {
             // Calculate new shares for investor's deposit
-            let new_shares = Calculator::calculate_shares(
+            let new_shares = LiquidityCalculator::calculate_shares(
                 nat_to_f64(&amount),
                 nat_to_f64(&self.get_total_balance()),
                 nat_to_f64(&self.get_total_shares()),
@@ -141,7 +146,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             save_strategy(self.clone_self());
 
             // Create event for deposit
-            create_user_event(
+            event_service::create_user_event(
                 UserEventParams::AddLiquidity {
                     amount: amount.clone(),
                     token: current_pool.token0.ledger.to_text(),
@@ -152,12 +157,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             DepositResponse {
                 amount: amount,
-                shares: Nat::from(new_shares as u128),
+                shares: self.get_user_shares().get(&investor).unwrap().clone(),
                 tx_id: 0,
                 request_id: add_liquidity_response.request_id,
             }
         } else {
-            trap("Rebalance");
+            trap("No pool found to deposit");
         }
     }
 
@@ -183,21 +188,21 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     async fn withdraw(&mut self, shares: Nat) -> WithdrawResponse {
-        let investor = caller();
+        let user = caller();
+
         // Check if user has enough shares
-        if let Some(user_shares) = self.get_user_shares().get(&investor) {
+        if let Some(user_shares) = self.get_user_shares().get(&user) {
             if shares > *user_shares {
                 trap("Not sufficient shares".into());
             }
         } else {
-            trap("No shares found for this investor".into());
+            trap("No shares found for this user".into());
         }
 
         if let Some(current_pool) = self.get_current_pool() {
             let token0 = current_pool.token0.clone();
             let token1 = current_pool.token1.clone();
 
-            // trap(format!("shares: {:?}, total: {:?}", shares, self.get_total_shares()).as_str());
             // Remove liquidity from pool
             let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
@@ -206,17 +211,17 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             )
             .await;
 
-            // Swap token_1 to token_0 (to base token)
-            let swap_response = swap_icrc2_kong(
+            // Swap token_1 to token_0 (base token)
+            let swap_response = swap_service::swap_icrc2_optimal(
                 token1.clone(),
                 token0.clone(),
                 nat_to_f64(&withdraw_response.token_1_amount) as u128,
-            )
-            .await;
+            ).await;
 
-            // Calculate total token_0 to send after swap
-            let amount_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
+            // Amount to withdraw is the sum of token_0 amount and token_1 amount after swap
+            let amount_0_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
 
+            // Transfer token_0 (base token) to user
             let transfer_result = icrc1_transfer(
                 token0.ledger,
                 &TransferArg {
@@ -228,7 +233,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     fee: None,
                     created_at_time: None,
                     memo: None,
-                    amount: amount_to_withdraw.clone(),
+                    amount: amount_0_to_withdraw.clone(),
                 },
             )
             .await;
@@ -244,15 +249,16 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             };
 
             // Update total shares
-            let total_shares = self.get_total_shares() - shares.clone();
-            self.set_total_shares(total_shares.clone());
+            let new_total_shares = self.get_total_shares() - shares.clone();
+            self.set_total_shares(new_total_shares.clone());
 
             // Update user shares
-            let shares_before_withdraw = self.get_user_shares().get(&investor).cloned().unwrap();
-            let new_shares = shares_before_withdraw.clone() - shares;
-            self.update_user_shares(investor.clone(), new_shares.clone());
+            let shares_before_withdraw = self.get_user_shares().get(&user).cloned().unwrap();
+            let new_user_shares = shares_before_withdraw.clone() - shares;
+            self.update_user_shares(user.clone(), new_user_shares.clone());
 
-            // Update initial deposit //TODO WIP - need to fix
+            // Update initial deposit
+            // TODO: WIP - need to fix
             // let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
             // // Remaining initial deposit proportional to the new shares
             //
@@ -262,21 +268,21 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             save_strategy(self.clone_self());
 
             // Create event for withdraw
-            create_user_event(
+            event_service::create_user_event(
                 UserEventParams::RemoveLiquidity {
-                    amount: amount_to_withdraw.clone(),
+                    amount: amount_0_to_withdraw.clone(),
                     token: token0.ledger.to_text(),
                     symbol: token0.symbol.clone(),
                 },
-                investor,
+                user,
             );
 
             WithdrawResponse {
-                amount: amount_to_withdraw,
-                current_shares: new_shares.clone(),
+                amount: amount_0_to_withdraw,
+                current_shares: new_user_shares.clone(),
             }
         } else {
-            trap("No current pool");
+            trap("No current pool found in strategy");
         }
     }
 
@@ -330,7 +336,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///   * `pool` - The pool being used after rebalancing
     ///
     async fn rebalance(&mut self) -> RebalanceResponse {
-        let pools_data = get_pools_data(Vec::from(self.get_pools())).await;
+        let pools_data = get_pools_data(self.get_pools()).await;
         let mut max_apy = 0;
         let mut max_apy_pool = None;
 
@@ -341,58 +347,60 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 max_apy_pool = Some(pool_data.pool);
             }
         }
+
         let current_pool = self.get_current_pool();
 
         if max_apy_pool.is_none() {
             return RebalanceResponse {
-                pool: self.get_current_pool().unwrap(),
+                previous_pool: current_pool.clone().unwrap(),
+                current_pool: current_pool.clone().unwrap(),
+                is_rebalanced: false,
             };
         }
 
         let max_apy_pool = max_apy_pool.unwrap();
 
-        // If current pool is the same as max APY pool, return
         if let Some(current_pool) = &current_pool {
+             // If current pool is the same as max APY pool, return
             if current_pool.is_same_pool(&max_apy_pool) {
                 return RebalanceResponse {
-                    pool: current_pool.clone(),
+                    previous_pool: current_pool.clone(),
+                    current_pool: current_pool.clone(),
+                    is_rebalanced: false,
                 };
             }
 
             let token0 = current_pool.token0.clone();
             let token1 = current_pool.token1.clone();
 
-            // Remove liquidity from current pool
+            // Withdraw liquidity from current pool
             let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),
-            )
-            .await;
+            ).await;
 
-            let token_0_amount = withdraw_response.token_0_amount;
-            let token_1_amount = withdraw_response.token_1_amount;
+            let token_0_withdrawn_amount = withdraw_response.token_0_amount;
+            let token_1_withdrawn_amount = withdraw_response.token_1_amount;
 
-            // Swap withdrawed token_1 to token_0 (to base token)
-            let swap_response = swap_icrc2_kong(
+            // Swap withdrawed token_1 to token_0 (base token)
+            let swap_response = swap_service::swap_icrc2_optimal(
                 token1.clone(),
                 token0.clone(),
-                nat_to_u128(token_1_amount),
-            )
-            .await;
+                nat_to_u128(token_1_withdrawn_amount),
+            ).await;
 
             // Calculate total token_0 to send in new pool after swap
-            let token_0_to_pool_amount = token_0_amount + swap_response.amount_out;
+            let token_0_to_pool_amount = token_0_withdrawn_amount + swap_response.amount_out;
 
             // Add liquidity to new pool
-            let _ = add_liquidity_to_pool(
+            add_liquidity_to_pool(
                 token_0_to_pool_amount,
                 max_apy_pool.clone(),
-            )
-            .await;
+            ).await;
 
             // Create event for rebalance
-            create_system_event(
+            event_service::create_system_event(
                 SystemEventParams::Rebalance {
                     old_pool: current_pool.token0.symbol.clone(),
                     new_pool: max_apy_pool.token0.symbol.clone(),
@@ -403,7 +411,9 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             self.set_current_pool(Some(max_apy_pool));
 
             RebalanceResponse {
-                pool: self.get_current_pool().unwrap(),
+                previous_pool: current_pool.clone(),
+                current_pool: self.get_current_pool().unwrap(),
+                is_rebalanced: true,
             }
         } else {
             trap("No current pool");

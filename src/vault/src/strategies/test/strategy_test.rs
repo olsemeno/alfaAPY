@@ -1,19 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use crate::strategies::basic_strategy::BasicStrategy;
-    use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
-    use types::liquidity::AddLiquidityResponse;
-    use crate::pools::pool::Pool;
-    use candid::{Nat, Principal};
     use std::collections::HashMap;
-    use async_trait::async_trait;
+    use candid::{Nat, Principal};
     use ic_cdk::trap;
-    use crate::strategies::calculator::Calculator;
-    use crate::strategies::strategy::IStrategy;
-    use crate::strategies::strategy_candid::StrategyCandid;
+    use async_trait::async_trait;
+
+    use types::liquidity::AddLiquidityResponse;
     use utils::util::nat_to_f64;
+    use liquidity::liquidity_calculator::LiquidityCalculator;
     use types::exchanges::TokenInfo;
     use types::exchange_id::ExchangeId;
+
+    use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+    use crate::pools::pool::Pool;
+    use crate::strategies::basic_strategy::BasicStrategy;
+    use crate::strategies::strategy::IStrategy;
+    use crate::strategies::strategy_candid::StrategyCandid;
 
     const ICP_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
     const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
@@ -195,7 +197,7 @@ mod tests {
     
             if let Some(ref pool_reply) = self.get_current_pool() {
                 // Calculate new shares for investor's deposit
-                let new_shares = Calculator::calculate_shares(
+                let new_shares = LiquidityCalculator::calculate_shares(
                     nat_to_f64(&amount), 
                     nat_to_f64(&self.get_total_balance()), 
                     nat_to_f64(&self.get_total_shares())
@@ -253,7 +255,9 @@ mod tests {
         
         async fn rebalance(&mut self) -> RebalanceResponse {
             RebalanceResponse {
-                pool: self.get_current_pool().unwrap(),
+                previous_pool: self.get_current_pool().unwrap(),
+                current_pool: self.get_current_pool().unwrap(),
+                is_rebalanced: false,
             }
         }
         
@@ -360,9 +364,9 @@ mod tests {
         mock_strategy.set_current_pool(Some(pool));
         
         // Create the test strategy with our mock
-        let mut test_strategy = TestStrategy { mock: mock_strategy };
+        let test_strategy = TestStrategy { mock: mock_strategy };
         
-        // Calculate expected shares based on the Calculator implementation
+        // Calculate expected shares based on the LiquidityCalculator implementation
         let total_balance = test_strategy.get_total_balance();
         let total_shares = test_strategy.get_total_shares();
         let expected_shares = if total_balance == Nat::from(0u64) || total_shares == Nat::from(0u64) {
@@ -376,7 +380,7 @@ mod tests {
         // we'll just test the non-async parts of the implementation
         
         // Verify the user shares calculation
-        let new_shares = Calculator::calculate_shares(
+        let new_shares = LiquidityCalculator::calculate_shares(
             nat_to_f64(&amount),
             nat_to_f64(&total_balance),
             nat_to_f64(&total_shares)

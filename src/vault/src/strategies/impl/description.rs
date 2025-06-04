@@ -93,6 +93,17 @@ lazy_static! {
                     },
                     provider: ExchangeId::KongSwap,
                 },
+                Pool {
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(CKBTC_CANISTER_ID).unwrap(),
+                        symbol: "ckBTC".to_string(),
+                    },
+                    provider: ExchangeId::ICPSwap,
+                }
             ],
         });
         m.insert(4, StrategyInfo {
@@ -110,6 +121,17 @@ lazy_static! {
                     },
                     provider: ExchangeId::KongSwap,
                 },
+                Pool {
+                    token0: TokenInfo {
+                        ledger: Principal::from_text(PANDA_CANISTER_ID).unwrap(),
+                        symbol: "PANDA".to_string(),
+                    },
+                    token1: TokenInfo {
+                        ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+                        symbol: "ICP".to_string(),
+                    },
+                    provider: ExchangeId::ICPSwap,
+                }
             ],
         });
         m

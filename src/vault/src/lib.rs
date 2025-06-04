@@ -18,11 +18,11 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 pub use kongswap_canister::pools::{PoolsReply, Response};
 use kongswap_canister::user_balances::UserBalancesReply;
 use ::types::exchanges::TokenInfo;
-use providers::kongswap::user_balances;
-use providers::icpswap::{withdraw as withdraw_icpswap};
+use providers::{kongswap as kongswap_provider};
+use providers::{icpswap as icpswap_provider};
 
 use crate::repository::repo::{stable_restore, stable_save};
-use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id, STRATEGIES};
+use crate::repository::strategies_repo::{get_all_strategies, get_strategy_by_id};
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
 use crate::events::event_service;
@@ -79,12 +79,38 @@ fn init(conf: Option<Conf>) {
     init_strategies();
 }
 
-// TODO remove test function
+/// The heartbeat function is called periodically to perform maintenance tasks.
+///
+/// This function increments a counter and checks if a day has passed (based on the counter value).
+/// TODO make unique for each strategy
+/// If a day has passed, it triggers the rebalance operation for all strategies.
+// #[heartbeat]
+#[allow(unused)]
+fn heartbeat() {
+    let n = (3600 * 24) as u64;
+    HEARTBEAT.with(|store| {
+        // TODO: uncomment
+        // let count = store.borrow_mut().clone();
+        // if count % n == 0 {
+        //     STRATEGIES.with(|strategies| {
+        //         let mut strategies = strategies.borrow_mut();
+        //         for strategy in strategies.iter_mut() {
+        //             strategy.rebalance();
+        //         }
+        //     });
+        // }
+        // store.replace(count + 1)
+    });
+}
+
+// =============== Test functions ===============
+
+// TODO: remove test function
 #[update]
 async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
-    let canister_id = Principal::from_text("xmiu5-jqaaa-aaaag-qbz7q-cai").unwrap();
+    let canister_id = Principal::from_text("5fq4w-lyaaa-aaaag-qjqta-cai").unwrap();
 
-    let icpswap_quote_result = withdraw_icpswap(
+    let icpswap_quote_result = icpswap_provider::withdraw(
         canister_id,
         token_out,
         amount,
@@ -95,7 +121,7 @@ async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> 
 }
 
 
-// Events
+// =============== Events ===============
 
 #[update]
 async fn get_system_events(offset: u64, limit: u64) -> Vec<SystemEvent> {
@@ -107,6 +133,7 @@ async fn get_user_events(user: Principal, offset: u64, limit: u64) -> Vec<UserEv
     event_service::get_user_events(user, offset as usize, limit as usize)
 }
 
+// =============== Strategies ===============
 
 /// Accepts an investment into a specified strategy.
 ///
@@ -123,33 +150,41 @@ async fn get_user_events(user: Principal, offset: u64, limit: u64) -> Vec<UserEv
 /// This function will trap if the strategy ID is not found
 #[update]
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
-    let _ = accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await;
-    let mut str = get_strategy_by_id(args.strategy_id).unwrap();
-    str.deposit(caller(), args.amount).await
+    match accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await {
+        Ok(_) => {
+            let mut strategy = get_strategy_by_id(args.strategy_id).unwrap();
+            strategy.deposit(caller(), args.amount).await
+        }
+        Err(e) => {
+            trap(format!("Error accepting investment: {}", e).as_str());
+        }
+    }
 }
 
-/// The heartbeat function is called periodically to perform maintenance tasks.
+/// Withdraws an amount from a specified strategy.
 ///
-/// This function increments a counter and checks if a day has passed (based on the counter value).
-/// TODO make unique for each strategy
-/// If a day has passed, it triggers the rebalance operation for all strategies.
-// #[heartbeat]
-#[allow(unused)]
-fn heartbeat() {
-    let n = (3600 * 24) as u64;
-    HEARTBEAT.with(|store| {
-        let count = store.borrow_mut().clone();
-        if count % n == 0 {
-            STRATEGIES.with(|strategies| {
-                let mut strategies = strategies.borrow_mut();
-                for strategy in strategies.iter_mut() {
-                    strategy.rebalance();
-                }
-            });
-        }
-        store.replace(count + 1)
-    });
+/// # Arguments
+///
+/// * `args` - A `WithdrawArgs` struct containing the ledger, amount, and strategy ID.
+///
+/// # Returns
+///
+/// A `WithdrawResponse` struct containing the amount and current shares.
+///
+/// # Errors
+///
+/// This function will trap if the strategy ID is not found.
+#[update]
+async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
+    let mut strategy = get_strategy_by_id(args.strategy_id).unwrap();
+    let withdraw_response = strategy.withdraw(args.amount).await;
+
+    WithdrawResponse {
+        amount: withdraw_response.amount,
+        current_shares: withdraw_response.current_shares,
+    }
 }
+
 /// Retrieves the balance of all users.
 ///
 /// # Returns
@@ -162,10 +197,10 @@ fn heartbeat() {
 #[update]
 async fn user_balance_all() -> Vec<UserBalancesReply> {
     let canister_id = id();
-    match user_balances(canister_id.to_text()).await.0 {
+    match kongswap_provider::user_balances(canister_id.to_text()).await.0 {
         Ok(reply) => reply,
         Err(err) => {
-            trap(format!("Error: {}", err).as_str());
+            trap(format!("User balance error: {}", err).as_str());
         }
     }
 }
@@ -208,39 +243,10 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
     user_strategies
 }
 
-
 #[query]
 fn get_strategies() -> Vec<StrategyResponse> {
     get_actual_strategies()
 }
-
-
-/// Withdraws an amount from a specified strategy.
-///
-/// # Arguments
-///
-/// * `args` - A `WithdrawArgs` struct containing the ledger, amount, and strategy ID.
-///
-/// # Returns
-///
-/// A `WithdrawResponse` struct containing the amount and current shares.
-///
-/// # Errors
-///
-/// This function will trap if the strategy ID is not found.
-#[update]
-async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
-    let mut str = get_strategy_by_id(args.strategy_id).unwrap();
-    let response = str.withdraw(args.amount).await;
-
-    WithdrawResponse {
-        amount: response.amount,
-        current_shares: response.current_shares,
-    }
-}
-
-
-
 
 /// Retrieves the current configuration.
 ///
@@ -252,10 +258,8 @@ fn get_config() -> Conf {
     CONF.with(|c| c.borrow().clone())
 }
 
-#[pre_upgrade]
-fn pre_upgrade() {
-    stable_save()
-}
+// =============== ICRC ===============
+
 /// Retrieves the supported standards for ICRC-10.
 ///
 /// # Returns
@@ -289,10 +293,18 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
     Icrc28TrustedOriginsResponse { trusted_origins }
 }
 
+// =============== Upgrade ===============
+
+#[pre_upgrade]
+fn pre_upgrade() {
+    stable_save()
+}
+
 #[post_upgrade]
 fn post_upgrade() {
     stable_restore()
 }
+
 export_service!();
 
 #[ic_cdk_macros::query(name = "export_candid")]

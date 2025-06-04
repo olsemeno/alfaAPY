@@ -3,13 +3,13 @@ use crate::clients::icpswap::ICPSwapLiquidityClient;
 use crate::liquidity_client::LiquidityClient;
 use types::exchange_id::ExchangeId;
 use types::exchanges::TokenInfo;
-use providers::kongswap::KONG_BE_CANISTER;
+use providers::kongswap::KONGSWAP_CANISTER;
 
 pub async fn get_liquidity_client(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Box<dyn LiquidityClient> {
     match provider {
         ExchangeId::KongSwap => Box::new(
             KongSwapLiquidityClient::new(
-                KONG_BE_CANISTER, 
+                *KONGSWAP_CANISTER,
                 token0.clone(), 
                 token1.clone()
             )

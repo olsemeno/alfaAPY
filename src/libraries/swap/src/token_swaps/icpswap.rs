@@ -1,21 +1,20 @@
-use super::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 use serde::{Deserialize, Serialize};
-use utils::util::nat_to_u128;
 use async_trait::async_trait;
 use ic_cdk::trap;
 use candid::Nat;
-
 use ic_response_codes::RejectCode;
+
 use types::exchanges::TokenInfo;
 use types::CanisterId;
-
-use providers::icpswap::{get_pool, get_token_meta, deposit_from, withdraw, quote, swap};
+use providers::{icpswap as icpswap_provider};
 use icpswap_swap_factory_canister::ICPSwapPool;
-use icpswap_swap_pool_canister::ICPSwapSwapPoolResult;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use types::liquidity::TokensFee;
+use utils::util::nat_to_u128;
 
-pub const SLIPPAGE_TOLERANCE: u128 = 50; // 5%
+use crate::token_swaps::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
+
+pub const SLIPPAGE_TOLERANCE: u128 = 50; // 50 slippage tolerance points == 5%
 
 pub struct ICPSwapClient {
     canister_id: CanisterId,
@@ -55,7 +54,7 @@ impl ICPSwapClient {
             (t0, t1) if t0 == token1_str && t1 == token0_str => false,
             (t0, t1) => trap(
                 format!(
-                    "Invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}", 
+                    "Invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}",
                     self.token0,
                     self.token1,
                     t0,
@@ -91,42 +90,42 @@ impl ICPSwapClient {
     }
 
     async fn get_pool(token0: TokenInfo, token1: TokenInfo) -> Result<ICPSwapPool, String> {
-        match get_pool(token0, token1).await {
+        match icpswap_provider::get_pool(token0, token1).await {
             Ok(pool) => Ok(pool),
             Err(e) => Err(format!("Failed to get pool (ICPSWAP): {}", e)),
         }
     }
 
     async fn get_token_meta(&self) -> Result<TokenMeta, String> {
-        match get_token_meta(self.canister_id).await {
+        match icpswap_provider::get_token_meta(self.canister_id).await {
             Ok(token_meta) => Ok(token_meta),
             Err(e) => Err(format!("Failed to get token meta (ICPSWAP): {}", e)),
         }
     }
     
     async fn deposit_from(&self, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
-        match deposit_from(self.canister_id, self.token0.clone(), amount, token_fee).await {
+        match icpswap_provider::deposit_from(self.canister_id, self.token0.clone(), amount, token_fee).await {
             Ok(deposited_amount) => Ok(deposited_amount),
             Err(e) => Err(format!("Failed to deposit_from (ICPSWAP): {}", e)),
         }
     }
 
     async fn withdraw(&self, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
-        match withdraw(self.canister_id, self.token1.clone(), amount, token_fee).await {
+        match icpswap_provider::withdraw(self.canister_id, self.token1.clone(), amount, token_fee).await {
             Ok(withdrawn_amount) => Ok(withdrawn_amount),
             Err(e) => Err(format!("Failed to withdraw (ICPSWAP): {}", e)),
         }
     }
 
     async fn quote(&self, amount: Nat) -> Result<Nat, String> {
-        match quote(self.canister_id, amount.clone(), self.is_zero_for_one_swap_direction(), amount).await {
+        match icpswap_provider::quote(self.canister_id, amount.clone(), self.is_zero_for_one_swap_direction(), amount).await {
             Ok(quote_amount) => Ok(quote_amount),
             Err(e) => Err(format!("Failed to quote (ICPSWAP): {}", e)),
         }
     }
 
     async fn swap(&self, amount_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, String> {
-        match swap(self.canister_id, amount_in, zero_for_one, amount_out_minimum).await {
+        match icpswap_provider::swap(self.canister_id, amount_in, zero_for_one, amount_out_minimum).await {
             Ok(amount_out) => Ok(amount_out),
             Err(e) => Err(format!("Failed to swap (ICPSWAP): {}", e)),
         }
@@ -156,8 +155,8 @@ impl SwapClient for ICPSwapClient {
         // let token1_fee = tokens_fee.token1_fee.unwrap_or(Nat::from(0u8));
 
         //TODO: Remove hardcoded fees
-        let token0_fee = Nat::from(10_000u128); // For ICP
-        let token1_fee = Nat::from(10u8); // For ckBTC
+        let token0_fee = Nat::from(10_000u128); // For PANDA
+        let token1_fee = Nat::from(10_000u128); // For ICP
 
         // 1. Deposit
         let deposited_amount = match self.deposit_from(
@@ -176,9 +175,13 @@ impl SwapClient for ICPSwapClient {
 
         // 3. Swap
         let expected_out_u128 = nat_to_u128(&expected_out);
-        let amount_out_minimum = Nat::from(expected_out_u128 * (1000 - SLIPPAGE_TOLERANCE) / 1000u128);
+        let amount_out_minimum = Nat::from(
+            expected_out_u128 * (1000 - SLIPPAGE_TOLERANCE) / 1000u128 // consider slippage tolerance
+        );
 
-        let amount_out = match self.swap(deposited_amount.clone(), self.is_zero_for_one_swap_direction(), amount_out_minimum).await {
+        // panic!("amount_out_minimum {:?}", amount_out_minimum);
+
+        let amount_out = match self.swap(deposited_amount.clone(), self.is_zero_for_one_swap_direction(), amount_out_minimum.clone()).await {
             Ok(amt) => amt,
             Err(e) => {
                 // If swap fails, withdraw the deposited amount
@@ -190,6 +193,8 @@ impl SwapClient for ICPSwapClient {
                 trap(format!("Swap error 2 (ICPSWAP): {:?}", e).as_str());
             }
         };
+
+        // panic!("amount {:?}, deposited_amount {:?}, amount_out {:?}, amount_out_minimum {:?}, expected_out {:?}", amount, deposited_amount, amount_out, amount_out_minimum, expected_out);
 
         // 4. Withdraw
         let withdrawn_amount = match self.withdraw(amount_out, token1_fee).await {

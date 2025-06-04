@@ -37,12 +37,12 @@ pub fn get_pools() -> Vec<Pool> {
 
 pub fn get_pool_by_tokens(pool_by_tokens: PoolByTokens) -> Option<Pool> {
     POOLS.with(|pools| pools.borrow().values().find(|pool| {
-        let direct = pool.token0.symbol == pool_by_tokens.token0.symbol
-            && pool.token1.symbol == pool_by_tokens.token1.symbol;
-        let reverse = pool.token0.symbol == pool_by_tokens.token1.symbol
-            && pool.token1.symbol == pool_by_tokens.token0.symbol;
+        let direct_match = pool.token0.ledger == pool_by_tokens.token0.ledger
+            && pool.token1.ledger == pool_by_tokens.token1.ledger;
+        let reverse_match = pool.token0.ledger == pool_by_tokens.token1.ledger
+            && pool.token1.ledger == pool_by_tokens.token0.ledger;
 
-        (direct || reverse) && pool.provider == pool_by_tokens.provider
+        (direct_match || reverse_match) && pool.provider == pool_by_tokens.provider
     }).cloned())
 }
 

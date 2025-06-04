@@ -3,74 +3,62 @@ use ic_cdk::trap;
 
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::exchanges::TokenInfo;
-use types::swap_tokens::SuccessResult;
+use types::swap_tokens::{SuccessResult, QuoteResult};
 use types::exchange_id::ExchangeId;
-use providers::kongswap::KONG_BE_CANISTER;
+use providers::kongswap::KONGSWAP_CANISTER;
 
 use crate::token_swaps::kongswap::KongSwapClient;
 use crate::token_swaps::icpswap::ICPSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
 
-pub async fn swap_icrc2(
+pub async fn swap_icrc2_optimal(
     input_token: TokenInfo,
     output_token: TokenInfo,
     amount: u128,
 ) -> SuccessResult {
-    let kongswap_client = Box::new(
-        KongSwapClient::new(
-            KONG_BE_CANISTER,
-            input_token.clone(),
-            output_token.clone()
-        )
-    );
+    let provider = quote_swap_icrc2_optimal(input_token.clone(), output_token.clone(), amount).await.provider;
+    swap_icrc2(input_token, output_token, amount, provider).await
+}
 
-    let icpswap_client = Box::new(
-        ICPSwapClient::new(
-            input_token.clone(),
-            output_token.clone()
-        ).await
-    );
-
-    // Fetch KongSwap quote
-    let kongswap_quote_result = match kongswap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => Ok(quote),
-            Err(e) => Err(format!("KongSwap quote error: {:?}", e)),
+pub async fn swap_icrc2(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+    provider: ExchangeId,
+) -> SuccessResult {
+    match provider {
+        ExchangeId::KongSwap => {
+            swap_icrc2_kongswap(input_token, output_token, amount).await
         },
-        Err(e) => Err(format!("KongSwap quote failed: {:?}", e)),
-    };
-
-    // Fetch ICPSwap quote
-    let icpswap_quote_result = match icpswap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => Ok(quote),
-            Err(e) => Err(format!("ICPSwap quote error: {:?}", e)),
-        },
-        Err(e) => Err(format!("ICPSwap quote failed: {:?}", e)),
-    };
-
-    match (kongswap_quote_result, icpswap_quote_result) {
-        (Ok(kong_quote), Ok(icp_quote)) => {
-            if kong_quote.amount_out > icp_quote.amount_out {
-                swap_icrc2_kong(input_token, output_token, amount).await
-            } else {
-                swap_icrc2_icpswap(input_token, output_token, amount).await
-            }
-        },
-        (Ok(_), Err(_)) => {
-            // Only KongSwap gave a result
-            swap_icrc2_kong(input_token, output_token, amount).await
-        },
-        (Err(_), Ok(_)) => {
-            // Only ICPSwap gave a result
+        ExchangeId::ICPSwap => {
             swap_icrc2_icpswap(input_token, output_token, amount).await
         },
-        (Err(kong_err), Err(icp_err)) => {
-            trap(format!("Both quote services failed. KongSwap: {}, ICPSwap: {}", kong_err, icp_err).as_str());
-        }
+        _ => {
+            trap("Quote services failed.");
+        },
     }
 }
 
+pub async fn quote_swap_icrc2_optimal(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+) -> QuoteResult {
+    let kong_quote = quote_swap_kongswap(input_token.clone(), output_token.clone(), amount).await;
+    let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
+
+    // Return the quote with the highest amount_out
+    std::cmp::max_by(
+        kong_quote,
+        icp_quote,
+        |a, b| a.amount_out.cmp(&b.amount_out)
+    )
+}
+
+
+// TODO: move to separate services for each provider
+
+// TODO: make private
 pub async fn swap_icrc2_icpswap(
     input_token: TokenInfo,
     output_token: TokenInfo,
@@ -125,7 +113,7 @@ pub async fn swap_icrc2_icpswap(
     match swap_result {
         Ok(x) => {
             SuccessResult {
-                swap_provider: ExchangeId::ICPSwap,
+                provider: ExchangeId::ICPSwap,
                 amount_out: x.amount_out
             }
         }
@@ -136,14 +124,15 @@ pub async fn swap_icrc2_icpswap(
     }
 }
 
-pub async fn swap_icrc2_kong(
+// TODO: make private
+pub async fn swap_icrc2_kongswap(
     input_token: TokenInfo,
     output_token: TokenInfo,
     amount: u128,
 ) -> SuccessResult {
     let swap_client = Box::new(
         KongSwapClient::new(
-            KONG_BE_CANISTER,
+            *KONGSWAP_CANISTER,
             input_token.clone(),
             output_token
         )
@@ -190,12 +179,83 @@ pub async fn swap_icrc2_kong(
     match swap_result {
         Ok(x) => {
             SuccessResult {
-                swap_provider: ExchangeId::KongSwap,
+                provider: ExchangeId::KongSwap,
                 amount_out: x.amount_out
             }
         }
         Err(e) => {
             let msg = format!("Swap error 2 (KONGSWAP): {e:?} arguments: {}", amount);
+            trap(msg.as_str());
+        }
+    }
+}
+
+// TODO: make private
+pub async fn quote_swap_kongswap(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+) -> QuoteResult {
+    let swap_client = Box::new(
+        KongSwapClient::new(
+            *KONGSWAP_CANISTER,
+            input_token.clone(),
+            output_token.clone()
+        )
+    );
+
+    let quote_result = match swap_client.quote(amount).await {
+        Ok(result) => match result {
+            Ok(quote) => Ok(quote),
+            Err(e) => Err(format!("KongSwap quote error: {:?}", e)),
+        },
+        Err(e) => Err(format!("KongSwap quote failed: {:?}", e)),
+    };
+
+    match quote_result {
+        Ok(quote) => {
+            QuoteResult {
+                provider: ExchangeId::KongSwap,
+                amount_out: quote.amount_out
+            }
+        }
+        Err(e) => {
+            let msg = format!("KongSwap quote error: {e:?}");
+            trap(msg.as_str());
+        }
+    }
+}
+
+// TODO: make private
+pub async fn quote_swap_icpswap(
+    input_token: TokenInfo,
+    output_token: TokenInfo,
+    amount: u128,
+) -> QuoteResult {
+    let swap_client = Box::new(
+        ICPSwapClient::new(
+            input_token.clone(),
+            output_token.clone()
+        ).await
+    );
+
+    let quote_result = match swap_client.quote(amount).await {
+        Ok(result) => match result {
+            Ok(quote) => Ok(quote),
+            Err(e) => Err(format!("ICPSwap quote error: {:?}", e)),
+        },
+        Err(e) => Err(format!("ICPSwap quote failed: {:?}", e)),
+    };
+
+    match quote_result {
+        Ok(quote) => {
+            QuoteResult {
+                provider: ExchangeId::ICPSwap,
+                amount_out: quote.amount_out
+            }
+        }
+        Err(e) => {
+            let msg = format!("ICPSwap quote error: {e:?}");
             trap(msg.as_str());
         }
     }

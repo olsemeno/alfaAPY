@@ -62,6 +62,12 @@ pub enum Response {
 
 #[derive(CandidType, Serialize, Deserialize, Debug)]
 pub struct SuccessResult {
-    pub swap_provider: ExchangeId,
+    pub provider: ExchangeId,
+    pub amount_out: u128,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Debug)]
+pub struct QuoteResult {
+    pub provider: ExchangeId,
     pub amount_out: u128,
 }
