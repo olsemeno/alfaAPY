@@ -245,7 +245,7 @@ mod tests {
                 name: self.get_name(),
                 id: self.get_id(),
                 description: self.get_description(),
-                pools: self.get_pools().iter().map(|pool| pool.to_response()).collect(),
+                pools: self.get_pools(),
                 current_pool: self.get_current_pool(),
                 total_shares: self.get_total_shares(),
                 user_shares: self.get_user_shares(),

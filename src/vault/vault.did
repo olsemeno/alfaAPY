@@ -42,12 +42,6 @@ type Pool = record {
   token1 : TokenInfo;
 };
 
-type PoolResponse = record {
-  provider : ExchangeId;
-  token0 : text;
-  token1 : text;
-};
-
 type StrategyResponse = record {
   id : nat16;
   name : text;
@@ -56,7 +50,7 @@ type StrategyResponse = record {
   initial_deposit : vec record { principal; nat };
   user_shares : vec record { principal; nat };
   current_pool : opt Pool;
-  pools : vec PoolResponse;
+  pools : vec Pool;
 };
 
 type SupportedStandard = record { url : text; name : text };
@@ -118,10 +112,10 @@ service : (opt Conf) -> {
   get_strategies : () -> (vec StrategyResponse) query;
   get_system_events : (nat64, nat64) -> (vec SystemEvent);
   get_user_events : (principal, nat64, nat64) -> (vec UserEvent);
+  icpswap_withdraw : (TokenInfo, nat, nat) -> (nat);
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
   user_balance_all : () -> (vec UserBalancesReply);
   user_strategies : (principal) -> (vec UserStrategyResponse);
   withdraw : (WithdrawArgs) -> (WithdrawResponse);
-  icpswap_withdraw : (TokenInfo, nat, nat) -> (nat);
 }

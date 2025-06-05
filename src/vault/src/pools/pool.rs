@@ -11,13 +11,6 @@ pub struct Pool {
     pub provider: ExchangeId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, CandidType)]
-pub struct PoolResponse {
-    pub token0: String,
-    pub token1: String,
-    pub provider: ExchangeId,
-}
-
 impl Pool {
     /// Check if two pools are the same
     pub fn is_same_pool(&self, compared_pool: &Pool) -> bool {
@@ -27,13 +20,5 @@ impl Pool {
             && self.token1.ledger == compared_pool.token0.ledger;
 
         (direct_match || reverse_match) && self.provider == compared_pool.provider
-    }
-
-    pub fn to_response(&self) -> PoolResponse {
-        PoolResponse {
-            token0: self.token0.symbol.clone(),
-            token1: self.token1.symbol.clone(),
-            provider: self.provider.clone(),
-        }
     }
 }

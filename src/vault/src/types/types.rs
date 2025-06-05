@@ -4,14 +4,14 @@ use serde::Serialize;
 
 use types::CanisterId;
 use crate::events::event::{UserEvent, SystemEvent};
-use crate::pools::pool::{Pool, PoolResponse};
+use crate::pools::pool::Pool;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StrategyResponse {
     pub name: String,
     pub id: StrategyId,
     pub description: String,
-    pub pools: Vec<PoolResponse>,
+    pub pools: Vec<Pool>,
     pub current_pool: Option<Pool>,
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>,
