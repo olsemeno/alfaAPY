@@ -82,15 +82,18 @@ type WithdrawFromPoolResponse = record {
 
 service : () -> {
   add_liquidity_to_pool : (text, nat) -> (Result);
-  add_pool : (PoolByTokens) -> ();
+  add_pool : (TokenInfo, TokenInfo, ExchangeId) -> (text);
   add_pool_snapshot : (PoolSnapshotArgs) -> ();
-  delete_pool : (PoolByTokens) -> ();
+  delete_all_pools_and_snapshots : () -> (bool);
+  delete_pool : (text) -> (bool);
   delete_pool_snapshot : (text, text) -> ();
   delete_pool_snapshots : (text) -> ();
+  get_pool_by_id : (text) -> (opt Pool);
   get_pool_by_tokens : (PoolByTokens) -> (opt Pool);
-  get_pool_metrics : (vec PoolByTokens) -> (vec record { PoolByTokens; PoolMetrics },);
+  get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
   get_pools : () -> (vec Pool);
-  get_pools_snapshots : (vec PoolByTokens) -> (vec record { PoolByTokens; vec PoolSnapshot },);
+  get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
   set_operator : (principal) -> ();
+  update_pool_ids : () -> (bool);
 }

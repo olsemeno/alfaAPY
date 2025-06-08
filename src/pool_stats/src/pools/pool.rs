@@ -3,6 +3,8 @@ use serde::Serialize;
 
 use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
+use utils::pool_id_util::generate_pool_id;
+
 use crate::repository::pools_repo;
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
@@ -28,6 +30,14 @@ impl Pool {
 
     pub fn get_id(&self) -> String {
         self.id.clone()
+    }
+
+    pub fn create(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> Self {
+        let id = generate_pool_id(&token0, &token1, &provider);
+        let pool = Self::new(id, token0, token1, provider);
+        pool.save();
+
+        pool
     }
 
     pub fn save(&self) {

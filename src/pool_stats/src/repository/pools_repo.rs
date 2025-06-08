@@ -23,6 +23,12 @@ thread_local! {
 
 // Pools
 
+// TODO: test method, remove after testing
+pub fn delete_all_pools_and_snapshots() {
+    POOLS.with(|pools| pools.borrow_mut().clear());
+    POOLS_SNAPSHOTS.with(|snapshots| snapshots.borrow_mut().clear());
+}
+
 pub fn save_pool(pool: Pool) {
     POOLS.with(|pools| pools.borrow_mut().insert(pool.id.clone(), pool));
 }

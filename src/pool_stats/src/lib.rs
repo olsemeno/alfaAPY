@@ -6,10 +6,13 @@ use ic_cdk::{call, id, trap, update};
 use ic_cdk::api::call::CallResult;
 use candid::export_service;
 
+use types::exchanges::TokenInfo;
+use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::pool_stats::PoolByTokens;
-use crate::pools::pool_snapshot::PoolSnapshot;
+use utils::pool_id_util::generate_pool_id;
 
+use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::snapshots::snapshot_service;
 use crate::pools::pool::Pool;
 use crate::pools::pool_metrics::PoolMetrics;
@@ -43,30 +46,92 @@ thread_local! {
     );
 }
 
+
+// TODO: test method, remove after testing
+use crate::pools::pool_data_service::{PositionData, PoolData};
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
+pub struct PoolSnapshotArgs {
+    pub pool_id: String,
+    pub timestamp: u64,
+    pub position_data: Option<PositionData>,
+    pub pool_data: Option<PoolData>,
+}
+
+// TODO: test method, remove after testing
+#[update]
+pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
+    let snapshot = PoolSnapshot::new(
+        (pools_repo::get_pool_snapshots_count(args.pool_id.clone()) + 1).to_string(),
+        args.pool_id,
+        args.timestamp,
+        args.position_data,
+        args.pool_data,
+    );
+    pools_repo::save_pool_snapshot(snapshot);
+}
+
+// TODO: test method, remove after testing
+#[update]
+pub fn delete_pool_snapshots(pool_id: String) {
+    pools_repo::delete_pool_snapshots(pool_id);
+}
+
+// TODO: test method, remove after testing
+#[update]
+pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
+    pools_repo::delete_pool_snapshot(pool_id, snapshot_id);
+}
+
+// TODO: test method, remove after testing
+#[update]
+pub fn update_pool_ids() -> bool {
+    let pools = pools_repo::get_pools();
+    for mut pool in pools {
+        let new_id = generate_pool_id(&pool.token0, &pool.token1, &pool.provider);
+        pool.id = new_id;
+        pools_repo::save_pool(pool);
+    }
+    true
+}
+
+// TODO: test method, remove after testing
+#[update]
+pub fn delete_all_pools_and_snapshots() -> bool {
+    pools_repo::delete_all_pools_and_snapshots();
+    true
+}
+
+// End of test method
+
+
+
 // Pools management
 
 #[update]
-pub fn add_pool(pool_by_tokens: PoolByTokens) {
-    let id = (pools_repo::get_pool_count() + 1).to_string();
-
-    Pool::new(
-        id,
-        pool_by_tokens.token0,
-        pool_by_tokens.token1,
-        pool_by_tokens.provider,
-    ).save();
+pub fn add_pool(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> String {
+    let pool = Pool::create(token0, token1, provider);
+    pool.id
 }
 
 #[update]
-pub fn delete_pool(pool_by_tokens: PoolByTokens) {
-    if let Some(pool) = pools_repo::get_pool_by_tokens(pool_by_tokens) {
-        pool.delete();
-    }
+pub fn delete_pool(id: String) -> bool {
+    pools_repo::get_pool_by_id(id.clone())
+        .map(|pool| {
+            pool.delete();
+            true
+        })
+        .unwrap_or(false)
 }
 
 #[update]
 pub fn get_pools() -> Vec<Pool> {
     pools_repo::get_pools()
+}
+
+#[update]
+pub fn get_pool_by_id(id: String) -> Option<Pool> {
+    pools_repo::get_pool_by_id(id)
 }
 
 #[update]
@@ -77,21 +142,21 @@ pub fn get_pool_by_tokens(pool_by_tokens: PoolByTokens) -> Option<Pool> {
 // Pool metrics
 
 #[update]
-pub fn get_pool_metrics(pool_by_tokens: Vec<PoolByTokens>) -> HashMap<PoolByTokens, PoolMetrics> {
-    pool_by_tokens.into_iter()
-        .filter_map(|pool_by_tokens| {
-            pools_repo::get_pool_by_tokens(pool_by_tokens.clone())
-                .map(|pool| (pool_by_tokens, pool_metrics_service::create_pool_metrics(pool)))
+pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
+    pool_ids.into_iter()
+        .filter_map(|pool_id| {
+            pools_repo::get_pool_by_id(pool_id.clone())
+                .map(|pool| (pool_id, pool_metrics_service::create_pool_metrics(pool)))
         })
         .collect()
 }
 
 #[update]
-pub fn get_pools_snapshots(pools_by_tokens: Vec<PoolByTokens>) -> HashMap<PoolByTokens, Vec<PoolSnapshot>> {
-    pools_by_tokens.into_iter()
-        .filter_map(|pool_by_tokens| {
-            pools_repo::get_pool_by_tokens(pool_by_tokens.clone())
-                .map(|pool| (pool_by_tokens, pools_repo::get_pool_snapshots(pool.id).unwrap_or_default()))
+pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSnapshot>> {
+    pool_ids.into_iter()
+        .filter_map(|pool_id| {
+            pools_repo::get_pool_by_id(pool_id.clone())
+                .map(|pool| (pool_id, pools_repo::get_pool_snapshots(pool.id).unwrap_or_default()))
         })
         .collect()
 }
@@ -107,43 +172,6 @@ pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLi
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, String> {
     liquidity_service::remove_liquidity_from_pool(pool_id).await
 }
-
-
-// TODO: remove test methods
-use crate::pools::pool_data_service::{PositionData, PoolData};
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct PoolSnapshotArgs {
-    pub pool_id: String,
-    pub timestamp: u64,
-    pub position_data: Option<PositionData>,
-    pub pool_data: Option<PoolData>,
-}
-
-#[update]
-pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
-    let snapshot = PoolSnapshot::new(
-        (pools_repo::get_pool_snapshots_count(args.pool_id.clone()) + 1).to_string(),
-        args.pool_id,
-        args.timestamp,
-        args.position_data,
-        args.pool_data,
-    );
-    pools_repo::save_pool_snapshot(snapshot);
-}
-
-#[update]
-pub fn delete_pool_snapshots(pool_id: String) {
-    pools_repo::delete_pool_snapshots(pool_id);
-}
-
-#[update]
-pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
-    pools_repo::delete_pool_snapshot(pool_id, snapshot_id);
-}
-
-// End of test method
-
 
 // Vault management
 
