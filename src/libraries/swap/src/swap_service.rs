@@ -48,11 +48,14 @@ pub async fn quote_swap_icrc2_optimal(
     let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
 
     // Return the quote with the highest amount_out
-    std::cmp::max_by(
-        kong_quote,
-        icp_quote,
-        |a, b| a.amount_out.cmp(&b.amount_out)
-    )
+    // std::cmp::max_by(
+    //     kong_quote,
+    //     icp_quote,
+    //     |a, b| a.amount_out.cmp(&b.amount_out)
+    // )
+
+    // TODO: remove this after testing and return the quote with the highest amount_out
+    return kong_quote;
 }
 
 

@@ -62,7 +62,7 @@ describe("VR Test PROD", () => {
     describe(".accept_investment", () => {
         const strategyId = 4;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(100_000_000);
+        const depositAmount = BigInt(200_000_000);
         // const depositAmount = BigInt(100_000);
 
         it("Deposits to strategy without any liquidity", async () => {
@@ -104,33 +104,33 @@ describe("VR Test PROD", () => {
         let sharesToWithdraw: bigint;
         let remainingShares: bigint;
 
-        beforeEach(async () => {
-            // Approve tokens
-            await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
+        // beforeEach(async () => {
+        //     // Approve tokens
+        //     await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 
-            try {
-                console.log("Deposit starting...");
+        //     try {
+        //         console.log("Deposit starting...");
 
-                // Deposit tokens
-                let depositResp: DepositResponse = await actorVault.accept_investment({
-                    amount: depositAmount,
-                    strategy_id: strategyId,
-                    ledger: Principal.fromText(ledgerCanisterId)
-                });
+        //         // Deposit tokens
+        //         let depositResp: DepositResponse = await actorVault.accept_investment({
+        //             amount: depositAmount,
+        //             strategy_id: strategyId,
+        //             ledger: Principal.fromText(ledgerCanisterId)
+        //         });
 
-                console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
+        //         console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
 
-                shares = BigInt(depositResp.shares);
-            } catch (e) {
-                console.log("Deposit error:", e);
-            }
-        });
+        //         shares = BigInt(depositResp.shares);
+        //     } catch (e) {
+        //         console.log("Deposit error:", e);
+        //     }
+        // });
 
         it("Withdraws full balance", async () => {
             console.log("== START \"Withdraws full balance\" TEST ==");
             console.log("Shares:", shares);
 
-            // shares = depositAmount; // For testing without deposit
+            shares = depositAmount; // For testing without deposit
             sharesToWithdraw = shares; // All shares
             remainingShares = 0n; // No shares left
 
@@ -161,8 +161,9 @@ describe("VR Test PROD", () => {
         it("Withdraws part of balance", async () => {
             console.log("== START \"Withdraws part of balance\" TEST ==");
 
-            // shares = BigInt(50_000_000); // For testing without deposit
+            shares = depositAmount; // For testing without deposit
             let sharesToWithdraw = BigInt(shares) / 2n; // 50% of shares
+            // let sharesToWithdraw = BigInt(100_000_000);
             let remainingShares = BigInt(shares) - sharesToWithdraw;
 
             try {
@@ -204,7 +205,13 @@ describe("VR Test PROD", () => {
 
                 if (userStrategies.length > 0) {
                     userStrategies.forEach(strategy => {
-                        console.log(`Strategy ID: ${strategy.strategy_id}, Name: ${strategy.strategy_name}, User shares: ${strategy.user_shares.toString()}, Total shares: ${strategy.total_shares.toString()}`);
+                        console.log(
+                            `Strategy ID: ${strategy.strategy_id}\n` +
+                            `Name: ${strategy.strategy_name}\n` +
+                            `Initial deposit: ${strategy.initial_deposit.toString()}\n` +
+                            `User shares: ${strategy.user_shares.toString()}\n` +
+                            `Total shares: ${strategy.total_shares.toString()}\n`
+                        );
                     });
                 } else {
                     console.log("No strategies found for this user");
@@ -235,11 +242,15 @@ describe("VR Test PROD", () => {
             const pandaIcpStrategy = strategies.find(strategy => strategy.id === 4);
             const pandaIcpPools = pandaIcpStrategy.pools;
 
-            // console.log("Panda ICP strategy:", pandaIcpStrategy);
-            // console.log("Panda ICP pools:", pandaIcpPools);
-
             strategies.forEach(strategy => {
-                console.log("Strategy:", strategy.id, strategy.name, strategy.current_pool, strategy.total_shares, strategy.user_shares);
+                console.log(
+                    `Strategy ID: ${strategy.id}\n` +
+                    `Name: ${strategy.name}\n` +
+                    `Current pool: ${JSON.stringify(strategy.current_pool)}\n` +
+                    `Total balance: ${strategy.total_balance}\n` +
+                    `Total shares: ${strategy.total_shares}\n` +
+                    `User shares: ${JSON.stringify(strategy.user_shares.toString())}\n`
+                );
             });
         });
     });
@@ -248,6 +259,14 @@ describe("VR Test PROD", () => {
         it("Returns user balance", async () => {
             const userBalance = await actorVault.user_balance_all();
             console.log("User balance:", userBalance);
+        });
+    });
+
+    describe(".reset_strategy", () => {
+        it("Resets strategy", async () => {
+            const strategyId = 4;
+            const resetResult = await actorVault.reset_strategy(strategyId);
+            console.log("Reset result:", resetResult);
         });
     });
 

@@ -47,12 +47,12 @@ share_price = 1000/500 = 2
 Result: 100/2 = 50 shares
 ```
 
-### 2. `calculate_pool_liquidity_amounts`
+### 2. `calculate_token_amounts_for_deposit`
 
 This function calculates how to optimally distribute tokens when adding liquidity to a pool, determining how much of the input token should be swapped to the second token.
 
 ```rust
-pub fn calculate_pool_liquidity_amounts(
+pub fn calculate_token_amounts_for_deposit(
     amount: f64,
     pool_ratio: f64,
     swap_price: f64,
@@ -119,7 +119,7 @@ Result:
 
 1. User deposits 1000 ICP into a strategy
 2. System identifies the best pool (e.g., ICP_ckUSDT with a 2:1 ratio)
-3. `calculate_pool_liquidity_amounts` determines:
+3. `calculate_token_amounts_for_deposit` determines:
    - 500 ICP should be swapped to ckUSDT
    - 500 ICP should be kept for direct deposit
 4. After the swap, we have 500 ICP and 1000 ckUSDT
@@ -130,7 +130,7 @@ Result:
 
 1. System detects a higher APY in a different pool
 2. Liquidity is withdrawn from the current pool
-3. `calculate_pool_liquidity_amounts` determines the optimal distribution for the new pool
+3. `calculate_token_amounts_for_deposit` determines the optimal distribution for the new pool
 4. Tokens are swapped as needed and deposited into the new pool
 5. Total shares remain unchanged, but the underlying assets are now in a higher-yielding pool
 

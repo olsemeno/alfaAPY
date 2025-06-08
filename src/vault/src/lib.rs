@@ -105,7 +105,7 @@ fn heartbeat() {
 
 // =============== Test functions ===============
 
-// TODO: remove test function
+// TODO: Test function. Remove after testing.
 #[update]
 async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("5fq4w-lyaaa-aaaag-qjqta-cai").unwrap();
@@ -120,6 +120,12 @@ async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> 
     icpswap_quote_result.unwrap()
 }
 
+// TODO: Test function. Remove after testing.
+#[update]
+async fn reset_strategy(strategy_id: u16) {
+    let mut strategy = strategies_repo::get_strategy_by_id(strategy_id).unwrap();
+    strategy.reset_strategy().await;
+}
 
 // =============== Events ===============
 
@@ -194,6 +200,7 @@ async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
 /// # Errors
 ///
 /// This function will trap if there is an error retrieving the user balances.
+// TODO: Function not used, need to remove.
 #[update]
 async fn user_balance_all() -> Vec<UserBalancesReply> {
     let canister_id = id();
@@ -216,6 +223,8 @@ async fn user_balance_all() -> Vec<UserBalancesReply> {
 /// A vector of `UserStrategyResponse` containing the strategies information for the user.
 #[update]
 async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
+    // TODO: rename user_strategies to user_positions
+
     let strategies = strategies_repo::get_user_strategies(user);
     let mut user_strategies = Vec::new();
 

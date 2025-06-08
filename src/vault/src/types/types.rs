@@ -13,11 +13,14 @@ pub struct StrategyResponse {
     pub description: String,
     pub pools: Vec<Pool>,
     pub current_pool: Option<Pool>,
+    pub total_balance: Nat,
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>,
     pub initial_deposit: HashMap<Principal, Nat>,
 }
 
+
+// TODO: rename to UserPositionResponse
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct UserStrategyResponse {
     pub strategy_id: StrategyId,

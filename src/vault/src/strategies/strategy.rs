@@ -6,6 +6,7 @@ use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use swap::swap_service;
 use swap::token_swaps::nat_to_u128;
@@ -15,15 +16,15 @@ use types::exchange_id::ExchangeId;
 
 use crate::enums::{SystemEventParams, UserEventParams};
 use crate::events::event_service;
+use crate::repository::strategies_repo::save_strategy;
+use crate::strategies::basic_strategy::BasicStrategy;
+use crate::strategies::strategy_candid::StrategyCandid;
+use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool,
     get_pools_data,
     withdraw_liquidity_from_pool,
 };
-use crate::repository::strategies_repo::save_strategy;
-use crate::strategies::basic_strategy::BasicStrategy;
-use crate::strategies::strategy_candid::StrategyCandid;
-use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
@@ -41,36 +42,20 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 2. Updates or inserts the new share amount for the specified user
     /// 3. Saves the updated mapping back to the strategy state
     fn update_user_shares(&mut self, user: Principal, shares: Nat) {
-        let mut user_shares = self.get_user_shares();
-        user_shares.insert(user, shares);
-        self.set_user_shares(user_shares);
+        let mut user_shares_map = self.get_user_shares();
+        user_shares_map.insert(user, shares);
+        self.set_user_shares(user_shares_map);
     }
 
-    /// Updates the initial deposit amount for an investor based on their new share allocation
-    ///
-    /// # Arguments
-    ///
-    /// * `investor` - The Principal ID of the investor whose initial deposit is being updated
-    /// * `new_shares` - The new number of shares owned by the investor
-    ///
-    /// # Details
-    ///
-    /// This function:
-    /// 1. Gets the current initial deposit mapping
-    /// 2. Retrieves the investor's current deposit amount (defaults to 0 if none exists)
-    /// 3. Calculates the new initial deposit proportional to the new shares
-    /// 4. Updates the initial deposit mapping with the new amount
-    fn update_initial_deposit(&mut self, investor: Principal, new_shares: Nat) {
-        let mut initial_deposit = self.get_initial_deposit();
-        let user_deposit = initial_deposit
-            .get(&investor)
-            .cloned()
-            .unwrap_or(Nat::from(0u64));
-        // Remaining initial deposit proportional to the new shares
-        let new_initial_deposit = user_deposit * new_shares.clone()
-            / self.get_user_shares().get(&investor).unwrap().clone();
-        initial_deposit.insert(investor.clone(), new_initial_deposit.clone());
-        self.set_initial_deposit(initial_deposit);
+    // TODO: Test function. Remove after testing.
+    async fn reset_strategy(&mut self) {
+        self.set_user_shares(HashMap::new());
+        self.set_total_shares(Nat::from(0u64));
+
+        self.set_total_balance(Nat::from(0u64));
+        self.set_initial_deposit(HashMap::new());
+
+        save_strategy(self.clone_self());
     }
 
     /// Deposits an amount of tokens into the strategy
@@ -102,7 +87,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
         let pools_data = get_pools_data(self.get_pools()).await;
 
-        // TODO: remove this
+        // // TODO: remove this after testing
         self.set_current_pool(None);
 
         // Set current pool to the best APY pool if not set
@@ -117,35 +102,46 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             if let Some(pool) = best_apy_pool {
                 self.set_current_pool(Some(pool));
             } else {
-                trap("No pool found to deposit");
+                trap("Strategy::deposit: No pool found to deposit");
             }
         }
 
         if let Some(ref current_pool) = self.get_current_pool() {
-            // Calculate new shares for investor's deposit
-            let new_shares = LiquidityCalculator::calculate_shares(
-                nat_to_f64(&amount),
-                nat_to_f64(&self.get_total_balance()),
-                nat_to_f64(&self.get_total_shares()),
-            );
-
-            // Update total balance and total shares
-            self.set_total_balance(self.get_total_balance() + amount.clone());
-            self.set_total_shares(self.get_total_shares() + Nat::from(new_shares as u128));
-            self.update_user_shares(investor, Nat::from(new_shares as u128));
-
-            // Update initial deposit
-            self.update_initial_deposit(investor, amount.clone());
-
-            // Add liquidity to pool
+             // Add liquidity to pool
             let add_liquidity_response = add_liquidity_to_pool(
                 amount.clone(),
                 current_pool.clone()
             ).await;
 
+            // Calculate new shares for investor's deposit
+            let new_shares = LiquidityCalculator::calculate_shares_for_deposit(
+                amount.clone(),
+                self.get_total_balance().clone(),
+                self.get_total_shares().clone(),
+            );
+
+            // Update total shares
+            self.set_total_shares(self.get_total_shares() + new_shares.clone());
+
+            // Update user shares (sum of current user shares and new shares)
+            let user_shares = self.get_user_shares().get(&investor).cloned().unwrap_or(Nat::from(0u64));
+            let new_user_shares = user_shares + new_shares.clone();
+            self.update_user_shares(investor, new_user_shares.clone());
+
+            // Update initial deposit (sum of current user initial deposit and amount)
+            let mut initial_deposit_map = self.get_initial_deposit();
+            let initial_deposit = initial_deposit_map.get(&investor).cloned().unwrap_or(Nat::from(0u64));
+            let new_initial_deposit = initial_deposit + amount.clone();
+            initial_deposit_map.insert(investor.clone(), new_initial_deposit);
+            self.set_initial_deposit(initial_deposit_map);
+
+            // Update total balance
+            self.set_total_balance(self.get_total_balance() + amount.clone());
+
+            // Save strategy with new total balance, initial deposit, user shares and total shares
             save_strategy(self.clone_self());
 
-            // Create event for deposit
+            // Create user event for deposit
             event_service::create_user_event(
                 UserEventParams::AddLiquidity {
                     amount: amount.clone(),
@@ -162,7 +158,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 request_id: add_liquidity_response.request_id,
             }
         } else {
-            trap("No pool found to deposit");
+            trap("Strategy::deposit: No current pool found to deposit");
         }
     }
 
@@ -188,22 +184,22 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     async fn withdraw(&mut self, shares: Nat) -> WithdrawResponse {
-        let user = caller();
+        let investor = caller(); // "Ya ne halyavshchik, ya partner!"
 
         // Check if user has enough shares
-        if let Some(user_shares) = self.get_user_shares().get(&user) {
+        if let Some(user_shares) = self.get_user_shares().get(&investor) {
             if shares > *user_shares {
-                trap("Not sufficient shares".into());
+                trap("Strategy::withdraw: Not sufficient shares for user".into());
             }
         } else {
-            trap("No shares found for this user".into());
+            trap("Strategy::withdraw: No shares found for user".into());
         }
 
         if let Some(current_pool) = self.get_current_pool() {
             let token0 = current_pool.token0.clone();
             let token1 = current_pool.token1.clone();
 
-            // Remove liquidity from pool
+            // Withdraw liquidity from pool
             let withdraw_response = withdraw_liquidity_from_pool(
                 self.get_total_shares(),
                 shares.clone(),
@@ -211,17 +207,17 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             )
             .await;
 
-            // Swap token_1 to token_0 (base token)
+            // Swap withdrawn token_1 to token_0 (base token)
             let swap_response = swap_service::swap_icrc2_optimal(
                 token1.clone(),
                 token0.clone(),
                 nat_to_f64(&withdraw_response.token_1_amount) as u128,
             ).await;
 
-            // Amount to withdraw is the sum of token_0 amount and token_1 amount after swap
+            // Sum of token_0 amount and token_1 amount after swap to token_0 (base token)
             let amount_0_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
 
-            // Transfer token_0 (base token) to user
+            // Transfer amount of token_0 (base token) to user
             let transfer_result = icrc1_transfer(
                 token0.ledger,
                 &TransferArg {
@@ -241,10 +237,10 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             match transfer_result {
                 Ok(Ok(x)) => x,
                 Err(x) => {
-                    trap(format!("Transfer error 1: {:?}", x.1).as_str());
+                    trap(format!("Strategy::withdraw: Transfer to user error 1: {:?}", x.1).as_str());
                 }
                 Ok(Err(x)) => {
-                    trap(format!("Transfer error 2: {:?}", x).as_str());
+                    trap(format!("Strategy::withdraw: Transfer to user error 2: {:?}", x).as_str());
                 }
             };
 
@@ -253,28 +249,42 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             self.set_total_shares(new_total_shares.clone());
 
             // Update user shares
-            let shares_before_withdraw = self.get_user_shares().get(&user).cloned().unwrap();
-            let new_user_shares = shares_before_withdraw.clone() - shares;
-            self.update_user_shares(user.clone(), new_user_shares.clone());
+            let previous_user_shares = self.get_user_shares().get(&investor).cloned().unwrap();
+            let new_user_shares = previous_user_shares.clone() - shares;
+            self.update_user_shares(investor.clone(), new_user_shares.clone());
 
-            // Update initial deposit
-            // TODO: WIP - need to fix
-            // let initial_deposit = self.get_initial_deposit().get(&investor).cloned().unwrap();
-            // // Remaining initial deposit proportional to the new shares
-            //
-            // let new_initial_deposit = initial_deposit / shares_before_withdraw.clone() * new_shares.clone();
-            // self.update_initial_deposit(investor.clone(), new_initial_deposit.clone());
+            // Update initial deposit proportional to the new shares
+            let mut initial_deposit = self.get_initial_deposit();
+            let user_initial_deposit = initial_deposit
+                .get(&investor)
+                .cloned()
+                .unwrap_or(Nat::from(0u64));
 
+            let new_user_initial_deposit = if previous_user_shares == Nat::from(0u64) {
+                Nat::from(0u64)
+            } else {
+                user_initial_deposit.clone() * new_user_shares.clone() / previous_user_shares.clone()
+            };
+
+            initial_deposit.insert(investor.clone(), new_user_initial_deposit.clone());
+            self.set_initial_deposit(initial_deposit);
+
+            // Update total balance
+            let total_balance = self.get_total_balance().clone();
+            let new_total_balance = total_balance - user_initial_deposit + new_user_initial_deposit.clone();
+            self.set_total_balance(new_total_balance.clone());
+
+            // Save strategy with new total balance, initial deposit, user shares and total shares
             save_strategy(self.clone_self());
 
-            // Create event for withdraw
+            // Create user event for withdraw
             event_service::create_user_event(
                 UserEventParams::RemoveLiquidity {
                     amount: amount_0_to_withdraw.clone(),
                     token: token0.ledger.to_text(),
                     symbol: token0.symbol.clone(),
                 },
-                user,
+                investor,
             );
 
             WithdrawResponse {
@@ -282,35 +292,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 current_shares: new_user_shares.clone(),
             }
         } else {
-            trap("No current pool found in strategy");
-        }
-    }
-
-    fn to_candid(&self) -> StrategyCandid;
-
-    /// Converts the strategy into a StrategyResponse struct that can be returned to clients
-    ///
-    /// # Returns
-    ///
-    /// * `StrategyResponse` - A struct containing:
-    ///   * `name` - Name of the strategy
-    ///   * `id` - Unique identifier for the strategy
-    ///   * `description` - Description of what the strategy does
-    ///   * `pools` - List of pool symbols this strategy can invest in
-    ///   * `current_pool` - The pool currently being used, if any
-    ///   * `total_shares` - Total number of shares issued by this strategy
-    ///   * `user_shares` - Mapping of user principals to their share amounts
-    ///   * `initial_deposit` - Mapping of user principals to their initial deposits
-    fn to_response(&self) -> StrategyResponse {
-        StrategyResponse {
-            name: self.get_name(),
-            id: self.get_id(),
-            description: self.get_description(),
-            pools: self.get_pools(),
-            current_pool: self.get_current_pool(),
-            total_shares: self.get_total_shares(),
-            user_shares: self.get_user_shares(),
-            initial_deposit: self.get_initial_deposit(),
+            trap("Strategy::withdraw: No current pool found in strategy");
         }
     }
 
@@ -412,7 +394,36 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 is_rebalanced: true,
             }
         } else {
-            trap("No current pool");
+            trap("Strategy::rebalance: No current pool");
+        }
+    }
+
+    fn to_candid(&self) -> StrategyCandid;
+
+    /// Converts the strategy into a StrategyResponse struct that can be returned to clients
+    ///
+    /// # Returns
+    ///
+    /// * `StrategyResponse` - A struct containing:
+    ///   * `name` - Name of the strategy
+    ///   * `id` - Unique identifier for the strategy
+    ///   * `description` - Description of what the strategy does
+    ///   * `pools` - List of pool symbols this strategy can invest in
+    ///   * `current_pool` - The pool currently being used, if any
+    ///   * `total_shares` - Total number of shares issued by this strategy
+    ///   * `user_shares` - Mapping of user principals to their share amounts
+    ///   * `initial_deposit` - Mapping of user principals to their initial deposits
+    fn to_response(&self) -> StrategyResponse {
+        StrategyResponse {
+            name: self.get_name(),
+            id: self.get_id(),
+            description: self.get_description(),
+            pools: self.get_pools(),
+            current_pool: self.get_current_pool(),
+            total_balance: self.get_total_balance(),
+            total_shares: self.get_total_shares(),
+            user_shares: self.get_user_shares(),
+            initial_deposit: self.get_initial_deposit(),
         }
     }
 

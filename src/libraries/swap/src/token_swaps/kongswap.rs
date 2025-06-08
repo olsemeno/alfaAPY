@@ -67,12 +67,12 @@ impl SwapClient for KongSwapClient {
                         }))
                     }
                     Err(error) => {
-                        trap(format!("Swap error 3 : {:?} arguments {:?}", error, args).as_str());
+                        trap(format!("KongSwapClient::swap: swap error 1: {:?} arguments {:?}", error, args).as_str());
                     }
                 }
             }
             Err(error) => {
-                trap(format!("Swap error 4 : {:?} arguments {:?}", error, args).as_str());
+                trap(format!("KongSwapClient::swap: swap error 2: {:?} arguments {:?}", error, args).as_str());
             },
         }
     }

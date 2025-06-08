@@ -1,3 +1,4 @@
+use candid::Nat;
 use std::ops::Mul;
 
 // TODO: remove this struct
@@ -9,10 +10,12 @@ pub struct CalculatePoolLiquidityAmountsResponse {
     pub token_1_for_pool: f64,
 }
 
+
+// TODO: move methods to separate services
 impl LiquidityCalculator {
-    pub fn calculate_shares(amount: f64, total_balance: f64, total_shares: f64) -> f64 {
-        let zero =0f64;
-        let one = 1f64;
+    pub fn calculate_shares_for_deposit(amount: Nat, total_balance: Nat, total_shares: Nat) -> Nat {
+        let zero = Nat::from(0u64);
+        let one = Nat::from(1u64);
 
         let share_price = if total_shares == zero {
             one.clone()
@@ -27,7 +30,7 @@ impl LiquidityCalculator {
         }
     }
 
-    pub fn calculate_pool_liquidity_amounts(
+    pub fn calculate_token_amounts_for_deposit(
         amount: f64,
         pool_ratio: f64,
         swap_price: f64,
@@ -66,26 +69,26 @@ mod tests {
 
         #[test]
         fn test_with_zero_total() {
-            let amount = 100f64;
-            let total_balance = 0f64;
-            let total_shares = 0f64;
+            let amount = Nat::from(100u64);
+            let total_balance = Nat::from(0u64);
+            let total_shares = Nat::from(0u64);
 
-            let shares = LiquidityCalculator::calculate_shares(amount.clone(), total_balance, total_shares);
-            assert_eq!(shares, amount);
+            let shares = LiquidityCalculator::calculate_shares_for_deposit(amount.clone(), total_balance.clone(), total_shares.clone());
+            assert_eq!(shares, amount.clone());
         }
 
         #[test]
         fn test_with_existing_total() {
-            let amount = 100f64;
-            let total_balance = 1000f64;
-            let total_shares = 500f64;
+            let amount = Nat::from(100u64);
+            let total_balance = Nat::from(1000u64);
+            let total_shares = Nat::from(500u64);
 
-            let shares = LiquidityCalculator::calculate_shares(amount, total_balance, total_shares);
-            assert_eq!(shares, 50f64);
+            let shares = LiquidityCalculator::calculate_shares_for_deposit(amount, total_balance, total_shares);
+            assert_eq!(shares, Nat::from(50u64));
         }
     }
 
-    mod calculate_pool_liquidity_amounts {
+    mod calculate_token_amounts_for_deposit {
         use candid::Nat;
         use super::super::*;
 
@@ -95,7 +98,7 @@ mod tests {
             let pool_ratio = 1f64; // 1:1 ratio
             let swap_price = 1.0f64; // 1:1 ratio
 
-            let result = LiquidityCalculator::calculate_pool_liquidity_amounts(
+            let result = LiquidityCalculator::calculate_token_amounts_for_deposit(
                 amount.clone(),
                 pool_ratio.clone(),
                 swap_price
@@ -116,7 +119,7 @@ mod tests {
             let pool_ratio = 2f64; // 2:1 ratio
             let swap_price = 2.0f64; // 2:1 ratio
 
-            let result = LiquidityCalculator::calculate_pool_liquidity_amounts(
+            let result = LiquidityCalculator::calculate_token_amounts_for_deposit(
                 amount.clone(),
                 pool_ratio.clone(),
                 swap_price
@@ -137,7 +140,7 @@ mod tests {
             let pool_ratio = 3f64; // 3:1 ratio
             let swap_price = 2.0f64; // 2:1 ratio
 
-            let result = LiquidityCalculator::calculate_pool_liquidity_amounts(
+            let result = LiquidityCalculator::calculate_token_amounts_for_deposit(
                 amount.clone(),
                 pool_ratio.clone(),
                 swap_price

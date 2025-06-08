@@ -30,8 +30,6 @@ pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityRespo
         pool.provider.clone()
     ).await;
 
-    // panic!("amount {:?}, pool {:?}", amount, pool);
-
     match liquidity_client.add_liquidity_to_pool(amount).await {
         Ok(response) => response,
         Err(error) => {

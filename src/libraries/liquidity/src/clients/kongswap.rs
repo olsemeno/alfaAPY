@@ -61,12 +61,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             ),
         };
 
-        // Get amounts of token_0 and token1 to swap
-        // let swap_amounts_resp = match swap_amounts(token_0.clone(), amount.clone(), token_1.clone()).await {
-        //     (Ok(x), ) => x,
-        //     (Err(e), ) => trap(format!("Error for {} and {} and {}: {}", token_0, token_1, amount, e).as_str()),
-        // };
-
+        // Get quote for token swap
         let quote_result = quote_swap_icrc2_optimal(
             self.token0.clone(),
             self.token1.clone(),
@@ -82,7 +77,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let swap_price = (amount_out as f64) / (nat_to_f64(&amount) as f64);
 
         // Calculate how much token_0 and token_1 to swap and add to pool
-        let calculator_response = LiquidityCalculator::calculate_pool_liquidity_amounts(
+        let calculator_response = LiquidityCalculator::calculate_token_amounts_for_deposit(
             nat_to_f64(&amount),
             pool_ratio.clone(),
             swap_price.clone(),

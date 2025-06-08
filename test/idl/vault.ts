@@ -43,20 +43,16 @@ export interface Pool {
   'token0' : TokenInfo,
   'token1' : TokenInfo,
 }
-export interface PoolResponse {
-  'provider' : ExchangeId,
-  'token0' : string,
-  'token1' : string,
-}
 export interface StrategyResponse {
   'id' : number,
   'name' : string,
   'description' : string,
+  'total_balance' : bigint,
   'total_shares' : bigint,
   'initial_deposit' : Array<[Principal, bigint]>,
   'user_shares' : Array<[Principal, bigint]>,
   'current_pool' : [] | [Pool],
-  'pools' : Array<PoolResponse>,
+  'pools' : Array<Pool>,
 }
 export interface SupportedStandard { 'url' : string, 'name' : string }
 export interface SystemEvent {
@@ -123,7 +119,7 @@ export interface _SERVICE {
   'user_balance_all' : ActorMethod<[], Array<UserBalancesReply>>,
   'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
   'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
-  'swap_icrc2_icpswap' : ActorMethod<[TokenInfo, bigint, TokenInfo], bigint>,
+  'reset_strategy' : ActorMethod<[number], void>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
