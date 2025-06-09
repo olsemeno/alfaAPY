@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use types::exchange_id::ExchangeId;
 use types::CanisterId;
-use utils::pool_id_util::generate_pool_id;
+use types::pool::PoolTrait;
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct Pool {
@@ -13,21 +13,30 @@ pub struct Pool {
     pub provider: ExchangeId,
 }
 
-impl Pool {
-    pub fn new(id: String, token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Self {
-        Self { id, token0, token1, provider }
+impl PoolTrait for Pool {
+    fn get_id(&self) -> String { self.id.clone() }
+    fn get_token0(&self) -> CanisterId { self.token0 }
+    fn get_token1(&self) -> CanisterId { self.token1 }
+    fn get_provider(&self) -> ExchangeId { self.provider }
+    fn is_same_pool(&self, compared_pool: &Self) -> bool {
+        let (token0, token1, provider) = Self::decode_pool_id(&compared_pool.id).unwrap();
+        self.provider == provider && (
+            (self.token0 == token0 && self.token1 == token1) ||
+            (self.token0 == token1 && self.token1 == token0)
+        )
     }
 
-    pub fn get_id(&self) -> String {
-        self.id.clone()
+    fn new(id: String, token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Self {
+        Self {
+            id,
+            token0,
+            token1,
+            provider,
+        }
     }
 
-    pub fn build(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Self {
-        let id = generate_pool_id(&token0, &token1, &provider);
+    fn build(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Self {
+        let id = Self::generate_pool_id(&token0, &token1, &provider);
         Self::new(id, token0, token1, provider)
-    }
-
-    pub fn is_same_pool(&self, compared_pool: &Pool) -> bool {
-        self.id == compared_pool.id
     }
 }

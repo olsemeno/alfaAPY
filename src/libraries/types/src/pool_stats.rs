@@ -1,27 +1,6 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
-use crate::exchange_id::ExchangeId;
-use crate::CanisterId;
-
-// Pool
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct Pool {
-    pub id: String,
-    pub token0: CanisterId,
-    pub token1: CanisterId,
-    pub provider: ExchangeId,
-    pub position: Option<Position>,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct Position {
-    pub id: Nat,
-    pub initial_amount0: Nat,
-    pub initial_amount1: Nat,
-}
-
 // Pool Snapshots
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
@@ -70,11 +49,4 @@ pub struct PoolApy {
     pub week: ApyValue,
     pub month: ApyValue,
     pub year: ApyValue,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct PoolByTokens {
-    pub token0: CanisterId,
-    pub token1: CanisterId,
-    pub provider: ExchangeId,
 }

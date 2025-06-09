@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use types::exchange_id::ExchangeId;
 use types::CanisterId;
+use types::pool::PoolTrait;
 use utils::constants::*;
 
 #[derive(Debug, Clone)]

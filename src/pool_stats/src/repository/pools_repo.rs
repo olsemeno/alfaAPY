@@ -4,8 +4,6 @@ use candid::{CandidType, Deserialize};
 use serde::Serialize;
 use ic_cdk::storage;
 
-use types::pool_stats::PoolByTokens;
-
 use crate::pools::pool::Pool;
 use crate::pools::pool_snapshot::PoolSnapshot;
 
@@ -41,17 +39,6 @@ pub fn get_pools() -> Vec<Pool> {
     POOLS.with(|pools| pools.borrow().values().cloned().collect())
 }
 
-pub fn get_pool_by_tokens(pool_by_tokens: PoolByTokens) -> Option<Pool> {
-    POOLS.with(|pools| pools.borrow().values().find(|pool| {
-        let direct_match = pool.token0 == pool_by_tokens.token0
-            && pool.token1 == pool_by_tokens.token1;
-        let reverse_match = pool.token0 == pool_by_tokens.token1
-            && pool.token1 == pool_by_tokens.token0;
-
-        (direct_match || reverse_match) && pool.provider == pool_by_tokens.provider
-    }).cloned())
-}
-
 pub fn get_pool_by_id(pool_id: String) -> Option<Pool> {
     POOLS.with(|pools| pools.borrow().get(&pool_id).cloned())
 }
@@ -61,10 +48,6 @@ pub fn update_pool(pool_id: String, pool: Pool) {
         let mut pools = pools.borrow_mut();
         pools.insert(pool_id.to_string(), pool);
     });
-}
-
-pub fn get_pool_count() -> u64 {
-    POOLS.with(|pools| pools.borrow().len() as u64)
 }
 
 // Pool Snapshots

@@ -14,21 +14,15 @@ type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 type Pool = record {
   id : text;
   provider : ExchangeId;
-  initial_position : opt Position;
   token0 : principal;
   token1 : principal;
+  position_id : opt nat;
 };
 
 type PoolApy = record {
   month : ApyValue;
   week : ApyValue;
   year : ApyValue;
-};
-
-type PoolByTokens = record {
-  provider : ExchangeId;
-  token0 : principal;
-  token1 : principal;
 };
 
 type PoolData = record {
@@ -53,12 +47,6 @@ type PoolSnapshotArgs = record {
   timestamp : nat64;
   pool_id : text;
   position_data : opt PositionData;
-};
-
-type Position = record {
-  id : nat;
-  initial_amount0 : nat;
-  initial_amount1 : nat;
 };
 
 type PositionData = record {
@@ -87,7 +75,6 @@ service : () -> {
   delete_pool_snapshot : (text, text) -> ();
   delete_pool_snapshots : (text) -> ();
   get_pool_by_id : (text) -> (opt Pool);
-  get_pool_by_tokens : (PoolByTokens) -> (opt Pool);
   get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
   get_pools : () -> (vec Pool);
   get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });

@@ -13,6 +13,7 @@ use swap::token_swaps::nat_to_u128;
 use utils::util::nat_to_f64;
 use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
+use types::pool::PoolTrait;
 
 use crate::enums::{SystemEventParams, UserEventParams};
 use crate::events::event_service;

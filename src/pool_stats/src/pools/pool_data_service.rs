@@ -25,28 +25,31 @@ pub struct PoolData {
     // pub lp_fee_1: Nat,
 }
 
-pub async fn get_current_position(pool: &Pool) -> Option<PositionData> {
+pub async fn get_position_data(pool: &Pool) -> Option<PositionData> {
     let liquidity_client = get_liquidity_client(pool).await;
-    let position_id = pool.initial_position.as_ref().unwrap().id.clone();
 
-    match liquidity_client.get_position_by_id(position_id).await {
-        Ok(position) => {
-            let current_position = PositionData {
-                id: position.position_id,
-                amount0: position.token_0_amount,
-                amount1: position.token_1_amount,
-                usd_amount0: position.usd_amount_0,
-                usd_amount1: position.usd_amount_1,
-            };
-            Some(current_position)
+    if let Some(position_id) = pool.position_id.as_ref().cloned() {
+        match liquidity_client.get_position_by_id(position_id).await {
+            Ok(position) => {
+                let current_position = PositionData {
+                    id: position.position_id,
+                    amount0: position.token_0_amount,
+                    amount1: position.token_1_amount,
+                    usd_amount0: position.usd_amount_0,
+                    usd_amount1: position.usd_amount_1,
+                };
+                Some(current_position)
+            }
+            Err(_error) => {
+                None
+            }
         }
-        Err(_error) => {
-            None
-        }
+    } else {
+        None
     }
 }
 
-pub async fn get_current_data(pool: &Pool) -> Option<PoolData> {
+pub async fn get_pool_data(pool: &Pool) -> Option<PoolData> {
     let liquidity_client = get_liquidity_client(pool).await;
 
     match liquidity_client.get_pool_data().await {

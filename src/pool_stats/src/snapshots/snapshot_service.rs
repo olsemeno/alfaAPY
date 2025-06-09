@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::time::Duration;
 use ic_cdk_timers::TimerId;
 
+use crate::pools::pool::Pool;
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::repository::pools_repo;
-use crate::pools::pool_data_service::{get_current_data, get_current_position};
-use utils::util::current_timestamp;
+use crate::pools::pool_data_service::{get_pool_data, get_position_data};
 
 thread_local! {
     static POOL_SNAPSHOT_TIMER_ID: RefCell<Option<TimerId>> = RefCell::new(None);
@@ -41,18 +41,15 @@ pub fn stop_pool_snapshots_timer() {
 pub async fn take_pool_snapshots() {
     let pools = pools_repo::get_pools();
     // Iterate over pools with liquidity position
-    for pool in pools.into_iter().filter(|p| p.initial_position.is_some()) {
-        let pool_current_data = get_current_data(&pool).await;
-        let current_position = get_current_position(&pool).await;
-        let id = (pools_repo::get_pool_snapshots_count(pool.id.clone()) + 1).to_string();
-
-        let snapshot = PoolSnapshot::new(
-            id,
-            pool.id, 
-            current_timestamp(),
-            current_position,
-            pool_current_data,
-        );
-        pools_repo::save_pool_snapshot(snapshot);
+    for pool in pools.into_iter().filter(|p| p.position_id.is_some()) {
+        take_pool_snapshot(&pool).await;
     }
+}
+
+pub async fn take_pool_snapshot(pool: &Pool) -> PoolSnapshot {
+    let pool_data = get_pool_data(pool).await;
+    let position_data = get_position_data(pool).await;
+    let snapshot = PoolSnapshot::build(pool.id.clone(), position_data, pool_data);
+    snapshot.save();
+    snapshot
 }

@@ -8,9 +8,8 @@ use candid::export_service;
 
 use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
-use types::pool_stats::PoolByTokens;
 use types::CanisterId;
-use utils::pool_id_util::generate_pool_id;
+use types::pool::PoolTrait;
 
 use crate::pools::pool_snapshot::PoolSnapshot;
 use crate::snapshots::snapshot_service;
@@ -89,7 +88,7 @@ pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
 pub fn update_pool_ids() -> bool {
     let pools = pools_repo::get_pools();
     for mut pool in pools {
-        let new_id = generate_pool_id(&pool.token0, &pool.token1, &pool.provider);
+        let new_id = Pool::generate_pool_id(&pool.token0, &pool.token1, &pool.provider);
         pool.id = new_id;
         pools_repo::save_pool(pool);
     }
@@ -111,7 +110,8 @@ pub fn delete_all_pools_and_snapshots() -> bool {
 
 #[update]
 pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> String {
-    let pool = Pool::create(token0, token1, provider);
+    let pool = Pool::build(token0, token1, provider);
+    pool.save();
     pool.id
 }
 
@@ -133,11 +133,6 @@ pub fn get_pools() -> Vec<Pool> {
 #[update]
 pub fn get_pool_by_id(id: String) -> Option<Pool> {
     pools_repo::get_pool_by_id(id)
-}
-
-#[update]
-pub fn get_pool_by_tokens(pool_by_tokens: PoolByTokens) -> Option<Pool> {
-    pools_repo::get_pool_by_tokens(pool_by_tokens)
 }
 
 // Pool metrics
