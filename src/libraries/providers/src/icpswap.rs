@@ -2,7 +2,6 @@ use types::CanisterId;
 use candid::{Nat, Principal, Int};
 use once_cell::sync::Lazy;
 
-use types::exchanges::TokenInfo;
 use icpswap_swap_factory_canister::{ICPSwapSwapFactoryResult, ICPSwapToken, ICPSwapPool};
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use icpswap_swap_pool_canister::ICPSwapSwapPoolResult;
@@ -16,6 +15,7 @@ use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountB
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use utils::util::principal_to_canister_id;
+use utils::constants::*;
 
 // pub const SWAP_FACTORY_CANISTER: CanisterId = CanisterId::from_slice(&[0, 0, 0, 0, 0, 208, 10, 215, 1, 1]);
 
@@ -27,25 +27,26 @@ pub const SWAP_FEE: u128 = 3000;
 pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
 pub const ICP_TOKEN_STANDARD: &str = "ICP";
 
-fn make_icpswap_token(token: &TokenInfo) -> ICPSwapToken {
-    let standard = match token.symbol.as_str() {
-        "ICP" => ICP_TOKEN_STANDARD.to_string(),
-        _ => ICRC2_TOKEN_STANDARD.to_string(),
+fn token_icpswap_format(token: &CanisterId) -> ICPSwapToken {
+    let standard = if token.to_text() == ICP_TOKEN_CANISTER_ID {
+        ICP_TOKEN_STANDARD.to_string()
+    } else {
+        ICRC2_TOKEN_STANDARD.to_string()
     };
 
     ICPSwapToken {
-        address: token.ledger.to_string(),
+        address: token.to_text(),
         standard,
     }
 }
 
 // Swap Factory canister
 
-pub async fn get_pool(token_in: TokenInfo, token_out: TokenInfo) -> Result<ICPSwapPool, String> {
+pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICPSwapPool, String> {
     let pool_args = &icpswap_swap_factory_canister::getPool::Args {
         fee: candid::Nat::from(SWAP_FEE as u128),
-        token0: make_icpswap_token(&token_in),
-        token1: make_icpswap_token(&token_out),
+        token0: token_icpswap_format(&token_in),
+        token1: token_icpswap_format(&token_out),
     };
 
     match icpswap_swap_factory_canister_c2c_client::getPool(*SWAP_FACTORY_CANISTER, pool_args).await {
@@ -145,12 +146,12 @@ pub async fn get_token_meta(canister_id: CanisterId) -> Result<TokenMeta, String
 
 pub async fn deposit_from(
     canister_id: CanisterId,
-    token_in: TokenInfo,
+    token_in: CanisterId,
     amount: Nat,
     token_fee: Nat
 ) -> Result<Nat, String> {
     let args = &icpswap_swap_pool_canister::depositFrom::Args {
-        token: token_in.ledger.to_string(),
+        token: token_in.to_text(),
         amount: amount,
         fee: token_fee,
     };
@@ -174,12 +175,12 @@ pub async fn deposit_from(
 
 pub async fn withdraw(
     canister_id: CanisterId,
-    token_out: TokenInfo,
+    token_out: CanisterId,
     amount: Nat,
     token_fee: Nat
 ) -> Result<Nat, String> {
     let args = &icpswap_swap_pool_canister::withdraw::Args {
-        token: token_out.ledger.to_string(),
+        token: token_out.to_text(),
         amount: amount,
         fee: token_fee,
     };

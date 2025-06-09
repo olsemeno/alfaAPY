@@ -1,4 +1,3 @@
-pub mod exchanges;
 pub mod cryptocurrency;
 pub mod user;
 pub mod swap_tokens;

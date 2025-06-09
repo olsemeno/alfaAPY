@@ -42,9 +42,9 @@ describe("VR Test PROD", () => {
         ledgerActor = await getTypedActor<ledgerService>(ledgerCanisterId, memberIdentity, ledger_idl);
 
         // ICP balance
-        let icpLedgerActor = await getTypedActor<ledgerService>(icpCanisterId, memberIdentity, ledger_idl);
-        let icpBalance = await icpLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
-        console.log("ICP balance:", icpBalance);
+        // let icpLedgerActor = await getTypedActor<ledgerService>(icpCanisterId, memberIdentity, ledger_idl);
+        // let icpBalance = await icpLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
+        // console.log("ICP balance:", icpBalance);
 
         // ckBTC balance
         // let ckBtcLedgerActor = await getTypedActor<ledgerService>(ckBtcCanisterId, memberIdentity, ledger_idl);
@@ -52,9 +52,9 @@ describe("VR Test PROD", () => {
         // console.log("ckBTC balance:", ckBtcBalance);
 
         // PANDA balance
-        let pandaLedgerActor = await getTypedActor<ledgerService>(pandaCanisterId, memberIdentity, ledger_idl);
-        let pandaBalance = await pandaLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
-        console.log("PANDA balance:", pandaBalance);
+        // let pandaLedgerActor = await getTypedActor<ledgerService>(pandaCanisterId, memberIdentity, ledger_idl);
+        // let pandaBalance = await pandaLedgerActor.icrc1_balance_of({subaccount: [], owner: principalId});
+        // console.log("PANDA balance:", pandaBalance);
 
         actorVault = await getTypedActor<VaultType>(canisterId, memberIdentity, idlFactory);
     });
@@ -62,7 +62,7 @@ describe("VR Test PROD", () => {
     describe(".accept_investment", () => {
         const strategyId = 4;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(200_000_000);
+        const depositAmount = BigInt(100_000_000);
         // const depositAmount = BigInt(100_000);
 
         it("Deposits to strategy without any liquidity", async () => {
@@ -135,21 +135,13 @@ describe("VR Test PROD", () => {
             remainingShares = 0n; // No shares left
 
             try {
-                let user_balance = await actorVault.user_balance_all();
-
-                console.log("User balance before withdraw:", user_balance);
-                console.log("Withdraw starting...");
-
                 let withdrawResp: WithdrawResponse = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
-
                 // @ts-ignore
                 console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
-                user_balance = await actorVault.user_balance_all();
-                console.log("User balance after withdraw:", user_balance);
 
                 expect(withdrawResp.current_shares).to.equal(0n);
             } catch (e) {
@@ -181,18 +173,6 @@ describe("VR Test PROD", () => {
             } catch (e) {
                 console.log("Withdraw error: ", e);
                 throw new Error("Withdraw failed with error: " + e);
-            }
-        });
-    });
-
-    describe(".user_balance_all", () => {
-        it("Returns user balance", async () => {
-            try {
-                const userBalance = await actorVault.user_balance_all();
-                console.log("User balance:", userBalance);
-            } catch (e) {
-                console.log("User balance error: ", e);
-                throw new Error("User balance failed with error: " + e);
             }
         });
     });
@@ -255,13 +235,6 @@ describe("VR Test PROD", () => {
         });
     });
 
-    describe(".user_balance_all", () => {
-        it("Returns user balance", async () => {
-            const userBalance = await actorVault.user_balance_all();
-            console.log("User balance:", userBalance);
-        });
-    });
-
     describe(".reset_strategy", () => {
         it("Resets strategy", async () => {
             const strategyId = 4;
@@ -271,14 +244,8 @@ describe("VR Test PROD", () => {
     });
 
     context("ICPSWAP", () => {
-        const token0 = {
-            ledger: Principal.fromText(pandaCanisterId),
-            symbol: "PANDA",
-        };
-        const token1 = {
-            ledger: Principal.fromText(icpCanisterId),
-            symbol: "ICP",
-        };
+        const token0 = Principal.fromText(pandaCanisterId);
+        const token1 = Principal.fromText(icpCanisterId);
         const token0Fee = 10_000n;
         const token1Fee = 10_000n;
 
@@ -345,25 +312,15 @@ describe("VR Test PROD", () => {
     });
 
     // context("KONGSWAP", () => {
-    //     const token0 = {
-    //         ledger: Principal.fromText(pandaCanisterId),
-    //         symbol: "PANDA",
-    //     }
-    //     const token1 = {
-    //         ledger: Principal.fromText(icpCanisterId),
-    //         symbol: "ICP",
-    //     };
-    //     // const token1 = {
-    //     //     ledger: Principal.fromText(nfidwCanisterId),
-    //     //     symbol: "NFIDW",
-    //     // };
+    //     const token0 = Principal.fromText(pandaCanisterId);
+    //     const token1 = Principal.fromText(icpCanisterId);
 
     //     describe(".get_kongswap_quote", () => {
     //         it("Returns ICP/ckBTC quote", async () => {
     //             const amount = 50_000_000n;
 
     //             const quote = await actorVault.get_kongswap_quote(token0, token1, amount);
-    //             console.log(`${token0.symbol}/${token1.symbol} quote:`, quote);
+    //             console.log("quote:", quote);
     //         });
     //     });
 

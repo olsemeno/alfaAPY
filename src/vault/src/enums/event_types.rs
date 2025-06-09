@@ -1,17 +1,16 @@
 use candid::{CandidType, Deserialize, Nat};
+use types::CanisterId;
 use serde::Serialize;
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum UserEventParams {
     AddLiquidity {
         amount: Nat,
-        token: String,
-        symbol: String,
+        token: CanisterId,
     },
     RemoveLiquidity {
         amount: Nat,
-        token: String,
-        symbol: String,
+        token: CanisterId,
     },
 }
 
@@ -25,15 +24,13 @@ impl UserEventParams {
 
     pub fn details(&self) -> UserEventDetails {
         match self {
-            UserEventParams::AddLiquidity { amount, token, symbol } => UserEventDetails::AddLiquidity {
+            UserEventParams::AddLiquidity { amount, token } => UserEventDetails::AddLiquidity {
                 amount: amount.clone(),
                 token: token.clone(),
-                symbol: symbol.clone(),
             },
-            UserEventParams::RemoveLiquidity { amount, token, symbol } => UserEventDetails::RemoveLiquidity {
+            UserEventParams::RemoveLiquidity { amount, token } => UserEventDetails::RemoveLiquidity {
                 amount: amount.clone(),
                 token: token.clone(),
-                symbol: symbol.clone(),
             },
         }
     }
@@ -83,13 +80,11 @@ pub enum SystemEventType {
 pub enum UserEventDetails {
     AddLiquidity {
         amount: Nat,
-        token: String,
-        symbol: String,
+        token: CanisterId,
     },
     RemoveLiquidity {
         amount: Nat,
-        token: String,
-        symbol: String,
+        token: CanisterId,
     },
 }
 

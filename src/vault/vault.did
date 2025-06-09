@@ -17,29 +17,11 @@ type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
 type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
 
-type LPReply = record {
-  ts : nat64;
-  usd_balance : float64;
-  balance : float64;
-  name : text;
-  amount_0 : float64;
-  amount_1 : float64;
-  address_0 : text;
-  address_1 : text;
-  symbol_0 : text;
-  symbol_1 : text;
-  usd_amount_0 : float64;
-  usd_amount_1 : float64;
-  chain_0 : text;
-  chain_1 : text;
-  symbol : text;
-  lp_token_id : nat64;
-};
-
 type Pool = record {
+  id : text;
   provider : ExchangeId;
-  token0 : TokenInfo;
-  token1 : TokenInfo;
+  token0 : principal;
+  token1 : principal;
 };
 
 type StrategyResponse = record {
@@ -50,6 +32,7 @@ type StrategyResponse = record {
   initial_deposit : vec record { principal; nat };
   user_shares : vec record { principal; nat };
   current_pool : opt Pool;
+  total_balance : nat;
   pools : vec Pool;
 };
 
@@ -69,10 +52,6 @@ type SystemEventDetails = variant {
 
 type SystemEventType = variant { Swap; Rebalance };
 
-type TokenInfo = record { ledger : principal; symbol : text };
-
-type UserBalancesReply = variant { LP : LPReply };
-
 type UserEvent = record {
   id : nat64;
   user : principal;
@@ -82,8 +61,8 @@ type UserEvent = record {
 };
 
 type UserEventDetails = variant {
-  AddLiquidity : record { token : text; amount : nat; symbol : text };
-  RemoveLiquidity : record { token : text; amount : nat; symbol : text };
+  AddLiquidity : record { token : principal; amount : nat };
+  RemoveLiquidity : record { token : principal; amount : nat };
 };
 
 type UserEventType = variant { AddLiquidity; RemoveLiquidity };
@@ -112,10 +91,10 @@ service : (opt Conf) -> {
   get_strategies : () -> (vec StrategyResponse) query;
   get_system_events : (nat64, nat64) -> (vec SystemEvent);
   get_user_events : (principal, nat64, nat64) -> (vec UserEvent);
-  icpswap_withdraw : (TokenInfo, nat, nat) -> (nat);
+  icpswap_withdraw : (principal, nat, nat) -> (nat);
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
-  user_balance_all : () -> (vec UserBalancesReply);
+  reset_strategy : (nat16) -> ();
   user_strategies : (principal) -> (vec UserStrategyResponse);
   withdraw : (WithdrawArgs) -> (WithdrawResponse);
 }

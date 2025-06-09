@@ -27,7 +27,7 @@ pub struct PoolData {
 
 pub async fn get_current_position(pool: &Pool) -> Option<PositionData> {
     let liquidity_client = get_liquidity_client(pool).await;
-    let position_id = pool.position.as_ref().unwrap().id.clone();
+    let position_id = pool.initial_position.as_ref().unwrap().id.clone();
 
     match liquidity_client.get_position_by_id(position_id).await {
         Ok(position) => {

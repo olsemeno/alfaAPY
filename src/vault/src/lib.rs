@@ -12,14 +12,11 @@ use serde::Serialize;
 use std::cell::RefCell;
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{caller, id, trap};
+use ic_cdk::{caller, trap};
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
-pub use kongswap_canister::pools::{PoolsReply, Response};
-use kongswap_canister::user_balances::UserBalancesReply;
-use ::types::exchanges::TokenInfo;
-use providers::{kongswap as kongswap_provider};
 use providers::{icpswap as icpswap_provider};
+use ::types::CanisterId;
 
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo;
@@ -107,7 +104,7 @@ fn heartbeat() {
 
 // TODO: Test function. Remove after testing.
 #[update]
-async fn icpswap_withdraw(token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Nat {
+async fn icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("5fq4w-lyaaa-aaaag-qjqta-cai").unwrap();
 
     let icpswap_quote_result = icpswap_provider::withdraw(
@@ -188,27 +185,6 @@ async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
     WithdrawResponse {
         amount: withdraw_response.amount,
         current_shares: withdraw_response.current_shares,
-    }
-}
-
-/// Retrieves the balance of all users.
-///
-/// # Returns
-///
-/// A vector of `UserBalancesReply` containing the balance information of all users.
-///
-/// # Errors
-///
-/// This function will trap if there is an error retrieving the user balances.
-// TODO: Function not used, need to remove.
-#[update]
-async fn user_balance_all() -> Vec<UserBalancesReply> {
-    let canister_id = id();
-    match kongswap_provider::user_balances(canister_id.to_text()).await.0 {
-        Ok(reply) => reply,
-        Err(err) => {
-            trap(format!("User balance error: {}", err).as_str());
-        }
     }
 }
 

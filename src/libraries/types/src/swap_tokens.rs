@@ -2,14 +2,13 @@ use candid::CandidType;
 use serde::{Deserialize, Serialize};
 use crate::{CanisterId, Milliseconds};
 use crate::exchange_id::ExchangeId;
-use crate::exchanges::TokenInfo;
 use crate::pin_number::PinNumberWrapper;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Args {
     pub swap_id: u128,
-    pub input_token: TokenInfo,
-    pub output_token: TokenInfo,
+    pub input_token: CanisterId,
+    pub output_token: CanisterId,
     pub input_amount: u128,
     pub exchange_args: ExchangeArgs,
     pub min_output_amount: u128,

@@ -94,10 +94,10 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if self.get_current_pool().is_none() {
             let best_apy_pool = pools_data
                 .iter()
-                .filter(|x| x.pool.provider == ExchangeId::KongSwap)
-                // .max_by_key(|x| x.apy)
-                .map(|x| x.pool.clone())
-                .next();
+                // .filter(|x| x.pool.provider == ExchangeId::ICPSwap) // TODO: remove this after testing
+                .max_by_key(|x| x.apy)
+                .map(|x| x.pool.clone());
+                // .next();
 
             if let Some(pool) = best_apy_pool {
                 self.set_current_pool(Some(pool));
@@ -145,8 +145,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             event_service::create_user_event(
                 UserEventParams::AddLiquidity {
                     amount: amount.clone(),
-                    token: current_pool.token0.ledger.to_text(),
-                    symbol: current_pool.token0.symbol.clone(),
+                    token: current_pool.token0,
                 },
                 investor,
             );
@@ -184,7 +183,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     async fn withdraw(&mut self, shares: Nat) -> WithdrawResponse {
-        let investor = caller(); // "Ya ne halyavshchik, ya partner!"
+        let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
 
         // Check if user has enough shares
         if let Some(user_shares) = self.get_user_shares().get(&investor) {
@@ -219,7 +218,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // Transfer amount of token_0 (base token) to user
             let transfer_result = icrc1_transfer(
-                token0.ledger,
+                token0,
                 &TransferArg {
                     from_subaccount: None,
                     to: Account {
@@ -281,8 +280,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             event_service::create_user_event(
                 UserEventParams::RemoveLiquidity {
                     amount: amount_0_to_withdraw.clone(),
-                    token: token0.ledger.to_text(),
-                    symbol: token0.symbol.clone(),
+                    token: token0,
                 },
                 investor,
             );
@@ -380,8 +378,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             // Create event for rebalance
             event_service::create_system_event(
                 SystemEventParams::Rebalance {
-                    old_pool: current_pool.token0.symbol.clone(),
-                    new_pool: max_apy_pool.token0.symbol.clone(),
+                    old_pool: current_pool.get_id(),
+                    new_pool: max_apy_pool.get_id(),
                 },
             );
 

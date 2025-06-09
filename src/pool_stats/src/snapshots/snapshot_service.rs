@@ -41,7 +41,7 @@ pub fn stop_pool_snapshots_timer() {
 pub async fn take_pool_snapshots() {
     let pools = pools_repo::get_pools();
     // Iterate over pools with liquidity position
-    for pool in pools.into_iter().filter(|p| p.position.is_some()) {
+    for pool in pools.into_iter().filter(|p| p.initial_position.is_some()) {
         let pool_current_data = get_current_data(&pool).await;
         let current_position = get_current_position(&pool).await;
         let id = (pools_repo::get_pool_snapshots_count(pool.id.clone()) + 1).to_string();

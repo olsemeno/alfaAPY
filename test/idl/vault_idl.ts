@@ -16,14 +16,10 @@ export const idlFactory = ({ IDL }) => {
     'KongSwap' : IDL.Null,
     'ICPSwap' : IDL.Null,
   });
-  const TokenInfo = IDL.Record({
-    'ledger' : IDL.Principal,
-    'symbol' : IDL.Text,
-  });
   const Pool = IDL.Record({
     'provider' : ExchangeId,
-    'token0' : TokenInfo,
-    'token1' : TokenInfo,
+    'token0' : IDL.Principal,
+    'token1' : IDL.Principal,
   });
   const StrategyResponse = IDL.Record({
     'id' : IDL.Nat16,
@@ -77,25 +73,6 @@ export const idlFactory = ({ IDL }) => {
   const Icrc28TrustedOriginsResponse = IDL.Record({
     'trusted_origins' : IDL.Vec(IDL.Text),
   });
-  const LPReply = IDL.Record({
-    'ts' : IDL.Nat64,
-    'usd_balance' : IDL.Float64,
-    'balance' : IDL.Float64,
-    'name' : IDL.Text,
-    'amount_0' : IDL.Float64,
-    'amount_1' : IDL.Float64,
-    'address_0' : IDL.Text,
-    'address_1' : IDL.Text,
-    'symbol_0' : IDL.Text,
-    'symbol_1' : IDL.Text,
-    'usd_amount_0' : IDL.Float64,
-    'usd_amount_1' : IDL.Float64,
-    'chain_0' : IDL.Text,
-    'chain_1' : IDL.Text,
-    'symbol' : IDL.Text,
-    'lp_token_id' : IDL.Nat64,
-  });
-  const UserBalancesReply = IDL.Variant({ 'LP' : LPReply });
   const UserStrategyResponse = IDL.Record({
     'strategy_current_pool' : Pool,
     'total_shares' : IDL.Nat,
@@ -132,14 +109,13 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(UserEvent)],
         [],
       ),
-    'icpswap_withdraw' : IDL.Func([TokenInfo, IDL.Nat, IDL.Nat], [IDL.Nat], []),
+    'icpswap_withdraw' : IDL.Func([IDL.Principal, IDL.Nat, IDL.Nat], [IDL.Nat], []),
     'icrc10_supported_standards' : IDL.Func(
         [],
         [IDL.Vec(SupportedStandard)],
         ['query'],
       ),
     'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
-    'user_balance_all' : IDL.Func([], [IDL.Vec(UserBalancesReply)], []),
     'user_strategies' : IDL.Func(
         [IDL.Principal],
         [IDL.Vec(UserStrategyResponse)],

@@ -10,11 +10,10 @@ use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 use std::collections::HashMap;
 
-
-impl_strategy_methods!(PandaTestStrategy);
+impl_strategy_methods!(IcsStrategy);
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-pub struct PandaTestStrategy {
+pub struct IcsStrategy {
     id: StrategyId,
     current_pool: Option<Pool>,
     total_balance: Nat,
@@ -23,24 +22,24 @@ pub struct PandaTestStrategy {
     initial_deposit: HashMap<Principal, Nat>,
 }
 
-impl PandaTestStrategy {
+impl IcsStrategy {
     pub fn new() -> Self {
         //TODO move to config
-        PandaTestStrategy {
+        IcsStrategy {
             current_pool: None,
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
             initial_deposit: HashMap::new(),
-            id: 4,
+            id: 5,
         }
     }
 }
 
 #[async_trait]
-impl IStrategy for PandaTestStrategy {
+impl IStrategy for IcsStrategy {
     fn to_candid(&self) -> StrategyCandid {
-        StrategyCandid::PandaTestStrategyV(self.clone())
+        StrategyCandid::IcsStrategyV(self.clone())
     }
 
     fn clone_self(&self) -> Box<dyn IStrategy> {

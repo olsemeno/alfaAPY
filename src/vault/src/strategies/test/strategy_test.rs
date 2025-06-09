@@ -8,7 +8,6 @@
 //     use types::liquidity::AddLiquidityResponse;
 //     use utils::util::nat_to_f64;
 //     use liquidity::liquidity_calculator::LiquidityCalculator;
-//     use types::exchanges::TokenInfo;
 //     use types::exchange_id::ExchangeId;
 
 //     use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
@@ -16,9 +15,7 @@
 //     use crate::strategies::basic_strategy::BasicStrategy;
 //     use crate::strategies::strategy::IStrategy;
 //     use crate::strategies::strategy_candid::StrategyCandid;
-
-//     const ICP_CANISTER_ID: &str = "ryjl3-tyaaa-aaaaa-aaaba-cai";
-//     const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
+//     use constants::{ICP_TOKEN_CANISTER_ID, CKUSDT_TOKEN_CANISTER_ID};
 
 //     // Mock for external functions
 //     pub mod liquidity_service_mock {
@@ -36,11 +33,11 @@
 //             vec![
 //                 Pool {
 //                     token0: TokenInfo {
-//                         ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+//                         ledger: Principal::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
 //                         symbol: "ICP".to_string(),
 //                     },
 //                     token1: TokenInfo {
-//                         ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+//                         ledger: Principal::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
 //                         symbol: "ckUSDT".to_string(),
 //                     },
 //                     provider: ExchangeId::KongSwap,
@@ -80,11 +77,11 @@
 //                 pools: vec![
 //                     Pool {
 //                         token0: TokenInfo {
-//                             ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+//                             ledger: Principal::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
 //                             symbol: "ICP".to_string(),
 //                         },
 //                         token1: TokenInfo {
-//                             ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+//                             ledger: Principal::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
 //                             symbol: "ckUSDT".to_string(),
 //                         },
 //                         provider: ExchangeId::KongSwap,
@@ -350,11 +347,11 @@
 //         // Create a pool reply for testing
 //         let pool = Pool {
 //             token0: TokenInfo {
-//                 ledger: Principal::from_text(ICP_CANISTER_ID).unwrap(),
+//                 ledger: Principal::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
 //                 symbol: "ICP".to_string(),
 //             },
 //             token1: TokenInfo {
-//                 ledger: Principal::from_text(CKUSDT_CANISTER_ID).unwrap(),
+//                 ledger: Principal::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
 //                 symbol: "ckUSDT".to_string(),
 //             },
 //             provider: ExchangeId::KongSwap,

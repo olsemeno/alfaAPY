@@ -2,18 +2,18 @@ use candid::Nat;
 use ic_cdk::trap;
 
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
-use types::exchanges::TokenInfo;
 use types::swap_tokens::{SuccessResult, QuoteResult};
 use types::exchange_id::ExchangeId;
 use providers::kongswap::KONGSWAP_CANISTER;
+use types::CanisterId;
 
 use crate::token_swaps::kongswap::KongSwapClient;
 use crate::token_swaps::icpswap::ICPSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
 
 pub async fn swap_icrc2_optimal(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> SuccessResult {
     let provider = quote_swap_icrc2_optimal(input_token.clone(), output_token.clone(), amount).await.provider;
@@ -21,8 +21,8 @@ pub async fn swap_icrc2_optimal(
 }
 
 pub async fn swap_icrc2(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
     provider: ExchangeId,
 ) -> SuccessResult {
@@ -40,8 +40,8 @@ pub async fn swap_icrc2(
 }
 
 pub async fn quote_swap_icrc2_optimal(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> QuoteResult {
     let kong_quote = quote_swap_kongswap(input_token.clone(), output_token.clone(), amount).await;
@@ -63,8 +63,8 @@ pub async fn quote_swap_icrc2_optimal(
 
 // TODO: make private
 pub async fn swap_icrc2_icpswap(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> SuccessResult {
     let swap_client = Box::new(
@@ -76,7 +76,7 @@ pub async fn swap_icrc2_icpswap(
 
     // ICRC2 APPROVE
     let approve_result = match icrc_ledger_canister_c2c_client::icrc2_approve(
-        input_token.ledger.clone(),
+        input_token.clone(),
         &ApproveArgs {
             from_subaccount: None,
             spender: swap_client.canister_id().into(),
@@ -98,7 +98,7 @@ pub async fn swap_icrc2_icpswap(
     match approve_result {
         Ok(_) => {}
         Err(a) => {
-            let c = input_token.ledger.to_text();
+            let c = input_token.to_text();
             trap(format!("ICRC2 approve SWAP (ICPSWAP) {a:?} : {c:?}").as_str());
         }
     }
@@ -129,8 +129,8 @@ pub async fn swap_icrc2_icpswap(
 
 // TODO: make private
 pub async fn swap_icrc2_kongswap(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> SuccessResult {
     let swap_client = Box::new(
@@ -142,7 +142,7 @@ pub async fn swap_icrc2_kongswap(
     );
 
     let x = match icrc_ledger_canister_c2c_client::icrc2_approve(
-        input_token.ledger.clone(),
+        input_token.clone(),
         &ApproveArgs {
             from_subaccount: None,
             spender: swap_client.canister_id().into(),
@@ -164,7 +164,7 @@ pub async fn swap_icrc2_kongswap(
     match x {
         Ok(_) => {}
         Err(a) => {
-            let c = input_token.ledger.to_text();
+            let c = input_token.to_text();
             trap(format!("ICRC2 approve SWAP (KONGSWAP) {a:?} : {c:?}").as_str());
         }
     }
@@ -195,8 +195,8 @@ pub async fn swap_icrc2_kongswap(
 
 // TODO: make private
 pub async fn quote_swap_kongswap(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> QuoteResult {
     let swap_client = Box::new(
@@ -231,8 +231,8 @@ pub async fn quote_swap_kongswap(
 
 // TODO: make private
 pub async fn quote_swap_icpswap(
-    input_token: TokenInfo,
-    output_token: TokenInfo,
+    input_token: CanisterId,
+    output_token: CanisterId,
     amount: u128,
 ) -> QuoteResult {
     let swap_client = Box::new(

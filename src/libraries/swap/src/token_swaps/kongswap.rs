@@ -3,24 +3,27 @@ use utils::util::nat_to_u128;
 use async_trait::async_trait;
 use ic_cdk::trap;
 use ic_response_codes::RejectCode;
-use types::exchanges::TokenInfo;
 use types::CanisterId;
 
 const SLIPPAGE_PERCENTAGE: f64 = 40.0; // TODO: Fix this
 
 pub struct KongSwapClient {
     canister_id: CanisterId,
-    token_in: TokenInfo,
-    token_out: TokenInfo,
+    token_in: CanisterId,
+    token_out: CanisterId,
 }
 
 impl KongSwapClient {
-    pub fn new(canister_id: CanisterId, token_in: TokenInfo, token_out: TokenInfo) -> KongSwapClient {
+    pub fn new(canister_id: CanisterId, token_in: CanisterId, token_out: CanisterId) -> KongSwapClient {
         KongSwapClient {
             canister_id,
             token_in,
             token_out,
         }
+    }
+
+    fn token_kongswap_format(&self, token: CanisterId) -> String {
+        format!("IC.{}", token.to_text())
     }
 }
 
@@ -46,8 +49,8 @@ impl SwapClient for KongSwapClient {
     async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
         let args = &kongswap_canister::swap::Args {
             pay_amount: amount.into(),
-            pay_token: format!("IC.{}", self.token_in.ledger),
-            receive_token: format!("IC.{}", self.token_out.ledger),
+            pay_token: self.token_kongswap_format(self.token_in.clone()),
+            receive_token: self.token_kongswap_format(self.token_out.clone()),
             max_slippage: Some(SLIPPAGE_PERCENTAGE),
         };
 
@@ -78,9 +81,9 @@ impl SwapClient for KongSwapClient {
     }
 
     async fn quote(&self, amount: u128) -> Result<Result<QuoteSuccess, String>, (RejectCode, String)> {
-        let pay_token = format!("IC.{}", self.token_in.ledger);
+        let pay_token = self.token_kongswap_format(self.token_in.clone());
         let amount_nat = candid::Nat::from(amount);
-        let receive_token = format!("IC.{}", self.token_out.ledger);
+        let receive_token = self.token_kongswap_format(self.token_out.clone());
 
         let args = (
             pay_token,

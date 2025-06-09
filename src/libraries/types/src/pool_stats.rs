@@ -1,16 +1,16 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
-use crate::exchanges::TokenInfo;
 use crate::exchange_id::ExchangeId;
+use crate::CanisterId;
 
 // Pool
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct Pool {
     pub id: String,
-    pub token0: TokenInfo,
-    pub token1: TokenInfo,
+    pub token0: CanisterId,
+    pub token1: CanisterId,
     pub provider: ExchangeId,
     pub position: Option<Position>,
 }
@@ -74,7 +74,7 @@ pub struct PoolApy {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolByTokens {
-    pub token0: TokenInfo,
-    pub token1: TokenInfo,
+    pub token0: CanisterId,
+    pub token1: CanisterId,
     pub provider: ExchangeId,
 }

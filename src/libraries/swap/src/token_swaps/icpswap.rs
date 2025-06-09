@@ -4,7 +4,6 @@ use ic_cdk::trap;
 use candid::Nat;
 use ic_response_codes::RejectCode;
 
-use types::exchanges::TokenInfo;
 use types::CanisterId;
 use providers::{icpswap as icpswap_provider};
 use icpswap_swap_factory_canister::ICPSwapPool;
@@ -18,8 +17,8 @@ pub const SLIPPAGE_TOLERANCE: u128 = 50; // 50 slippage tolerance points == 5%
 
 pub struct ICPSwapClient {
     canister_id: CanisterId,
-    token0: TokenInfo,
-    token1: TokenInfo,
+    token0: CanisterId,
+    token1: CanisterId,
     pool: ICPSwapPool,
 }
 
@@ -29,7 +28,7 @@ pub struct DepositFromSuccess {
 }
 
 impl ICPSwapClient {
-    pub async fn new(token0: TokenInfo, token1: TokenInfo) -> ICPSwapClient {
+    pub async fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapClient {
         let pool = match Self::get_pool(token0.clone(), token1.clone()).await {
             Ok(pool) => pool,
             Err(e) => trap(format!("Failed to get pool (ICPSWAP): {}", e).as_str()),
@@ -46,8 +45,8 @@ impl ICPSwapClient {
     }
 
     fn is_zero_for_one_swap_direction(&self) -> bool {
-        let token0_str = self.token0.ledger.to_string();
-        let token1_str = self.token1.ledger.to_string();
+        let token0_str = self.token0.to_text();
+        let token1_str = self.token1.to_text();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
             (t0, t1) if t0 == token0_str && t1 == token1_str => true,
@@ -65,8 +64,8 @@ impl ICPSwapClient {
     }
 
     fn get_tokens_fee(&self, token_meta: &TokenMeta) -> TokensFee {
-        let token0_str = self.token0.ledger.to_string();
-        let token1_str = self.token1.ledger.to_string();
+        let token0_str = self.token0.to_text();
+        let token1_str = self.token1.to_text();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
             (t0, t1) if t0 == token0_str && t1 == token1_str => TokensFee {
@@ -89,7 +88,7 @@ impl ICPSwapClient {
         }
     }
 
-    async fn get_pool(token0: TokenInfo, token1: TokenInfo) -> Result<ICPSwapPool, String> {
+    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, String> {
         match icpswap_provider::get_pool(token0, token1).await {
             Ok(pool) => Ok(pool),
             Err(e) => Err(format!("Failed to get pool (ICPSWAP): {}", e)),

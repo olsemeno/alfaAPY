@@ -9,15 +9,18 @@ use crate::pools::pool::Pool;
 use crate::pool_stats::pool_stats_service;
 
 pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
-    let pool_metrics = pool_stats_service::get_pool_metrics(pools.clone()).await;
+    let pool_ids: Vec<String> = pools.iter().map(|pool| pool.id.clone()).collect();
+    let pool_metrics = pool_stats_service::get_pool_metrics(pool_ids).await;
 
     let pool_data: Vec<PoolData> = pools
         .into_iter()
         .zip(pool_metrics.into_iter())
-        .map(|(pool, pool_metric)| PoolData {
-            pool: pool.clone(),
-            apy: pool_metric.1.apy.month.tokens_apy,
-        })
+        .map(|(pool, pool_metric)|
+            PoolData {
+                pool: pool.clone(),
+                apy: pool_metric.1.apy.month.tokens_apy,
+            }
+        )
         .collect();
 
     pool_data

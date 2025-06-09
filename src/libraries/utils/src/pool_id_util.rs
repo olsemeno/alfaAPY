@@ -1,16 +1,16 @@
-use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
+use types::CanisterId;
 
 use serde_json;
 use hex;
 
-pub fn generate_pool_id(token0: &TokenInfo, token1: &TokenInfo, provider: &ExchangeId) -> String {
-    let keys = (token0, token1, provider);
+pub fn generate_pool_id(token0: &CanisterId, token1: &CanisterId, provider: &ExchangeId) -> String {
+    let keys = (token0.to_text(), token1.to_text(), provider);
     let json = serde_json::to_string(&keys).unwrap();
     hex::encode(json)
 }
 
-pub fn decode_pool_id(hex_str: &str) -> Option<(TokenInfo, TokenInfo, ExchangeId)> {
+pub fn decode_pool_id(hex_str: &str) -> Option<(CanisterId, CanisterId, ExchangeId)> {
     let bytes = hex::decode(hex_str).ok()?;
     let json_str = std::str::from_utf8(&bytes).ok()?;
     serde_json::from_str(json_str).ok()
@@ -23,14 +23,8 @@ mod tests {
 
     #[test]
     fn test_generate_and_decode_pool_id() {
-        let token0 = TokenInfo {
-            symbol: "PANDE".to_string(),
-            ledger: CanisterId::from_text("druyg-tyaaa-aaaaq-aactq-cai").unwrap(),
-        };
-        let token1 = TokenInfo {
-            symbol: "ICP".to_string(),
-            ledger: CanisterId::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(),
-        };
+        let token0 = CanisterId::from_text("druyg-tyaaa-aaaaq-aactq-cai").unwrap();
+        let token1 = CanisterId::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap();
         let provider = ExchangeId::KongSwap;
         let pool_id = generate_pool_id(&token0, &token1, &provider);
 

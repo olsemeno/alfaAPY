@@ -6,10 +6,10 @@ use ic_cdk::{call, id, trap, update};
 use ic_cdk::api::call::CallResult;
 use candid::export_service;
 
-use types::exchanges::TokenInfo;
 use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::pool_stats::PoolByTokens;
+use types::CanisterId;
 use utils::pool_id_util::generate_pool_id;
 
 use crate::pools::pool_snapshot::PoolSnapshot;
@@ -19,6 +19,7 @@ use crate::pools::pool_metrics::PoolMetrics;
 use crate::pools::pool_metrics_service;
 use crate::repository::pools_repo;
 use crate::liquidity::liquidity_service;
+use crate::pools::pool_service;
 
 pub mod pools;
 pub mod liquidity;
@@ -109,7 +110,7 @@ pub fn delete_all_pools_and_snapshots() -> bool {
 // Pools management
 
 #[update]
-pub fn add_pool(token0: TokenInfo, token1: TokenInfo, provider: ExchangeId) -> String {
+pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> String {
     let pool = Pool::create(token0, token1, provider);
     pool.id
 }
@@ -177,6 +178,7 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
 
 #[ic_cdk::init]
 async fn init() {
+    pool_service::init_pools();
     snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 

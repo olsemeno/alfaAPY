@@ -18,7 +18,7 @@ pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLi
         match liquidity_client.add_liquidity_to_pool(amount).await {
             Ok(response) => {
                 // Update pool position
-                pool.position = Some(Position {
+                pool.initial_position = Some(Position {
                     id: Nat::from(response.request_id as u64),
                     initial_amount0: response.token_0_amount.clone(),
                     initial_amount1: response.token_1_amount.clone(),
@@ -51,7 +51,7 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
         match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
             Ok(response) => {
                 // Update pool position
-                pool.position = None;
+                pool.initial_position = None;
                 pools_repo::update_pool(pool.id.clone(), pool.clone());
                 Ok(response)
             }

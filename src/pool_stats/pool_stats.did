@@ -14,9 +14,9 @@ type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 type Pool = record {
   id : text;
   provider : ExchangeId;
-  token0 : TokenInfo;
-  token1 : TokenInfo;
-  position : opt Position;
+  initial_position : opt Position;
+  token0 : principal;
+  token1 : principal;
 };
 
 type PoolApy = record {
@@ -27,8 +27,8 @@ type PoolApy = record {
 
 type PoolByTokens = record {
   provider : ExchangeId;
-  token0 : TokenInfo;
-  token1 : TokenInfo;
+  token0 : principal;
+  token1 : principal;
 };
 
 type PoolData = record {
@@ -73,8 +73,6 @@ type Result = variant { Ok : AddLiquidityResponse; Err : text };
 
 type Result_1 = variant { Ok : WithdrawFromPoolResponse; Err : text };
 
-type TokenInfo = record { ledger : principal; symbol : text };
-
 type WithdrawFromPoolResponse = record {
   token_0_amount : nat;
   token_1_amount : nat;
@@ -82,7 +80,7 @@ type WithdrawFromPoolResponse = record {
 
 service : () -> {
   add_liquidity_to_pool : (text, nat) -> (Result);
-  add_pool : (TokenInfo, TokenInfo, ExchangeId) -> (text);
+  add_pool : (principal, principal, ExchangeId) -> (text);
   add_pool_snapshot : (PoolSnapshotArgs) -> ();
   delete_all_pools_and_snapshots : () -> (bool);
   delete_pool : (text) -> (bool);

@@ -20,7 +20,7 @@ use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountB
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
-use types::exchanges::TokenInfo;
+
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
 
 use crate::liquidity_client::LiquidityClient;
@@ -31,13 +31,13 @@ const TICK_UPPER: i32 = 887220;
 
 pub struct ICPSwapLiquidityClient {
     canister_id: CanisterId,
-    token0: TokenInfo, // token0 may be token1 in the pool and vice versa
-    token1: TokenInfo, // token1 may be token0 in the pool and vice versa
+    token0: CanisterId, // token0 may be token1 in the pool and vice versa
+    token1: CanisterId, // token1 may be token0 in the pool and vice versa
     pool: ICPSwapPool,
 }
 
 impl ICPSwapLiquidityClient {
-    pub async fn new(token0: TokenInfo, token1: TokenInfo) -> ICPSwapLiquidityClient {
+    pub async fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapLiquidityClient {
         let pool = match Self::get_pool(token0.clone(), token1.clone()).await {
             Ok(pool) => pool,
             Err(e) => trap(format!("Failed to get pool (ICPSWAP): {}", e).as_str()),
@@ -69,8 +69,8 @@ impl ICPSwapLiquidityClient {
     }
 
     fn get_tokens_fee(&self, token_meta: &TokenMeta) -> TokensFee {
-        let token_in_str = self.token0.ledger.to_string();
-        let token_out_str = self.token1.ledger.to_string();
+        let token_in_str = self.token0.to_text();
+        let token_out_str = self.token1.to_text();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
             (t0, t1) if t0 == token_in_str && t1 == token_out_str => TokensFee {
@@ -94,8 +94,8 @@ impl ICPSwapLiquidityClient {
     }
     
     fn is_zero_for_one_swap_direction(&self) -> bool {
-        let token_in_str = self.token0.ledger.to_string();
-        let token_out_str = self.token1.ledger.to_string();
+        let token_in_str = self.token0.to_text();
+        let token_out_str = self.token1.to_text();
 
         match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
             (t0, t1) if t0 == token_in_str && t1 == token_out_str => true,
@@ -112,9 +112,9 @@ impl ICPSwapLiquidityClient {
         }
     }
 
-    async fn icrc2_approve(&self, token: TokenInfo, amount: Nat) -> Result<(), String> {
+    async fn icrc2_approve(&self, token: CanisterId, amount: Nat) -> Result<(), String> {
         let approve_result = match icrc_ledger_canister_c2c_client::icrc2_approve(
-            token.ledger.clone(),
+            token.clone(),
             &ApproveArgs {
                 from_subaccount: None,
                 spender: self.canister_id().into(),
@@ -137,13 +137,13 @@ impl ICPSwapLiquidityClient {
         match approve_result {
             Ok(_) => Ok(()),
             Err(a) => {
-                let c = token.ledger.to_text();
+                let c = token.to_text();
                 trap(format!("ICRC2 approve SWAP (ICPSWAP) {a:?} : {c:?}").as_str());
             }
         }
     }
 
-    async fn get_pool(token0: TokenInfo, token1: TokenInfo) -> Result<ICPSwapPool, String> {
+    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, String> {
         match icpswap_provider::get_pool(token0, token1).await {
             Ok(pool) => Ok(pool),
             Err(e) => Err(format!("ICPSwapLiquidityClient.get_pool: get_pool error: {:?}", e)),
@@ -157,7 +157,7 @@ impl ICPSwapLiquidityClient {
         }
     }
 
-    async fn deposit_from(&self, token: TokenInfo, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
+    async fn deposit_from(&self, token: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
         match icpswap_provider::deposit_from(self.canister_id, token.clone(), amount, token_fee).await {
             Ok(deposited_amount) => Ok(Nat::from(deposited_amount)),
             Err(error) => {
@@ -246,7 +246,7 @@ impl ICPSwapLiquidityClient {
         }
     }
 
-    async fn withdraw(&self, token_out: TokenInfo, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
+    async fn withdraw(&self, token_out: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
         match icpswap_provider::withdraw(self.canister_id, token_out, amount, token_fee).await {
             Ok(amount_out_nat) => Ok(amount_out_nat),
             Err(error) => {
@@ -454,10 +454,10 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // Token0 and token1 in the pool are determined by the token0 and token1 in the metadata
         // So we need to determine the tokens amount order in the pool for minting new position or increasing liquidity
         let (amount0_for_position, amount1_for_position) = match (
-            self.token0.ledger.to_string() == metadata.token0.address,
-            self.token1.ledger.to_string() == metadata.token1.address,
-            self.token0.ledger.to_string() == metadata.token1.address,
-            self.token1.ledger.to_string() == metadata.token0.address,
+            self.token0.to_text() == metadata.token0.address,
+            self.token1.to_text() == metadata.token1.address,
+            self.token0.to_text() == metadata.token1.address,
+            self.token1.to_text() == metadata.token0.address,
         ) {
             // Token0 is token0 in the pool and token1 is token1 in the pool
             (true, true, _, _) => (amount0_for_pool.to_string(), amount1_swapped_for_pool.to_string()),
@@ -584,10 +584,10 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         // Determine which token is token0 and which is token1
         let (amount0_to_withdraw, amount1_to_withdraw) = match (
-            self.token0.ledger.to_string() == metadata.token0.address,
-            self.token1.ledger.to_string() == metadata.token1.address,
-            self.token0.ledger.to_string() == metadata.token1.address,
-            self.token1.ledger.to_string() == metadata.token0.address,
+            self.token0.to_text() == metadata.token0.address,
+            self.token1.to_text() == metadata.token1.address,
+            self.token0.to_text() == metadata.token1.address,
+            self.token1.to_text() == metadata.token0.address,
         ) {
             (true, true, _, _) => (
                 Nat::from(decrease_liquidity_response.amount0),
@@ -614,7 +614,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
                     "ICPSwapLiquidityClient.withdraw_liquidity_from_pool: \
                     withdrawing token0 error with amount0_to_withdraw={:?}, token0={:?}: {:?}",
                     amount0_to_withdraw,
-                    self.token0.ledger,
+                    self.token0.to_text(),
                     error
                 ));
             }
@@ -632,7 +632,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
                     "ICPSwapLiquidityClient.withdraw_liquidity_from_pool: \
                     withdrawing token1 error with amount1_to_withdraw={:?}, token1={:?}: {:?}",
                     amount1_to_withdraw,
-                    self.token1.ledger,
+                    self.token1.to_text(),
                     error
                 ));
             }
@@ -696,8 +696,8 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         for token in &all_tokens {
             match token.address.as_str() {
-                addr if addr == self.token0.ledger.to_string() => token0_price = token.priceUSD,
-                addr if addr == self.token1.ledger.to_string() => token1_price = token.priceUSD,
+                addr if addr == self.token0.to_text() => token0_price = token.priceUSD,
+                addr if addr == self.token1.to_text() => token1_price = token.priceUSD,
                 _ => {}
             }
             if token0_price != 0.0 && token1_price != 0.0 {

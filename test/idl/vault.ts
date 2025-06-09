@@ -20,28 +20,10 @@ export type ExchangeId = { 'Sonic' : null } |
 export interface Icrc28TrustedOriginsResponse {
   'trusted_origins' : Array<string>,
 }
-export interface LPReply {
-  'ts' : bigint,
-  'usd_balance' : number,
-  'balance' : number,
-  'name' : string,
-  'amount_0' : number,
-  'amount_1' : number,
-  'address_0' : string,
-  'address_1' : string,
-  'symbol_0' : string,
-  'symbol_1' : string,
-  'usd_amount_0' : number,
-  'usd_amount_1' : number,
-  'chain_0' : string,
-  'chain_1' : string,
-  'symbol' : string,
-  'lp_token_id' : bigint,
-}
 export interface Pool {
   'provider' : ExchangeId,
-  'token0' : TokenInfo,
-  'token1' : TokenInfo,
+  'token0' : Principal,
+  'token1' : Principal,
 }
 export interface StrategyResponse {
   'id' : number,
@@ -65,8 +47,6 @@ export type SystemEventDetails = { 'Swap' : null } |
   { 'Rebalance' : { 'old_pool' : string, 'new_pool' : string } };
 export type SystemEventType = { 'Swap' : null } |
   { 'Rebalance' : null };
-export interface TokenInfo { 'ledger' : Principal, 'symbol' : string }
-export type UserBalancesReply = { 'LP' : LPReply };
 export interface UserEvent {
   'id' : bigint,
   'user' : Principal,
@@ -113,10 +93,9 @@ export interface _SERVICE {
     [Principal, bigint, bigint],
     Array<UserEvent>
   >,
-  'icpswap_withdraw' : ActorMethod<[TokenInfo, bigint, bigint], bigint>,
+  'icpswap_withdraw' : ActorMethod<[Principal, bigint, bigint], bigint>,
   'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
   'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
-  'user_balance_all' : ActorMethod<[], Array<UserBalancesReply>>,
   'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
   'withdraw' : ActorMethod<[WithdrawArgs], WithdrawResponse>,
   'reset_strategy' : ActorMethod<[number], void>,
