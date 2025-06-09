@@ -88,16 +88,16 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         let pools_data = get_pools_data(self.get_pools()).await;
 
         // // TODO: remove this after testing
-        self.set_current_pool(None);
+        // self.set_current_pool(None);
 
         // Set current pool to the best APY pool if not set
         if self.get_current_pool().is_none() {
             let best_apy_pool = pools_data
                 .iter()
-                // .filter(|x| x.pool.provider == ExchangeId::ICPSwap) // TODO: remove this after testing
-                .max_by_key(|x| x.apy)
-                .map(|x| x.pool.clone());
-                // .next();
+                .filter(|x| x.pool.provider == ExchangeId::KongSwap) // TODO: remove this after testing
+                // .max_by_key(|x| x.apy)
+                .map(|x| x.pool.clone())
+                .next();
 
             if let Some(pool) = best_apy_pool {
                 self.set_current_pool(Some(pool));
@@ -105,6 +105,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 trap("Strategy::deposit: No pool found to deposit");
             }
         }
+
+        save_strategy(self.clone_self());
 
         if let Some(ref current_pool) = self.get_current_pool() {
              // Add liquidity to pool
@@ -182,8 +184,14 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 6. Updates total shares, user shares and initial deposit
     /// 7. Saves updated strategy state
     ///
-    async fn withdraw(&mut self, shares: Nat) -> WithdrawResponse {
+    /// TODO: Rename shares to percentage
+    async fn withdraw(&mut self, mut shares: Nat) -> WithdrawResponse {
         let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
+
+        // TODO: move to block below
+        let percentage = shares;
+        let user_shares = self.get_user_shares_by_principal(investor.clone());
+        shares = user_shares * percentage / Nat::from(100u64); // TODO: fix this
 
         // Check if user has enough shares
         if let Some(user_shares) = self.get_user_shares().get(&investor) {

@@ -2,9 +2,8 @@ import { PropsWithChildren } from "react";
 import { Header } from "./header";
 import { Footer } from "./footer";
 import { PageLoader } from "./page-loader";
-import { Badge, Button, Card } from "./ui";
+import { Badge } from "./ui";
 import { useLocation, useNavigate } from "react-router-dom";
-import colors from "tailwindcss/colors";
 
 export function Layout({ children }: PropsWithChildren) {
   const navigate = useNavigate();
@@ -18,29 +17,14 @@ export function Layout({ children }: PropsWithChildren) {
         </h1>
         <Badge className="mx-auto !mt-[10px] mb-[70px]">Alpha version</Badge>
         {location.pathname === "/swap" && (
-          <Card className="w-fit mb-[30px] mx-auto grid grid-cols-3 gap-5 p-[5px]">
-            <Button bg={colors.amber[500]} className="text-[16px]">
-              <span className="text-[20px]">🔄</span> Swap
-            </Button>
-            <Button
-              onClick={() => {
-                navigate("/");
-              }}
-              bg={colors.amber[400]}
-              className="text-[16px]"
+          <div className="w-full mb-[20px]">
+            <button
+              onClick={() => navigate("/")}
+              className="text-gray-600 hover:text-gray-800 transition-colors text-[20px] ml-[20px]"
             >
-              <span className="text-[20px]">🏊</span> Pools
-            </Button>
-            <Button
-              bg={colors.amber[400]}
-              className="text-[16px]"
-              onClick={() => {
-                navigate("/lending");
-              }}
-            >
-              <span className="text-[20px]">💸</span> Lending
-            </Button>
-          </Card>
+              ← Back
+            </button>
+          </div>
         )}
         <div className="my-auto pb-[50px]">{children}</div>
         <Footer className="mt-auto" />

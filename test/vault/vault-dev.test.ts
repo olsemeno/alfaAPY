@@ -19,9 +19,10 @@ describe("VR Test PROD", () => {
     const ckBtcCanisterId = "mxzaz-hqaaa-aaaar-qaada-cai";
     const pandaCanisterId = "druyg-tyaaa-aaaaq-aactq-cai";
     const nfidwCanisterId = "mih44-vaaaa-aaaaq-aaekq-cai";
+    const icsCanisterId = "ca6gz-lqaaa-aaaaq-aacwa-cai";
 
     // const ledgerCanisterId = icpCanisterId; // ICP
-    const ledgerCanisterId = pandaCanisterId; // PANDA
+    const ledgerCanisterId = icsCanisterId; // PANDA
 
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
@@ -60,10 +61,10 @@ describe("VR Test PROD", () => {
     });
 
     describe(".accept_investment", () => {
-        const strategyId = 4;
+        const strategyId = 5;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(100_000_000);
-        // const depositAmount = BigInt(100_000);
+        const depositAmount = BigInt(40_000_000);
+        // const depositAmount = BigInt(10_000);
 
         it("Deposits to strategy without any liquidity", async () => {
             console.log("== START \"Deposits to strategy without any liquidity\" TEST ==");
@@ -95,9 +96,9 @@ describe("VR Test PROD", () => {
     });
 
     describe(".withdraw", () => {
-        const strategyId = 4;
+        const strategyId = 5;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(100_000_000);
+        const depositAmount = BigInt(40_000_000);
         // const depositAmount = BigInt(50_000);
 
         let shares: bigint;

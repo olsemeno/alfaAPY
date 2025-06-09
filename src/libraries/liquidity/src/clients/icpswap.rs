@@ -20,8 +20,8 @@ use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountB
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
-
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
+use utils::token_fees::get_token_fee;
 
 use crate::liquidity_client::LiquidityClient;
 
@@ -387,7 +387,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // let token0_fee = Nat::from(10_000u128); // For ICP
         // let token1_fee = Nat::from(10u8); // For ckBTC
 
-        let token0_fee = Nat::from(10_000u128); // For PANDA
+        let token0_fee = get_token_fee(self.token0.clone()).await;
 
         // 3. Get metadata
         let metadata = match self.metadata().await {
@@ -552,8 +552,8 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // let token_out_fee = tokens_fee.token_out_fee.unwrap_or(Nat::from(0u8));
 
         //TODO: Remove hardcoded fees
-        let token0_fee = Nat::from(10_000u128); // For PANDA
-        let token1_fee = Nat::from(10_000u128); // For ICP
+        let token0_fee = get_token_fee(self.token0.clone()).await;
+        let token1_fee = get_token_fee(self.token1.clone()).await;
 
         // 3. Get user position
         let user_position = match self.get_user_position(position_id.clone()).await {

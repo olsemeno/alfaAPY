@@ -36,3 +36,7 @@ body {
   overflow: initial !important;
   top: 90px !important;
 }
+
+.Toastify__toast {
+  justify-content: start !important;
+}

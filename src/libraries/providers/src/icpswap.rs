@@ -28,10 +28,9 @@ pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
 pub const ICP_TOKEN_STANDARD: &str = "ICP";
 
 fn token_icpswap_format(token: &CanisterId) -> ICPSwapToken {
-    let standard = if token.to_text() == ICP_TOKEN_CANISTER_ID {
-        ICP_TOKEN_STANDARD.to_string()
-    } else {
-        ICRC2_TOKEN_STANDARD.to_string()
+    let standard = match token.to_text().as_str() {
+        ICP_TOKEN_CANISTER_ID => ICP_TOKEN_STANDARD.to_string(),
+        _ => ICRC2_TOKEN_STANDARD.to_string(),
     };
 
     ICPSwapToken {

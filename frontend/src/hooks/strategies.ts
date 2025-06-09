@@ -11,10 +11,11 @@ import { useAgent } from "@nfid/identitykit/react";
 
 export function useStrategies(user?: string) {
   const dispatch = useDispatch();
-  const agent = useAgent();
+  const agent = useAgent({ host: "https://ic0.app" });
 
   const {
     strategies: { data, status },
+    userStrategies: { data: userStrategies },
     balances: { data: balances, status: balancesStatus },
     service,
   } = useSelector((state) => state.strategies);
@@ -43,5 +44,24 @@ export function useStrategies(user?: string) {
     strategies: data,
     balances,
     service: service.data,
+    filterStrategies: (filter: string) =>
+      data?.filter(
+        (s) =>
+          s.name.toLowerCase().includes(filter.toLowerCase()) ||
+          s.description.toLowerCase().includes(filter.toLowerCase()) ||
+          s.pools.some((p) =>
+            p.token0.symbol.toLowerCase().includes(filter.toLowerCase())
+          )
+      ),
+    filterUserStrategies: (filter: string) =>
+      userStrategies?.filter(
+        (s) =>
+          s.name.toLowerCase().includes(filter.toLowerCase()) ||
+          s.description.toLowerCase().includes(filter.toLowerCase()) ||
+          s.pools.some((p) =>
+            p.token0.symbol.toLowerCase().includes(filter.toLowerCase())
+          )
+      ),
+    userStrategies,
   };
 }

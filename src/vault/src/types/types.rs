@@ -47,7 +47,7 @@ pub struct Icrc28TrustedOriginsResponse {
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct WithdrawArgs {
     pub ledger: CanisterId,
-    pub amount: Nat, // TODO: rename to shares
+    pub amount: Nat, // Rename to percentage
     pub strategy_id: StrategyId,
 }
 

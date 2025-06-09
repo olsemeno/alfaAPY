@@ -1,4 +1,4 @@
-import { Lending, Strategies, Layout } from "./components";
+import { Lending, Strategies, Layout, Swap, Profile } from "./components";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -8,6 +8,34 @@ function App() {
       <AnimatePresence mode="wait">
         <Layout>
           <Routes>
+            <Route
+              path="/swap"
+              element={
+                <motion.div
+                  key="1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Swap />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <motion.div
+                  key="1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Profile />
+                </motion.div>
+              }
+            />
             <Route
               path="/"
               element={

@@ -45,6 +45,7 @@ export class AgentWithRetry extends Agent.HttpAgent {
   }
 }
 
+//TODO fix deprecated
 /** We share the same agent across all actors, and replace the identity when identity connection events occur. */
 export const agent = new AgentWithRetry({ host: ic.host })
 

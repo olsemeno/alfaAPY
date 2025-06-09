@@ -10,7 +10,6 @@ use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 use std::collections::HashMap;
 
-
 impl_strategy_methods!(PandaTestStrategy);
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]

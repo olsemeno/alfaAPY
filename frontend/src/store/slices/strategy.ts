@@ -1,16 +1,17 @@
 import { createAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { Status } from "../types";
-import { PoolReply } from "../../services/strategies/idl/vault";
-import { StrategiesService } from "../../services/strategies/service";
 import { RootState } from "../store";
 import { Principal } from "@dfinity/principal";
 import { Agent } from "@dfinity/agent";
+import { poolStatsService } from "../../services";
+import { PoolMetrics } from "../../idl/pool_stats";
+import { userService } from "../../services/strategies/user-service";
 
 export const fetchPools = createAsyncThunk(
   "strategy/fetchPools",
-  async (pools_symbols: string[]) => {
-    const response = await StrategiesService.get_pool_data(pools_symbols);
-    return response as PoolReply[];
+  async () => {
+    const response = await poolStatsService.get_all_pool_metrics();
+    return response ;
   }
 );
 
@@ -34,7 +35,7 @@ export const deposit = createAsyncThunk(
     const strategiesService = (getState() as RootState).strategies.service.data;
     if (!strategiesService)
       return rejectWithValue("Strategies service not inited");
-    return await strategiesService.accept_investment(
+    return await userService.accept_investment(
       strategyId,
       ledger,
       amount,
@@ -50,6 +51,7 @@ export const withdraw = createAsyncThunk(
       amount,
       strategyId,
       ledger,
+      agent,
     }: {
       amount: bigint;
       strategyId: number;
@@ -62,7 +64,7 @@ export const withdraw = createAsyncThunk(
     const strategiesService = (getState() as RootState).strategies.service.data;
     if (!strategiesService)
       return rejectWithValue("Strategies service not inited");
-    return await strategiesService.withdraw(strategyId, ledger, amount);
+    return await userService.withdraw(strategyId, ledger, amount, agent);
   }
 );
 
@@ -85,7 +87,7 @@ const strategySlice = createSlice({
     fetchPools: {
       status: Status;
       error?: string;
-      pools: PoolReply[];
+      pools: [string, PoolMetrics][];
     };
     deposit: {
       status: Status;

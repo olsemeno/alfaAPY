@@ -10,24 +10,34 @@ export function TokensLogos({
   className?: string;
 }) {
   return (
-    <>
-      {logos.map((l, i) => (
-        <img
+    <div 
+      className="relative inline-flex" 
+      style={{ 
+        width: logos.length > 1 ? size + ((logos.length - 1) * (size / 1.7)) : size,
+        height: size 
+      }}
+    >
+      {logos.map((logo, i) => (
+        <div
+          key={i}
+          className="absolute"
           style={{
-            marginLeft: `${(size / 2) * i}px`,
-            marginTop: `${i ? -size : "0"}px`,
-            zIndex: i + 1,
+            left: `${(size / 1.7) * i}px`,
             width: size,
             height: size,
+            zIndex: logos.length - i,
           }}
+        >
+          <img
           className={clsx(
-            `relative rounded-[50%] border-2 border-black`,
+              "w-full h-full rounded-full border-2 border-black bg-white object-cover",
             className
           )}
-          key={i}
-          src={l}
+            src={logo}
+            alt={`Token logo ${i + 1}`}
         />
+        </div>
       ))}
-    </>
+    </div>
   );
 }

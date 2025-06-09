@@ -1,15 +1,44 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { StrategiesService } from "../../services/strategies/service";
-import { StrategyResponse } from "../../services/strategies/idl/vault";
-import { Agent } from "@dfinity/agent";
+import {
+  strategiesService,
+  StrategiesService,
+  Strategy,
+} from "../../services/strategies/strategy-service";
 import { Status } from "../types";
+import { Agent } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
+
+// Mock data for user balances
+// const MOCK_USER_BALANCES = {
+//   1: {
+//     strategy_id: 1,
+//     user_shares: 100,
+//     total_shares: 1000,
+//     initial_deposit: 1000,
+//   },
+// }
 
 export const fetchStrategies = createAsyncThunk(
   "strategies/fetch",
   async () => {
     try {
-      const response = await StrategiesService.get_strategies();
+      const response : Array<Strategy> = await strategiesService.getStrategies();
+      console.log("response", response);
+      return response;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+);
+
+export const fetchUserStrategies = createAsyncThunk(
+  "strategies/fetchUser",
+  async (user: Principal) => {
+    try {
+      console.log("user11111", user);
+      const response = await strategiesService.getUserStrategies(user);
+      console.log("user strategies", response);
+
       return response;
     } catch (e) {
       console.error(e);
@@ -19,37 +48,43 @@ export const fetchStrategies = createAsyncThunk(
 
 export const fetchStrategiesBalances = createAsyncThunk(
   "strategies/fetchBalances",
-  async ({ principal }: { principal: string }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  async (_params: any) => {
     try {
-      const balances: Array<{
-        strategy_id: number;
-        user_shares: number;
-        total_shares: number;
-        price: string;
-        usd_balance: number;
-        amount_0: number;
-        amount_1: number;
-      }> = await StrategiesService.get_user_strategies(
-        Principal.from(principal)
+      const balances = await strategiesService.getUserStrategies(
+        Principal.from(_params.principal)
       );
-      return balances.reduce(
+
+      const mappedBalances: Record<number, Strategy> = balances.reduce(
         (acc, value) => ({
           ...acc,
-          [value.strategy_id]: value,
+          [value.id]: value,
         }),
         {}
       );
+
+      // debugger;
+
+      // Using mock data for now
+      // return MOCK_USER_BALANCES;
+
+      return mappedBalances;
     } catch (e) {
       console.error(e);
     }
   }
 );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const initStrategies = createAsyncThunk(
   "strategies/init",
-  async (agent: Agent) => {
-    const response = await StrategiesService.build(agent);
-    return response;
+  async (_agent?: Agent) => {
+    // TODO: Uncomment when KongSwap is fixed
+    // const response = await StrategiesService.build(agent);
+    // return response;
+
+    // Return mock service for now
+    return strategiesService;
   }
 );
 
@@ -57,6 +92,9 @@ const strategiesSlice = createSlice({
   name: "strategies",
   initialState: {
     strategies: {
+      status: Status.IDLE,
+    },
+    userStrategies: {
       status: Status.IDLE,
     },
     service: {
@@ -68,7 +106,12 @@ const strategiesSlice = createSlice({
     },
   } as {
     strategies: {
-      data?: Array<StrategyResponse>;
+      data?: Array<Strategy>;
+      status: Status;
+      error?: string;
+    };
+    userStrategies: {
+      data?: Array<Strategy>;
       status: Status;
       error?: string;
     };
@@ -83,10 +126,11 @@ const strategiesSlice = createSlice({
         {
           user_shares: number;
           total_shares: number;
-          price: string;
-          usd_balance: number;
-          amount_0: number;
-          amount_1: number;
+          initial_deposit: number;
+          // price: string;
+          // usd_balance: number;
+          // amount_0: number;
+          // amount_1: number;
         }
       >;
       status: Status;
@@ -117,6 +161,17 @@ const strategiesSlice = createSlice({
       .addCase(fetchStrategies.rejected, (state, action) => {
         state.strategies.status = Status.FAILED;
         state.strategies.error = action.error.message;
+      })
+      .addCase(fetchUserStrategies.pending, (state) => {
+        state.userStrategies.status = Status.LOADING;
+      })
+      .addCase(fetchUserStrategies.fulfilled, (state, action) => {
+        state.userStrategies.status = Status.SUCCEEDED;
+        state.userStrategies.data = action.payload;
+      })
+      .addCase(fetchUserStrategies.rejected, (state, action) => {
+        state.userStrategies.status = Status.FAILED;
+        state.userStrategies.error = action.error.message;
       })
       .addCase(fetchStrategiesBalances.pending, (state) => {
         state.balances.status = Status.LOADING;

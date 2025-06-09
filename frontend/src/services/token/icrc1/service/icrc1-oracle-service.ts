@@ -6,6 +6,7 @@ import { Principal } from "@dfinity/principal";
 import { Icrc1Pair } from "../icrc1-pair/impl/Icrc1-pair";
 import { BigNumber } from "bignumber.js";
 import { exchangeRateService } from "../../../exchange/exchange-rate";
+import { integrationCache } from "../../../cache";
 
 export const icrc1OracleActor = createActor<ICRC1Oracle>(
   "zjahs-wyaaa-aaaal-qjuia-cai",
@@ -66,14 +67,22 @@ export class ICRC1OracleService {
     }
   }
 
-  async requestNetworkForCanisters() {
-    return await icrc1OracleActor.count_icrc1_canisters().then((canisters) => {
+  //TODO add cache
+  async requestNetworkForCanisters(): Promise<ICRC1[]> {
+    const cacheKey = 'requestNetworkForCanisters';
+    const cached = await integrationCache.getItem<ICRC1[]>(cacheKey);
+    if (cached) return cached;
+
+    const result = await icrc1OracleActor.count_icrc1_canisters().then((canisters) => {
       return Promise.all(
         Array.from({ length: Math.ceil(Number(canisters) / 25) }, (_, i) =>
           icrc1OracleActor.get_icrc1_paginated(i * 25, 25)
         )
       ).then((res) => res.flat());
     });
+
+    await integrationCache.setItem(cacheKey, result, { ttl: 300 });
+    return result;
   }
 }
 

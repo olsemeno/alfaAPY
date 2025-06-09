@@ -12,15 +12,8 @@
 
 # Alfa APY
 
-### ⚠️ Important Notice
-
-> **🚧 Some functionality may not work temporarily**\
-> This is due to recent changes in **Kongswap DEX canister interfaces** made after our "BUIDL BATTLE" hackathon submission.\
-> We are actively working on fixing this and will address it after the jury review.\
-> Thanks for your patience! 🙌
-
-
 **Introduction**: https://youtu.be/ldqRNLbQflI
+**Current progress**: https://www.youtube.com/watch?v=Vb0YfFJg770
 
 The [AlfaAPY](https://47r3x-paaaa-aaaao-qj6ha-cai.icp0.io/) is the first yield optimization DeFi protocol built on the Internet Computer Protocol (ICP) utilizing **ckBTC**, similar to Yearn Finance on Ethereum. The protocol automatically maximizes returns for users by finding the highest-yielding liquidity pools and dynamically reallocating assets to optimize yield.
 

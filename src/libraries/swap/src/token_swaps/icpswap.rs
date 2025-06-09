@@ -10,6 +10,7 @@ use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use types::liquidity::TokensFee;
 use utils::util::nat_to_u128;
+use utils::token_fees::get_token_fee;
 
 use crate::token_swaps::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 
@@ -154,8 +155,8 @@ impl SwapClient for ICPSwapClient {
         // let token1_fee = tokens_fee.token1_fee.unwrap_or(Nat::from(0u8));
 
         //TODO: Remove hardcoded fees
-        let token0_fee = Nat::from(10_000u128); // For PANDA
-        let token1_fee = Nat::from(10_000u128); // For ICP
+        let token0_fee = get_token_fee(self.token0.clone()).await;
+        let token1_fee = get_token_fee(self.token1.clone()).await;
 
         // 1. Deposit
         let deposited_amount = match self.deposit_from(

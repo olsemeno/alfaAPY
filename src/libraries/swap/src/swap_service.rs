@@ -45,7 +45,7 @@ pub async fn quote_swap_icrc2_optimal(
     amount: u128,
 ) -> QuoteResult {
     let kong_quote = quote_swap_kongswap(input_token.clone(), output_token.clone(), amount).await;
-    let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
+    // let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
 
     // Return the quote with the highest amount_out
     // std::cmp::max_by(
