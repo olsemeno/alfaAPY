@@ -1,19 +1,27 @@
 use types::exchange_id::ExchangeId;
 use types::CanisterId;
 
-use serde_json;
-use hex;
-
 pub fn generate_pool_id(token0: &CanisterId, token1: &CanisterId, provider: &ExchangeId) -> String {
-    let keys = (token0.to_text(), token1.to_text(), provider);
-    let json = serde_json::to_string(&keys).unwrap();
-    hex::encode(json)
+    format!("{}_{}_{}", provider, token0.to_text(), token1.to_text())
 }
 
-pub fn decode_pool_id(hex_str: &str) -> Option<(CanisterId, CanisterId, ExchangeId)> {
-    let bytes = hex::decode(hex_str).ok()?;
-    let json_str = std::str::from_utf8(&bytes).ok()?;
-    serde_json::from_str(json_str).ok()
+pub fn decode_pool_id(pool_id: &str) -> Option<(CanisterId, CanisterId, ExchangeId)> {
+    let parts: Vec<&str> = pool_id.split('_').collect();
+
+    if parts.len() != 3 {
+        return None;
+    }
+
+    let provider = match parts[0] {
+        "ICPSwap" => ExchangeId::ICPSwap,
+        "Sonic" => ExchangeId::Sonic,
+        "KongSwap" => ExchangeId::KongSwap,
+        _ => return None,
+    };
+    let token0 = CanisterId::from_text(parts[1]).ok()?;
+    let token1 = CanisterId::from_text(parts[2]).ok()?;
+
+    Some((token0, token1, provider))
 }
 
 #[cfg(test)]
@@ -28,10 +36,10 @@ mod tests {
         let provider = ExchangeId::KongSwap;
         let pool_id = generate_pool_id(&token0, &token1, &provider);
 
-        assert_eq!(pool_id, "5b7b2273796d626f6c223a2250414e4445222c226c6564676572223a2264727579672d74796161612d61616161712d61616374712d636169227d2c7b2273796d626f6c223a22494350222c226c6564676572223a2272796a6c332d74796161612d61616161612d61616162612d636169227d2c224b6f6e6753776170225d");
+        assert_eq!(pool_id, "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai");
 
         let (decoded_token0, decoded_token1, decoded_provider) =
-        decode_pool_id(&pool_id).expect("Failed to decode pool id");
+            decode_pool_id(&pool_id).expect("Failed to decode pool id");
 
         assert_eq!(token0, decoded_token0);
         assert_eq!(token1, decoded_token1);
