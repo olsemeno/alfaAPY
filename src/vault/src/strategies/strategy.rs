@@ -15,7 +15,7 @@ use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
 
-use crate::enums::{SystemEventParams, UserEventParams};
+use crate::enums::{ErrorEventParams, SystemEventParams, UserEventParams};
 use crate::events::event_service;
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
@@ -103,10 +103,21 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             if let Some(pool) = best_apy_pool {
                 self.set_current_pool(Some(pool));
             } else {
+                event_service::create_error_event(
+                    ErrorEventParams::BusinessLogic {
+                        context: "Strategy::deposit".to_string(),
+                        message: "No pool found to deposit".to_string(),
+                        extra: Some(HashMap::from([
+                            ("strategy_id".to_string(), self.get_id().to_string()),
+                        ])),
+                    },
+                    Some(investor),
+                );
                 trap("Strategy::deposit: No pool found to deposit");
             }
         }
 
+        // TODO: remove this after testing
         save_strategy(self.clone_self());
 
         if let Some(ref current_pool) = self.get_current_pool() {
@@ -161,6 +172,17 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 request_id: add_liquidity_response.request_id,
             }
         } else {
+            event_service::create_error_event(
+                ErrorEventParams::BusinessLogic {
+                    context: "Strategy::deposit".to_string(),
+                    message: "No current pool found to deposit".to_string(),
+                    extra: Some(HashMap::from([
+                        ("strategy_id".to_string(), self.get_id().to_string()),
+                    ])),
+                },
+                Some(investor),
+            );
+
             trap("Strategy::deposit: No current pool found to deposit");
         }
     }
@@ -186,25 +208,54 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 6. Updates total shares, user shares and initial deposit
     /// 7. Saves updated strategy state
     ///
-    /// TODO: Rename shares to percentage
+    /// TODO: Rename `shares` to `percentage`
     async fn withdraw(&mut self, mut shares: Nat) -> WithdrawResponse {
         let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
-
-        // TODO: move to block below
-        let percentage = shares;
         let user_shares = self.get_user_shares_by_principal(investor.clone());
-        shares = user_shares * percentage / Nat::from(100u64); // TODO: fix this
+        let current_pool = self.get_current_pool().clone();
 
-        // Check if user has enough shares
-        if let Some(user_shares) = self.get_user_shares().get(&investor) {
-            if shares > *user_shares {
-                trap("Strategy::withdraw: Not sufficient shares for user".into());
-            }
-        } else {
+        let percentage = shares; // TODO: Fix naming
+        shares = user_shares.clone() * percentage.clone() / Nat::from(100u64); // TODO: Check this operation
+
+
+        if user_shares == Nat::from(0u8) {
+            event_service::create_error_event(
+                ErrorEventParams::BusinessLogic {
+                    context: "Strategy::withdraw".to_string(),
+                    message: "No shares found for user".to_string(),
+                    extra: Some(HashMap::from([
+                        ("strategy_id".to_string(), self.get_id().to_string()),
+                        ("current_pool_id".to_string(), current_pool.clone().unwrap().get_id()),
+                        ("percentage".to_string(), percentage.to_string()),
+                        ("user_shares".to_string(), user_shares.to_string()),
+                        ("shares".to_string(), shares.to_string()),
+                    ])),
+                },
+                Some(investor),
+            );
             trap("Strategy::withdraw: No shares found for user".into());
         }
 
-        if let Some(current_pool) = self.get_current_pool() {
+        // Check if user has enough shares
+        if shares > user_shares {
+            event_service::create_error_event(
+                ErrorEventParams::BusinessLogic {
+                    context: "Strategy::withdraw".to_string(),
+                    message: "Not sufficient shares for user".to_string(),
+                    extra: Some(HashMap::from([
+                        ("strategy_id".to_string(), self.get_id().to_string()),
+                        ("current_pool_id".to_string(), current_pool.clone().unwrap().get_id()),
+                        ("percentage".to_string(), percentage.clone().to_string()),
+                        ("user_shares".to_string(), user_shares.to_string()),
+                        ("shares".to_string(), shares.to_string()),
+                    ])),
+                },
+                Some(investor),
+            );
+            trap("Strategy::withdraw: Not sufficient shares for user".into());
+        }
+
+        if let Some(current_pool) = current_pool {
             let token0 = current_pool.token0.clone();
             let token1 = current_pool.token1.clone();
 
@@ -240,16 +291,43 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     memo: None,
                     amount: amount_0_to_withdraw.clone(),
                 },
-            )
-            .await;
+            ).await;
 
             match transfer_result {
                 Ok(Ok(x)) => x,
-                Err(x) => {
-                    trap(format!("Strategy::withdraw: Transfer to user error 1: {:?}", x.1).as_str());
+                Err(message) => {
+                    event_service::create_error_event(
+                        ErrorEventParams::ExternalService {
+                            context: "Strategy::withdraw".to_string(),
+                            message: format!("Transfer to user error 1: {:?}", message),
+                            service: "icrc1_transfer".to_string(),
+                            extra: Some(HashMap::from([
+                                ("strategy_id".to_string(), self.get_id().to_string()),
+                                ("token0".to_string(), token0.to_string()),
+                                ("amount".to_string(), amount_0_to_withdraw.to_string()),
+                            ])),
+                        },
+                        Some(investor),
+                    );
+
+                    trap(format!("Strategy::withdraw: Transfer to user error 1: {:?}", message).as_str());
                 }
-                Ok(Err(x)) => {
-                    trap(format!("Strategy::withdraw: Transfer to user error 2: {:?}", x).as_str());
+                Ok(Err(message)) => {
+                    event_service::create_error_event(
+                        ErrorEventParams::ExternalService {
+                            context: "Strategy::withdraw".to_string(),
+                            message: format!("Transfer to user error 2: {:?}", message),
+                            service: "icrc1_transfer".to_string(),
+                            extra: Some(HashMap::from([
+                                ("strategy_id".to_string(), self.get_id().to_string()),
+                                ("token0".to_string(), token0.to_string()),
+                                ("amount".to_string(), amount_0_to_withdraw.to_string()),
+                            ])),
+                        },
+                        Some(investor),
+                    );
+
+                    trap(format!("Strategy::withdraw: Transfer to user error 2: {:?}", message).as_str());
                 }
             };
 
@@ -301,6 +379,17 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 current_shares: new_user_shares.clone(),
             }
         } else {
+            event_service::create_error_event(
+                ErrorEventParams::BusinessLogic {
+                    context: "Strategy::withdraw".to_string(),
+                    message: "No current pool found in strategy".to_string(),
+                    extra: Some(HashMap::from([
+                        ("strategy_id".to_string(), self.get_id().to_string()),
+                    ])),
+                },
+                Some(investor),
+            );
+
             trap("Strategy::withdraw: No current pool found in strategy");
         }
     }

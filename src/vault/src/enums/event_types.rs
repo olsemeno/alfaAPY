@@ -1,4 +1,5 @@
 use candid::{CandidType, Deserialize, Nat, Principal};
+use std::collections::HashMap;
 use types::CanisterId;
 use serde::Serialize;
 use types::exchange_id::ExchangeId;
@@ -94,43 +95,46 @@ impl SystemEventParams {
     }
 }
 
-
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum ErrorEventParams {
-    ExternalProvider {
+    ExternalService {
         context: String,
         message: String,
-        provider: ExchangeId,
+        extra: Option<HashMap<String, String>>,
+        service: String,
     },
     BusinessLogic {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
     Validation {
         context: String,
         message: String,
-        field: Option<String>,
-        value: Option<String>,
+        extra: Option<HashMap<String, String>>,
     },
     Access {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
     Infrastructure {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
         component: Option<String>,
     },
     Unknown {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
 }
 
 impl ErrorEventParams {
     pub fn event_type(&self) -> ErrorEventType {
         match self {
-            ErrorEventParams::ExternalProvider { .. } => ErrorEventType::ExternalService,
+            ErrorEventParams::ExternalService { .. } => ErrorEventType::ExternalService,
             ErrorEventParams::BusinessLogic { .. } => ErrorEventType::BusinessLogic,
             ErrorEventParams::Validation { .. } => ErrorEventType::Validation,
             ErrorEventParams::Access { .. } => ErrorEventType::Access,
@@ -141,34 +145,44 @@ impl ErrorEventParams {
 
     pub fn details(&self) -> ErrorEventDetails {
         match self {
-            ErrorEventParams::ExternalProvider { context, message, provider } => ErrorEventDetails::ExternalProvider {
-                context: context.clone(),
-                message: message.clone(),
-                provider: provider.clone(),
-            },
-            ErrorEventParams::BusinessLogic { context, message } => ErrorEventDetails::BusinessLogic {
-                context: context.clone(),
-                message: message.clone(),
-            },
-            ErrorEventParams::Validation { context, message, field, value } => ErrorEventDetails::Validation {
-                context: context.clone(),
-                message: message.clone(),
-                field: field.clone(),
-                value: value.clone(),
-            },
-            ErrorEventParams::Access { context, message } => ErrorEventDetails::Access {
-                context: context.clone(),
-                message: message.clone(),
-            },
-            ErrorEventParams::Infrastructure { context, message, component } => ErrorEventDetails::Infrastructure {
-                context: context.clone(),
-                message: message.clone(),
-                component: component.clone(),
-            },
-            ErrorEventParams::Unknown { context, message } => ErrorEventDetails::Unknown {
-                context: context.clone(),
-                message: message.clone(),
-            },
+            ErrorEventParams::ExternalService { context, message, service, extra } =>
+                ErrorEventDetails::ExternalService {
+                    context: context.clone(),
+                    message: message.clone(),
+                    service: service.clone(),
+                    extra: extra.clone(),
+                },
+            ErrorEventParams::BusinessLogic { context, message, extra } =>
+                ErrorEventDetails::BusinessLogic {
+                    context: context.clone(),
+                    message: message.clone(),
+                    extra: extra.clone(),
+                },
+            ErrorEventParams::Validation { context, message, extra } =>
+                ErrorEventDetails::Validation {
+                    context: context.clone(),
+                    message: message.clone(),
+                    extra: extra.clone(),
+                },
+            ErrorEventParams::Access { context, message, extra } =>
+                ErrorEventDetails::Access {
+                    context: context.clone(),
+                    message: message.clone(),
+                    extra: extra.clone(),
+                },
+            ErrorEventParams::Infrastructure { context, message, component, extra } =>
+                ErrorEventDetails::Infrastructure {
+                    context: context.clone(),
+                    message: message.clone(),
+                    extra: extra.clone(),
+                    component: component.clone(),
+                },
+            ErrorEventParams::Unknown { context, message, extra } =>
+                ErrorEventDetails::Unknown {
+                    context: context.clone(),
+                    message: message.clone(),
+                    extra: extra.clone(),
+                },
         }
     }
 }
@@ -237,32 +251,36 @@ pub enum SystemEventDetails {
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum ErrorEventDetails {
-    ExternalProvider {
+    ExternalService {
         context: String,
         message: String,
-        provider: ExchangeId,
+        extra: Option<HashMap<String, String>>,
+        service: String,
     },
     BusinessLogic {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
     Validation {
         context: String,
         message: String,
-        field: Option<String>,
-        value: Option<String>,
+        extra: Option<HashMap<String, String>>,
     },
     Access {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
     Infrastructure {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
         component: Option<String>,
     },
     Unknown {
         context: String,
         message: String,
+        extra: Option<HashMap<String, String>>,
     },
 }
