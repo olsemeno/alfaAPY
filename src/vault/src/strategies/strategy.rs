@@ -148,7 +148,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             event_service::create_user_event(
                 UserEventParams::AddLiquidity {
                     amount: amount.clone(),
-                    token: current_pool.token0,
+                    pool_id: current_pool.get_id(),
+                    token0: current_pool.token0,
                 },
                 investor,
             );
@@ -289,7 +290,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             event_service::create_user_event(
                 UserEventParams::RemoveLiquidity {
                     amount: amount_0_to_withdraw.clone(),
-                    token: token0,
+                    pool_id: current_pool.get_id(),
+                    token0: token0,
                 },
                 investor,
             );
@@ -387,8 +389,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             // Create event for rebalance
             event_service::create_system_event(
                 SystemEventParams::Rebalance {
-                    old_pool: current_pool.get_id(),
-                    new_pool: max_apy_pool.get_id(),
+                    previous_pool_id: current_pool.get_id(),
+                    new_pool_id: max_apy_pool.get_id(),
                 },
             );
 

@@ -3,7 +3,7 @@ use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 
 use types::CanisterId;
-use crate::events::event::{UserEvent, SystemEvent};
+use crate::events::event::{UserEvent, SystemEvent, ErrorEvent};
 use crate::pools::pool::Pool;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
@@ -82,4 +82,5 @@ pub type StrategyId = u16;
 pub enum EventResponse {
     User(UserEvent),
     System(SystemEvent),
+    Error(ErrorEvent),
 }
