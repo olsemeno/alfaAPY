@@ -3,8 +3,7 @@ pub mod liquidity;
 mod repository;
 mod user;
 mod types;
-mod events;
-mod enums;
+mod event_logs;
 mod pools;
 mod pool_stats;
 
@@ -22,8 +21,8 @@ use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
-use crate::events::event_service;
-use crate::events::event::{SystemEvent, UserEvent};
+use crate::event_logs::event_log_service;
+use crate::event_logs::event_log::EventLog;
 use crate::types::types::{
     AcceptInvestmentArgs,
     DepositResponse,
@@ -127,13 +126,8 @@ async fn reset_strategy(strategy_id: u16) {
 // =============== Events ===============
 
 #[update]
-async fn get_system_events(offset: u64, limit: u64) -> Vec<SystemEvent> {
-    event_service::get_system_events(offset as usize, limit as usize)
-}
-
-#[update]
-async fn get_user_events(user: Principal, offset: u64, limit: u64) -> Vec<UserEvent> {
-    event_service::get_user_events(user, offset as usize, limit as usize)
+async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
+    event_log_service::get_event_logs(offset as usize, limit as usize)
 }
 
 // =============== Strategies ===============

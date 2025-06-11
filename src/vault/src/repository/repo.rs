@@ -5,17 +5,14 @@ use serde::Serialize;
 use crate::{Conf, CONF};
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::{StrategyCandid, Candid as StrategyToCandid};
-use crate::events::event::IEvent;
-use crate::events::event_candid::{EventCandid, Candid as EventToCandid};
 use crate::repository::strategies_repo::STRATEGIES;
-use crate::repository::events_repo::USER_EVENTS;
-use crate::repository::events_repo::SYSTEM_EVENTS;
+use crate::repository::events_repo::EVENT_LOGS;
+use crate::event_logs::event_log::EventLog;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 struct Memory {
     pub strategies: Vec<StrategyCandid>,
-    pub user_events: Vec<EventCandid>,
-    pub system_events: Vec<EventCandid>,
+    pub event_logs: Vec<EventLog>,
     pub config: Conf,
 }
 
@@ -28,17 +25,13 @@ pub fn stable_save() {
         strategies.borrow().iter().map(|strategy| strategy.to_candid()).collect()
     });
 
-    let user_events: Vec<EventCandid> = USER_EVENTS.with(|events| {
-        events.borrow().iter().map(|event| event.to_candid()).collect()
-    });
-    let system_events: Vec<EventCandid> = SYSTEM_EVENTS.with(|events| {
-        events.borrow().iter().map(|event| event.to_candid()).collect()
+    let event_logs: Vec<EventLog> = EVENT_LOGS.with(|events| {
+        events.borrow().clone()
     });
 
     let memory = Memory {
         strategies,
-        user_events,
-        system_events,
+        event_logs,
         config: conf,
     };
 
@@ -65,25 +58,11 @@ pub fn stable_restore() {
         utrs.replace(strategies)
     });
 
-    // UserEvents
-    let user_events: Vec<Box<dyn IEvent>> = memory.user_events
-        .into_iter()
-        .map(|event| event.to_event())
-        .collect();
+    // EventLogs
+    let event_logs: Vec<EventLog> = memory.event_logs;
 
-    USER_EVENTS.with(|events| {
+    EVENT_LOGS.with(|events| {
         events.borrow_mut();
-        events.replace(user_events)
-    });
-
-    // SystemEvents
-    let system_events: Vec<Box<dyn IEvent>> = memory.system_events
-        .into_iter()
-        .map(|event| event.to_event())
-        .collect();
-
-    SYSTEM_EVENTS.with(|events| {
-        events.borrow_mut();
-        events.replace(system_events)
+        events.replace(event_logs)
     });
 }

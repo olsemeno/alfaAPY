@@ -13,6 +13,169 @@ type DepositResponse = record {
   amount : nat;
 };
 
+type EventLog = record {
+  id : nat64;
+  user : opt principal;
+  error : opt EventLogError;
+  timestamp : nat64;
+  correlation_id : text;
+  event_type : EventLogType;
+  params : EventLogParams;
+};
+
+type EventLogError = record {
+  context : text;
+  kind : EventLogErrorKind;
+  extra : opt vec record { text; text };
+  message : text;
+};
+
+type EventLogErrorKind = variant {
+  Infrastructure;
+  Access;
+  Unknown;
+  BusinessLogic;
+  ExternalService;
+  Validation;
+};
+
+type EventLogParams = variant {
+  ExternalCallCompleted : record {
+    "service" : text;
+    result : vec record { text; text };
+    method : text;
+    params : vec record { text; text };
+  };
+  StrategyWithdrawCompleted : record {
+    shares : nat;
+    strategy_id : text;
+    amount0 : nat;
+    pool_id : opt text;
+  };
+  StrategyWithdrawStarted : record {
+    shares : nat;
+    strategy_id : text;
+    pool_id : opt text;
+  };
+  AddLiquidityToPoolFailed : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  AddLiquidityToPoolCompleted : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  ExternalCallFailed : record {
+    "service" : text;
+    method : text;
+    error : text;
+    params : vec record { text; text };
+  };
+  SwapTokenFailed : record {
+    token_in : principal;
+    amount_in : nat;
+    token_out : principal;
+    pool_id : text;
+  };
+  RemoveLiquidityFromPoolStarted : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  AddLiquidityToPoolStarted : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  StrategyDepositStarted : record {
+    strategy_id : text;
+    amount0 : nat;
+    pool_id : opt text;
+  };
+  StrategyDepositCompleted : record {
+    strategy_id : text;
+    amount0 : nat;
+    pool_id : opt text;
+  };
+  StrategyRebalanceFailed : record {
+    new_pool_id : opt text;
+    strategy_id : text;
+    previous_pool_id : opt text;
+  };
+  RemoveLiquidityFromPoolFailed : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  SwapTokenCompleted : record {
+    token_in : principal;
+    amount_out : nat;
+    amount_in : nat;
+    token_out : principal;
+  };
+  RemoveLiquidityFromPoolCompleted : record {
+    amount0 : nat;
+    amount1 : nat;
+    pool_id : text;
+  };
+  StrategyRebalanceStarted : record {
+    strategy_id : text;
+    previous_pool_id : opt text;
+  };
+  SwapTokenStarted : record {
+    token_in : principal;
+    amount_in : nat;
+    token_out : principal;
+    pool_id : text;
+  };
+  ExternalCallStarted : record {
+    "service" : text;
+    method : text;
+    params : vec record { text; text };
+  };
+  StrategyWithdrawFailed : record {
+    shares : nat;
+    strategy_id : text;
+    pool_id : opt text;
+  };
+  StrategyRebalanceCompleted : record {
+    new_pool_id : opt text;
+    strategy_id : text;
+    previous_pool_id : opt text;
+  };
+  StrategyDepositFailed : record {
+    strategy_id : text;
+    amount0 : nat;
+    pool_id : opt text;
+  };
+};
+
+type EventLogType = variant {
+  ExternalCallCompleted;
+  StrategyWithdrawCompleted;
+  StrategyWithdrawStarted;
+  AddLiquidityToPoolFailed;
+  AddLiquidityToPoolCompleted;
+  ExternalCallFailed;
+  SwapTokenFailed;
+  RemoveLiquidityFromPoolStarted;
+  AddLiquidityToPoolStarted;
+  StrategyDepositStarted;
+  StrategyDepositCompleted;
+  StrategyRebalanceFailed;
+  RemoveLiquidityFromPoolFailed;
+  SwapTokenCompleted;
+  RemoveLiquidityFromPoolCompleted;
+  StrategyRebalanceStarted;
+  SwapTokenStarted;
+  ExternalCallStarted;
+  StrategyWithdrawFailed;
+  StrategyRebalanceCompleted;
+  StrategyDepositFailed;
+};
+
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
 type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
@@ -38,35 +201,6 @@ type StrategyResponse = record {
 
 type SupportedStandard = record { url : text; name : text };
 
-type SystemEvent = record {
-  id : nat64;
-  timestamp : nat64;
-  details : SystemEventDetails;
-  event_type : SystemEventType;
-};
-
-type SystemEventDetails = variant {
-  Swap;
-  Rebalance : record { old_pool : text; new_pool : text };
-};
-
-type SystemEventType = variant { Swap; Rebalance };
-
-type UserEvent = record {
-  id : nat64;
-  user : principal;
-  timestamp : nat64;
-  details : UserEventDetails;
-  event_type : UserEventType;
-};
-
-type UserEventDetails = variant {
-  AddLiquidity : record { token : principal; amount : nat };
-  RemoveLiquidity : record { token : principal; amount : nat };
-};
-
-type UserEventType = variant { AddLiquidity; RemoveLiquidity };
-
 type UserStrategyResponse = record {
   strategy_current_pool : Pool;
   total_shares : nat;
@@ -88,9 +222,8 @@ type WithdrawResponse = record { current_shares : nat; amount : nat };
 service : (opt Conf) -> {
   accept_investment : (AcceptInvestmentArgs) -> (DepositResponse);
   get_config : () -> (Conf) query;
+  get_event_logs : (nat64, nat64) -> (vec EventLog);
   get_strategies : () -> (vec StrategyResponse) query;
-  get_system_events : (nat64, nat64) -> (vec SystemEvent);
-  get_user_events : (principal, nat64, nat64) -> (vec UserEvent);
   icpswap_withdraw : (principal, nat, nat) -> (nat);
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
