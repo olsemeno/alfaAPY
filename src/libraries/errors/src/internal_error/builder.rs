@@ -2,9 +2,7 @@ use candid::{CandidType, Deserialize};
 use std::collections::HashMap;
 use serde::Serialize;
 
-use crate::errors::internal_error::error::{InternalError, InternalErrorKind};
-
-// EventLogError Builder
+use crate::internal_error::error::{InternalError, InternalErrorKind};
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct InternalErrorBuilder {

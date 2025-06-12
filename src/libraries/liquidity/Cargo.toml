@@ -5,7 +5,6 @@ edition = "2018"
 
 [dependencies]
 candid = "0.10.13"
-types = { path = "../types" }
 async-trait = "0.1.87"
 num-traits = "0.2"
 ic-cdk = "0.17.1"
@@ -21,3 +20,4 @@ kongswap_canister = { path = "../../external_canisters/kongswap/api" }
 providers = { path = "../providers" }
 utils = { path = "../utils" }
 swap = { path = "../swap" }
+types = { path = "../types" }

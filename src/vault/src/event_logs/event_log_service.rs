@@ -1,7 +1,8 @@
 use candid::Principal;
 
+use errors::internal_error::error::InternalError;
+
 use crate::event_logs::event_log::{EventLog, EventLogParams};
-use crate::errors::internal_error::error::InternalError;
 use crate::repository::events_repo;
 
 pub fn create_event_log(

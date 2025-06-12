@@ -1,8 +1,9 @@
 use candid::Principal;
 use ic_cdk::api::time;
 
+use errors::internal_error::error::InternalError;
+
 use crate::event_logs::event_log::{EventLog, EventLogType, EventLogParams};
-use crate::errors::internal_error::error::InternalError;
 use crate::repository::events_repo;
 
 impl EventLog {

@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use derive_more::Display;
 
-use crate::errors::internal_error::error::InternalErrorKind;
+use crate::internal_error::error::InternalErrorKind;
 
 #[derive(CandidType, Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, Display)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]

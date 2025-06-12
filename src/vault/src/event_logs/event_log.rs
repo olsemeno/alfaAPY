@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use types::CanisterId;
 
-use crate::errors::internal_error::error::InternalError;
+use errors::internal_error::error::InternalError;
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct EventLog {

@@ -25,7 +25,8 @@ members = [
     "src/libraries/utils",
     "src/libraries/liquidity",
     "src/libraries/providers",
-    "src/libraries/swap"
+    "src/libraries/swap",
+    "src/libraries/errors"
 ]
 
 

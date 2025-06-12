@@ -6,7 +6,6 @@ mod types;
 mod event_logs;
 mod pools;
 mod pool_stats;
-mod errors;
 
 use serde::Serialize;
 use std::cell::RefCell;
@@ -17,6 +16,8 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
 use providers::{icpswap as icpswap_provider};
 use ::types::CanisterId;
+use errors::response_error::error::ResponseError;
+use errors::response_error::builder::ResponseErrorBuilder;
 
 use crate::repository::repo::{stable_restore, stable_save};
 use crate::repository::strategies_repo;
@@ -25,8 +26,6 @@ use crate::user::user_service::accept_deposit;
 use crate::event_logs::event_log_service;
 use crate::event_logs::event_log::EventLog;
 use crate::strategies::strategy::IStrategy;
-use crate::errors::response_error::error::ResponseError;
-use crate::errors::response_error::builder::ResponseErrorBuilder;
 use crate::types::types::*;
 
 thread_local! {

@@ -15,10 +15,10 @@ use utils::util::nat_to_f64;
 use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
+use errors::internal_error::builder::InternalErrorBuilder;
+use errors::internal_error::error::InternalError;
 
 use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
-use crate::errors::internal_error::builder::InternalErrorBuilder;
-use crate::errors::internal_error::error::InternalError;
 use crate::event_logs::event_log_service;
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
