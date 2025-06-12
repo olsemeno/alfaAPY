@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use candid::{Nat, Principal};
-use ic_cdk::{caller, trap};
+use ic_cdk::caller;
 use icrc_ledger_canister_c2c_client::icrc1_transfer;
 use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
@@ -23,7 +23,7 @@ use crate::event_logs::event_log_service;
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+use crate::types::types::{StrategyDepositResponse, StrategyRebalanceResponse, StrategyResponse, StrategyWithdrawResponse};
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool,
     get_pools_data,
@@ -71,7 +71,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///
     /// # Returns
     ///
-    /// A `DepositResponse` struct containing the following fields:
+    /// A `StrategyDepositResponse` struct containing the following fields:
     /// - `amount`: The amount of tokens deposited
     /// - `shares`: The number of shares received
     /// - `tx_id`: The transaction ID (always 0 for this implementation)
@@ -88,7 +88,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 6. Adds liquidity to the pool
     /// 7. Saves the updated strategy state
     ///
-    async fn deposit(&mut self, investor: Principal, amount: Nat) -> Result<DepositResponse, InternalError> {
+    async fn deposit(&mut self, investor: Principal, amount: Nat) -> Result<StrategyDepositResponse, InternalError> {
         let correlation_id = "1".to_string(); // Uuid::new_v4().to_string();
         let pools_data = get_pools_data(self.get_pools()).await;
 
@@ -184,7 +184,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             );
             // ========== Event log end ==========
 
-            Ok(DepositResponse {
+            Ok(StrategyDepositResponse {
                 amount: amount,
                 shares: self.get_user_shares().get(&investor).unwrap().clone(),
                 tx_id: 0,
@@ -223,7 +223,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///
     /// # Returns
     ///
-    /// * `WithdrawResponse` - Contains the amount of tokens withdrawn and remaining shares
+    /// * `StrategyWithdrawResponse` - Contains the amount of tokens withdrawn and remaining shares
     ///
     /// # Details
     ///
@@ -237,7 +237,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     /// TODO: Rename `shares` to `percentage`
-    async fn withdraw(&mut self, mut shares: Nat) -> Result<WithdrawResponse, InternalError> {
+    async fn withdraw(&mut self, mut shares: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
         let correlation_id = "2".to_string(); //Uuid::new_v4().to_string();
         let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
         let user_shares = self.get_user_shares_by_principal(investor.clone());
@@ -450,7 +450,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             );
             // ========== Event log end ==========
 
-            Ok(WithdrawResponse {
+            Ok(StrategyWithdrawResponse {
                 amount: amount_0_to_withdraw,
                 current_shares: new_user_shares.clone(),
             })
@@ -493,10 +493,10 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///
     /// # Returns
     ///
-    /// * `RebalanceResponse` - Contains:
+    /// * `StrategyRebalanceResponse` - Contains:
     ///   * `pool` - The pool being used after rebalancing
     ///
-    async fn rebalance(&mut self) -> Result<RebalanceResponse, InternalError> {
+    async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
         let correlation_id = "3".to_string(); // Uuid::new_v4().to_string();
         let pools_data = get_pools_data(self.get_pools()).await;
         let mut max_apy = 0;
@@ -513,7 +513,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         let current_pool = self.get_current_pool();
 
         if max_apy_pool.is_none() {
-            return Ok(RebalanceResponse {
+            return Ok(StrategyRebalanceResponse {
                 previous_pool: current_pool.clone().unwrap(),
                 current_pool: current_pool.clone().unwrap(),
                 is_rebalanced: false,
@@ -525,7 +525,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if let Some(current_pool) = &current_pool {
              // If current pool is the same as max APY pool, return
             if current_pool.is_same_pool(&max_apy_pool) {
-                return Ok(RebalanceResponse {
+                return Ok(StrategyRebalanceResponse {
                     previous_pool: current_pool.clone(),
                     current_pool: current_pool.clone(),
                     is_rebalanced: false,
@@ -579,7 +579,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             // Update current pool
             self.set_current_pool(Some(max_apy_pool));
 
-            Ok(RebalanceResponse {
+            Ok(StrategyRebalanceResponse {
                 previous_pool: current_pool.clone(),
                 current_pool: self.get_current_pool().unwrap(),
                 is_rebalanced: true,

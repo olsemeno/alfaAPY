@@ -1,42 +1,13 @@
-type AcceptInvestmentArgs = record {
-  strategy_id : nat16;
-  ledger : principal;
-  amount : nat;
-};
-
 type Conf = record { controllers : opt vec principal };
-
-type DepositResponse = record {
-  request_id : nat64;
-  tx_id : nat64;
-  shares : nat;
-  amount : nat;
-};
 
 type EventLog = record {
   id : nat64;
   user : opt principal;
-  error : opt EventLogError;
+  error : opt InternalError;
   timestamp : nat64;
   correlation_id : text;
   event_type : EventLogType;
   params : EventLogParams;
-};
-
-type EventLogError = record {
-  context : text;
-  kind : EventLogErrorKind;
-  extra : opt vec record { text; text };
-  message : text;
-};
-
-type EventLogErrorKind = variant {
-  Infrastructure;
-  Access;
-  Unknown;
-  BusinessLogic;
-  ExternalService;
-  Validation;
 };
 
 type EventLogParams = variant {
@@ -180,11 +151,59 @@ type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
 type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
 
+type InternalError = record {
+  context : text;
+  kind : InternalErrorKind;
+  extra : opt vec record { text; text };
+  message : text;
+};
+
+type InternalErrorKind = variant {
+  AccessDenied;
+  Infrastructure;
+  NotFound;
+  Timeout;
+  Unknown;
+  BusinessLogic;
+  ExternalService;
+  Validation;
+};
+
 type Pool = record {
   id : text;
   provider : ExchangeId;
   token0 : principal;
   token1 : principal;
+};
+
+type ResponseError = record {
+  code : ResponseErrorCode;
+  message : text;
+  details : opt vec record { text; text };
+};
+
+type ResponseErrorCode = variant {
+  AccessDenied;
+  NotFound;
+  Timeout;
+  Validation;
+  InternalError;
+};
+
+type Result = variant { Ok : StrategyDepositResponse; Err : ResponseError };
+type Result_1 = variant { Ok : StrategyWithdrawResponse; Err : ResponseError };
+
+type StrategyDepositArgs = record {
+  strategy_id : nat16;
+  ledger : principal;
+  amount : nat;
+};
+
+type StrategyDepositResponse = record {
+  request_id : nat64;
+  tx_id : nat64;
+  shares : nat;
+  amount : nat;
 };
 
 type StrategyResponse = record {
@@ -199,6 +218,14 @@ type StrategyResponse = record {
   pools : vec Pool;
 };
 
+type StrategyWithdrawArgs = record {
+  strategy_id : nat16;
+  ledger : principal;
+  amount : nat;
+};
+
+type StrategyWithdrawResponse = record { current_shares : nat; amount : nat };
+
 type SupportedStandard = record { url : text; name : text };
 
 type UserStrategyResponse = record {
@@ -211,16 +238,8 @@ type UserStrategyResponse = record {
   users_count : nat32;
 };
 
-type WithdrawArgs = record {
-  strategy_id : nat16;
-  ledger : principal;
-  amount : nat;
-};
-
-type WithdrawResponse = record { current_shares : nat; amount : nat };
-
 service : (opt Conf) -> {
-  accept_investment : (AcceptInvestmentArgs) -> (DepositResponse);
+  deposit : (StrategyDepositArgs) -> (Result);
   get_config : () -> (Conf) query;
   get_event_logs : (nat64, nat64) -> (vec EventLog);
   get_strategies : () -> (vec StrategyResponse) query;
@@ -229,5 +248,5 @@ service : (opt Conf) -> {
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
   reset_strategy : (nat16) -> ();
   user_strategies : (principal) -> (vec UserStrategyResponse);
-  withdraw : (WithdrawArgs) -> (WithdrawResponse);
+  withdraw : (StrategyWithdrawArgs) -> (Result_1);
 }

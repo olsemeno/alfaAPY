@@ -3,7 +3,43 @@ use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 
 use types::CanisterId;
+
 use crate::pools::pool::Pool;
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct StrategyDepositArgs {
+    pub ledger: CanisterId,
+    pub amount: Nat,
+    pub strategy_id: StrategyId,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct StrategyWithdrawArgs {
+    pub ledger: CanisterId,
+    pub amount: Nat, // TODO:Rename to percentage
+    pub strategy_id: StrategyId,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+pub struct StrategyDepositResponse {
+    pub amount: Nat,
+    pub shares: Nat,
+    pub tx_id: u64,
+    pub request_id: u64,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct StrategyWithdrawResponse {
+    pub amount: Nat,
+    pub current_shares: Nat,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize)]
+pub struct StrategyRebalanceResponse {
+    pub previous_pool: Pool,
+    pub current_pool: Pool,
+    pub is_rebalanced: bool,
+}
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StrategyResponse {
@@ -18,7 +54,6 @@ pub struct StrategyResponse {
     pub initial_deposit: HashMap<Principal, Nat>,
 }
 
-
 // TODO: rename to UserPositionResponse
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct UserStrategyResponse {
@@ -31,49 +66,15 @@ pub struct UserStrategyResponse {
     pub users_count: u32,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct AcceptInvestmentArgs {
-    pub ledger: CanisterId,
-    pub amount: Nat,
-    pub strategy_id: StrategyId,
-}
-
 #[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct Icrc28TrustedOriginsResponse {
     pub trusted_origins: Vec<String>,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct WithdrawArgs {
-    pub ledger: CanisterId,
-    pub amount: Nat, // Rename to percentage
-    pub strategy_id: StrategyId,
 }
 
 #[derive(CandidType, Deserialize, Eq, PartialEq, Debug)]
 pub struct SupportedStandard {
     pub url: String,
     pub name: String,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
-pub struct DepositResponse {
-    pub amount: Nat,
-    pub shares: Nat,
-    pub tx_id: u64,
-    pub request_id: u64,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct WithdrawResponse {
-    pub amount: Nat,
-    pub current_shares: Nat,
-}
-
-pub struct RebalanceResponse {
-    pub previous_pool: Pool,
-    pub current_pool: Pool,
-    pub is_rebalanced: bool,
 }
 
 pub type StrategyId = u16;

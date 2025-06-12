@@ -10,7 +10,7 @@
 //     use liquidity::liquidity_calculator::LiquidityCalculator;
 //     use types::exchange_id::ExchangeId;
 
-//     use crate::types::types::{DepositResponse, RebalanceResponse, StrategyResponse, WithdrawResponse};
+//     use crate::types::types::{StrategyDepositResponse, StrategyRebalanceResponse, StrategyResponse, StrategyWithdrawResponse};
 //     use crate::pools::pool::Pool;
 //     use crate::strategies::basic_strategy::BasicStrategy;
 //     use crate::strategies::strategy::IStrategy;
@@ -180,7 +180,7 @@
 //             self.mock.set_initial_deposit(initial_deposit);
 //         }
         
-//         async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
+//         async fn deposit(&mut self, investor: Principal, amount: Nat) -> StrategyDepositResponse {
 //             // This is the actual implementation we want to test
 //             // TODO: remove this (added to setting current pool)
 //             let pools_data = liquidity_service_mock::get_pools_data(self.get_pools()).await;
@@ -212,7 +212,7 @@
     
 //                 repo_mock::save_strategy(self.clone_self());
     
-//                 DepositResponse {
+//                 StrategyDepositResponse {
 //                     amount: amount,
 //                     shares: new_shares.clone(),
 //                     tx_id: 0,
@@ -223,8 +223,8 @@
 //             }
 //         }
         
-//         async fn withdraw(&mut self, _shares: Nat) -> WithdrawResponse {
-//             WithdrawResponse {
+//         async fn withdraw(&mut self, _shares: Nat) -> StrategyWithdrawResponse {
+//             StrategyWithdrawResponse {
 //                 amount: Nat::from(0u64),
 //                 current_shares: Nat::from(0u64),
 //             }
@@ -251,8 +251,8 @@
 //             }
 //         }
         
-//         async fn rebalance(&mut self) -> RebalanceResponse {
-//             RebalanceResponse {
+//         async fn rebalance(&mut self) -> StrategyRebalanceResponse {
+//             StrategyRebalanceResponse {
 //                 previous_pool: self.get_current_pool().unwrap(),
 //                 current_pool: self.get_current_pool().unwrap(),
 //                 is_rebalanced: false,

@@ -2,7 +2,7 @@ import {Ed25519KeyIdentity} from "@dfinity/identity";
 import {getTypedActor} from "../util/util";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {idlFactory as ledger_idl} from "../idl/ledger_idl";
-import {_SERVICE as VaultType, DepositResponse, WithdrawResponse} from "../idl/vault";
+import {_SERVICE as VaultType, StrategyDepositResponse, StrategyWithdrawResponse} from "../idl/vault";
 import {idlFactory} from "../idl/vault_idl";
 import {Principal} from "@dfinity/principal";
 import {ActorSubclass} from "@dfinity/agent";
@@ -60,7 +60,7 @@ describe("VR Test PROD", () => {
         actorVault = await getTypedActor<VaultType>(canisterId, memberIdentity, idlFactory);
     });
 
-    describe(".accept_investment", () => {
+    describe(".deposit", () => {
         const strategyId = 5;
         const approveAmount = BigInt(10000000000);
         const depositAmount = BigInt(40_000_000);
@@ -75,7 +75,7 @@ describe("VR Test PROD", () => {
             try {
                 console.log("Deposit starting...");
 
-                let depositResp: DepositResponse = await actorVault.accept_investment({
+                const result = await actorVault.deposit({
                     amount: depositAmount,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
@@ -113,7 +113,7 @@ describe("VR Test PROD", () => {
         //         console.log("Deposit starting...");
 
         //         // Deposit tokens
-        //         let depositResp: DepositResponse = await actorVault.accept_investment({
+        //         let depositResp: DepositResponse = await actorVault.deposit({
         //             amount: depositAmount,
         //             strategy_id: strategyId,
         //             ledger: Principal.fromText(ledgerCanisterId)
@@ -136,7 +136,7 @@ describe("VR Test PROD", () => {
             remainingShares = 0n; // No shares left
 
             try {
-                let withdrawResp: WithdrawResponse = await actorVault.withdraw({
+                let withdrawResp: StrategyWithdrawResponse = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
@@ -162,7 +162,7 @@ describe("VR Test PROD", () => {
             try {
                 console.log("Withdraw starting...");
 
-                let withdrawResp: WithdrawResponse = await actorVault.withdraw({
+                let withdrawResp: StrategyWithdrawResponse = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)

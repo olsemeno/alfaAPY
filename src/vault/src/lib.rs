@@ -12,7 +12,7 @@ use serde::Serialize;
 use std::cell::RefCell;
 use candid::{candid_method, CandidType, Deserialize, Nat};
 use candid::{export_service, Principal};
-use ic_cdk::{caller, trap};
+use ic_cdk::caller;
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
 use providers::{icpswap as icpswap_provider};
@@ -25,16 +25,9 @@ use crate::user::user_service::accept_deposit;
 use crate::event_logs::event_log_service;
 use crate::event_logs::event_log::EventLog;
 use crate::strategies::strategy::IStrategy;
-use crate::types::types::{
-    AcceptInvestmentArgs,
-    DepositResponse,
-    Icrc28TrustedOriginsResponse,
-    StrategyResponse,
-    SupportedStandard,
-    UserStrategyResponse,
-    WithdrawArgs,
-    WithdrawResponse
-};
+use crate::errors::response_error::error::ResponseError;
+use crate::errors::response_error::builder::ResponseErrorBuilder;
+use crate::types::types::*;
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -138,33 +131,39 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 ///
 /// # Arguments
 ///
-/// * `args` - An `AcceptInvestmentArgs` struct containing the ledger, amount, and strategy ID.
+/// * `args` - An `StrategyDepositArgs` struct containing the ledger, amount, and strategy ID.
 ///
 /// # Returns
 ///
-/// A `DepositResponse` struct containing the amount, shares, transaction ID, and request ID.
+/// A `Result` containing a `DepositResponse` struct (with the amount, shares, transaction ID, and request ID)
+/// or a `ResponseError` if the strategy is not found or the deposit fails.
 ///
 /// # Errors
 ///
-/// This function will trap if the strategy ID is not found
-// TODO: Rename to deposit
+/// Returns a `ResponseError` if the strategy is not found or if the deposit operation fails.
 #[update]
-async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
+async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, ResponseError> {
     match accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await {
         Ok(_) => {
-            let mut strategy = get_strategy_by_id(args.strategy_id);
-
-            // TODO: Add not found error
+            let mut strategy = match get_strategy_by_id(args.strategy_id) {
+                Some(strategy) => strategy,
+                None => {
+                    let message = format!("Strategy with id {} not found", args.strategy_id);
+                    return Err(ResponseErrorBuilder::not_found().message(message).build());
+                }
+            };
 
             match strategy.deposit(caller(), args.amount).await {
-                Ok(response) => response,
+                Ok(response) => Ok(response),
                 Err(e) => {
-                    trap(format!("Error accepting investment: {}", e).as_str());
+                    let message = format!("Error depositing to strategy: {}", e.message);
+                    Err(ResponseErrorBuilder::internal_error().message(message).build())
                 }
             }
         }
         Err(e) => {
-            trap(format!("Error accepting investment: {}", e).as_str());
+            let message = format!("Error accepting deposit to strategy: {}", e);
+            Err(ResponseErrorBuilder::internal_error().message(message).build())
         }
     }
 }
@@ -173,31 +172,32 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
 ///
 /// # Arguments
 ///
-/// * `args` - A `WithdrawArgs` struct containing the ledger, amount, and strategy ID.
+/// * `args` - A `StrategyWithdrawArgs` struct containing the ledger, amount, and strategy ID.
 ///
 /// # Returns
 ///
-/// A `WithdrawResponse` struct containing the amount and current shares.
+/// A `Result` containing a `StrategyWithdrawResponse` struct (with the withdrawn amount and current shares)
+/// or a `ResponseError` if the strategy is not found or the withdrawal fails.
 ///
 /// # Errors
 ///
-/// This function will trap if the strategy ID is not found.
+/// Returns a `ResponseError` if the strategy is not found or if the withdrawal operation fails.
 #[update]
-async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
-    let mut strategy = get_strategy_by_id(args.strategy_id);
-
-    // TODO: Add not found error
-
-    let withdraw_response = match strategy.withdraw(args.amount).await {
-        Ok(response) => response,
-        Err(e) => {
-            trap(format!("Error withdrawing: {}", e).as_str());
+async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse, ResponseError> {
+    let mut strategy = match get_strategy_by_id(args.strategy_id) {
+        Some(strategy) => strategy,
+        None => {
+            let message = format!("Strategy with id {} not found", args.strategy_id);
+            return Err(ResponseErrorBuilder::not_found().message(message).build());
         }
     };
 
-    WithdrawResponse {
-        amount: withdraw_response.amount,
-        current_shares: withdraw_response.current_shares,
+    match strategy.withdraw(args.amount).await {
+        Ok(response) => Ok(response),
+        Err(e) => {
+            let message = format!("Error withdrawing from strategy: {}", e.message);
+            Err(ResponseErrorBuilder::internal_error().message(message).build())
+        }
     }
 }
 
@@ -302,8 +302,8 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 /// # Returns
 ///
 /// A `Box<dyn IStrategy>` containing the strategy.
-fn get_strategy_by_id(id: u16) -> Box<dyn IStrategy> {
-    strategies_repo::get_strategy_by_id(id).unwrap()
+fn get_strategy_by_id(id: u16) -> Option<Box<dyn IStrategy>> {
+    strategies_repo::get_strategy_by_id(id)
 }
 
 // =============== Upgrade ===============
