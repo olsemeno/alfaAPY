@@ -8,11 +8,12 @@ import {Principal} from "@dfinity/principal";
 import {ActorSubclass} from "@dfinity/agent";
 import {AccountIdentifier} from '@dfinity/ledger-icp';
 import {expect} from 'chai';
+import canisterIds from '../../canister_ids.json';
 
 export const isLocalENV = true;
 
 describe("VR Test PROD", () => {
-    const canisterId = "ownab-uaaaa-aaaap-qp2na-cai";
+    const canisterId = canisterIds.vault.dev;
     const identity = "87654321876543218765432187654399";
 
     const icpCanisterId = "ryjl3-tyaaa-aaaaa-aaaba-cai";

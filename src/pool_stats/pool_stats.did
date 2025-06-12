@@ -80,5 +80,6 @@ service : () -> {
   get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
   set_operator : (principal) -> ();
+  create_pool_snapshot : (text) -> (PoolSnapshot);
   update_pool_ids : () -> (bool);
 }

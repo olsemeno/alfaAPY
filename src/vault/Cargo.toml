@@ -42,3 +42,4 @@ liquidity = { path = "../libraries/liquidity" }
 types = { path = "../libraries/types" }
 utils = { path = "../libraries/utils" }
 errors = { path = "../libraries/errors" }
+event_logs = { path = "../libraries/event_logs" }

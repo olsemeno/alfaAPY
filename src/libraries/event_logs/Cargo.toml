@@ -1,0 +1,13 @@
+[package]
+name = "event_logs"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+candid = "0.10.13"
+async-trait = "0.1.87"
+serde = "1"
+num-traits = "0.2"
+ic-cdk = "0.17.1"
+errors = { path = "../errors" }
+types = { path = "../types" }

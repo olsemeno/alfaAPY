@@ -23,7 +23,7 @@ fn set_timer_interval(
 pub fn start_pool_snapshots_timer(interval: u64) {
     let timer_id = set_timer_interval(Duration::from_secs(interval), || {
         ic_cdk::spawn(async {
-            take_pool_snapshots().await;
+            create_all_pool_snapshots().await;
         });
     });
 
@@ -40,20 +40,19 @@ pub fn stop_pool_snapshots_timer() {
     });
 }
 
-pub async fn take_pool_snapshots() {
+pub async fn create_all_pool_snapshots() {
     let pools = pools_repo::get_pools();
     // Iterate over pools with liquidity position
     for pool in pools.into_iter().filter(|p| p.position_id.is_some()) {
-        take_pool_snapshot(&pool).await;
+        create_pool_snapshot(&pool).await;
     }
 }
 
-pub async fn take_pool_snapshot(pool: &Pool) -> PoolSnapshot {
+pub async fn create_pool_snapshot(pool: &Pool) -> PoolSnapshot {
     let pool_data = get_pool_data(pool).await;
     let position_data = get_position_data(pool).await;
-    let snapshot = PoolSnapshot::build(pool.id.clone(), position_data, pool_data);
-    snapshot.save();
-    snapshot
+
+    PoolSnapshot::create(pool.id.clone(), position_data, pool_data)
 }
 
 async fn get_position_data(pool: &Pool) -> Option<PositionData> {

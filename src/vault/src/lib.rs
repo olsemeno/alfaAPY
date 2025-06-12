@@ -19,7 +19,7 @@ use ::types::CanisterId;
 use errors::response_error::error::ResponseError;
 use errors::response_error::builder::ResponseErrorBuilder;
 
-use crate::repository::repo::{stable_restore, stable_save};
+use crate::repository::stable_state;
 use crate::repository::strategies_repo;
 use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
 use crate::user::user_service::accept_deposit;
@@ -309,12 +309,12 @@ fn get_strategy_by_id(id: u16) -> Option<Box<dyn IStrategy>> {
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    stable_save()
+    stable_state::stable_save()
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    stable_restore()
+    stable_state::stable_restore()
 }
 
 export_service!();

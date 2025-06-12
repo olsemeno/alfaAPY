@@ -17,6 +17,7 @@ use crate::pools::pool::Pool;
 use crate::pool_metrics::pool_metrics::PoolMetrics;
 use crate::pool_metrics::pool_metrics_service;
 use crate::repository::pools_repo;
+use crate::repository::stable_state;
 use crate::liquidity::liquidity_service;
 use crate::pools::pool_service;
 
@@ -25,6 +26,7 @@ pub mod liquidity;
 pub mod repository;
 pub mod pool_snapshots;
 pub mod pool_metrics;
+pub mod event_logs;
 
 const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
@@ -103,9 +105,14 @@ pub fn delete_all_pools_and_snapshots() -> bool {
     true
 }
 
+// TODO: test method, remove after testing
+#[update]
+pub async fn create_pool_snapshot(pool_id: String) -> PoolSnapshot {
+    let pool = pools_repo::get_pool_by_id(pool_id.clone()).unwrap();
+    pool_snapshot_service::create_pool_snapshot(&pool).await
+}
+
 // End of test method
-
-
 
 // Pools management
 
@@ -180,13 +187,13 @@ async fn init() {
 
 #[ic_cdk::pre_upgrade]
 fn pre_upgrade() {
-    pools_repo::stable_save();
+    stable_state::stable_save();
     pool_snapshot_service::stop_pool_snapshots_timer();
 }
 
 #[ic_cdk::post_upgrade]
 fn post_upgrade() {
-    pools_repo::stable_restore();
+    stable_state::stable_restore();
     pool_snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 

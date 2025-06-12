@@ -242,6 +242,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "event_logs"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "candid",
+ "errors",
+ "ic-cdk 0.17.1",
+ "num-traits",
+ "serde",
+ "types",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -814,6 +827,8 @@ dependencies = [
  "byteorder",
  "candid",
  "canister_client_macros",
+ "errors",
+ "event_logs",
  "ic-cdk 0.17.1",
  "ic-cdk-macros 0.17.1",
  "ic-cdk-timers",
@@ -1237,6 +1252,7 @@ dependencies = [
  "candid",
  "canister_client_macros",
  "errors",
+ "event_logs",
  "ic-cdk 0.17.1",
  "ic-cdk-macros 0.17.1",
  "ic-ledger-types",

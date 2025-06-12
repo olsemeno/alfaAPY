@@ -43,6 +43,12 @@ impl PoolSnapshot {
         )
     }
 
+    pub fn create(pool_id: String, position_data: Option<PositionData>, pool_data: Option<PoolData>) -> Self {
+        let snapshot = Self::build(pool_id, position_data, pool_data);
+        snapshot.save();
+        snapshot
+    }
+
     pub fn save(&self) {
         pools_repo::save_pool_snapshot(self.clone());
     }

@@ -1,20 +1,12 @@
-use candid::{CandidType, Deserialize, Nat, Principal};
+use candid::{CandidType, Deserialize, Nat};
 use std::collections::HashMap;
 use serde::Serialize;
 use types::CanisterId;
 
-use errors::internal_error::error::InternalError;
+use event_logs::generic_event_log::GenericEventLog;
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub struct EventLog {
-    pub id: u64,
-    pub timestamp: u64,
-    pub event_type: EventLogType,
-    pub params: EventLogParams,
-    pub correlation_id: String,
-    pub user: Option<Principal>,
-    pub error: Option<InternalError>,
-}
+pub struct EventLog(pub GenericEventLog<EventLogType, EventLogParams>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum EventLogType {
