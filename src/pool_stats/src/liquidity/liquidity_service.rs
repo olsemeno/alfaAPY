@@ -2,11 +2,13 @@ use candid::Nat;
 
 use liquidity::liquidity_router::get_liquidity_client;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use errors::internal_error::error::InternalError;
+use errors::internal_error::builder::InternalErrorBuilder;
 
 use crate::repository::pools_repo;
 use crate::pool_snapshots::pool_snapshot_service;
 
-pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, String> {
+pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
     if let Some(pool) = pool {
         let liquidity_client = get_liquidity_client(
@@ -21,15 +23,25 @@ pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLi
                 Ok(response)
             }
             Err(error) => {
-                Err(format!("Liquidity service: add_liquidity_to_pool: Error adding liquidity to pool: {}", error))
+                let internal_error = InternalErrorBuilder::business_logic()
+                    .context("Liquidity service: add_liquidity_to_pool")
+                    .message(format!("Error adding liquidity to pool: {}", error))
+                    .build();
+
+                Err(internal_error)
             }
         }
     } else {
-        Err(format!("Liquidity service: add_liquidity_to_pool: Pool not found: {}", pool_id))
+        let internal_error = InternalErrorBuilder::not_found()
+            .context("Liquidity service: add_liquidity_to_pool")
+            .message(format!("Pool not found: {}", pool_id))
+            .build();
+
+        Err(internal_error)
     }
 }
 
-pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, String> {
+pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, InternalError> {
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
     if let Some(pool) = pool {
         let liquidity_client = get_liquidity_client(
@@ -47,10 +59,20 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
                 Ok(response)
             }
             Err(error) => {
-                Err(format!("Liquidity service: remove_liquidity_from_pool: Error withdrawing from pool: {}", error))
+                let internal_error = InternalErrorBuilder::business_logic()
+                    .context("Liquidity service: remove_liquidity_from_pool")
+                    .message(format!("Error withdrawing from pool: {}", error))
+                    .build();
+
+                Err(internal_error)
             }
         }
     } else {
-        Err(format!("Liquidity service: remove_liquidity_from_pool: Pool not found: {}", pool_id))
+        let internal_error = InternalErrorBuilder::not_found()
+            .context("Liquidity service: remove_liquidity_from_pool")
+            .message(format!("Pool not found: {}", pool_id))
+            .build();
+
+        Err(internal_error)
     }
 }
