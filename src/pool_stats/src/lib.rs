@@ -11,11 +11,11 @@ use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::CanisterId;
 use types::pool::PoolTrait;
 
-use crate::pools::pool_snapshot::PoolSnapshot;
-use crate::snapshots::snapshot_service;
+use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
+use crate::pool_snapshots::pool_snapshot_service;
 use crate::pools::pool::Pool;
-use crate::pools::pool_metrics::PoolMetrics;
-use crate::pools::pool_metrics_service;
+use crate::pool_metrics::pool_metrics::PoolMetrics;
+use crate::pool_metrics::pool_metrics_service;
 use crate::repository::pools_repo;
 use crate::liquidity::liquidity_service;
 use crate::pools::pool_service;
@@ -23,7 +23,8 @@ use crate::pools::pool_service;
 pub mod pools;
 pub mod liquidity;
 pub mod repository;
-pub mod snapshots;
+pub mod pool_snapshots;
+pub mod pool_metrics;
 
 const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
@@ -48,7 +49,7 @@ thread_local! {
 
 
 // TODO: test method, remove after testing
-use crate::pools::pool_data_service::{PositionData, PoolData};
+use crate::pool_snapshots::pool_snapshot::{PositionData, PoolData};
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshotArgs {
@@ -174,19 +175,19 @@ pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromP
 #[ic_cdk::init]
 async fn init() {
     pool_service::init_pools();
-    snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
+    pool_snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 #[ic_cdk::pre_upgrade]
 fn pre_upgrade() {
     pools_repo::stable_save();
-    snapshot_service::stop_pool_snapshots_timer();
+    pool_snapshot_service::stop_pool_snapshots_timer();
 }
 
 #[ic_cdk::post_upgrade]
 fn post_upgrade() {
     pools_repo::stable_restore();
-    snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
+    pool_snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
 // Sets the operator principal.

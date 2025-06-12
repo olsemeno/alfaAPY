@@ -4,7 +4,7 @@ use liquidity::liquidity_router::get_liquidity_client;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 
 use crate::repository::pools_repo;
-use crate::snapshots::snapshot_service::take_pool_snapshot;
+use crate::pool_snapshots::pool_snapshot_service::take_pool_snapshot;
 
 pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, String> {
     let pool = pools_repo::get_pool_by_id(pool_id.clone());

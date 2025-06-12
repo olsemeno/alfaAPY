@@ -1,5 +1,5 @@
-use crate::pools::pool_snapshot::PoolSnapshot;
-use crate::pools::pool_metrics::{PoolApy, ApyValue};
+use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
+use crate::pool_metrics::pool_metrics::{PoolApy, ApyValue};
 use utils::util::nat_to_u128;
 
 const DAYS_PER_WEEK: u64 = 7;

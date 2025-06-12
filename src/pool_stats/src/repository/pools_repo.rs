@@ -5,7 +5,7 @@ use serde::Serialize;
 use ic_cdk::storage;
 
 use crate::pools::pool::Pool;
-use crate::pools::pool_snapshot::PoolSnapshot;
+use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 
 
 #[derive(Serialize, Deserialize, CandidType)]

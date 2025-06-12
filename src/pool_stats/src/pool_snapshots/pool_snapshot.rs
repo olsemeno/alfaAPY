@@ -1,7 +1,6 @@
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
-use crate::pools::pool_data_service::{PositionData, PoolData};
 use crate::repository::pools_repo;
 use utils::util::current_timestamp;
 
@@ -47,4 +46,22 @@ impl PoolSnapshot {
     pub fn save(&self) {
         pools_repo::save_pool_snapshot(self.clone());
     }
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
+pub struct PositionData {
+    pub id: Nat,
+    pub amount0: Nat,
+    pub amount1: Nat,
+    pub usd_amount0: Nat,
+    pub usd_amount1: Nat,
+}
+
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
+pub struct PoolData {
+    pub tvl: Nat,
+    // pub balance0: Nat,
+    // pub balance1: Nat,
+    // pub lp_fee_0: Nat,
+    // pub lp_fee_1: Nat,
 }
