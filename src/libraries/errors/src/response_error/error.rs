@@ -45,7 +45,7 @@ impl From<InternalErrorKind> for ResponseErrorCode {
             InternalErrorKind::AccessDenied => ResponseErrorCode::AccessDenied,
             InternalErrorKind::Timeout => ResponseErrorCode::Timeout,
             InternalErrorKind::BusinessLogic
-            | InternalErrorKind::ExternalService
+            | InternalErrorKind::ExternalService { service: _ }
             | InternalErrorKind::Infrastructure
             | InternalErrorKind::Unknown => ResponseErrorCode::InternalError,
         }

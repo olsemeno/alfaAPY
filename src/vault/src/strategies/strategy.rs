@@ -355,7 +355,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         .shares(shares.clone())
                         .build();
 
-                    let internal_error = InternalErrorBuilder::external_service()
+                    let internal_error = InternalErrorBuilder::external_service("icrc1_transfer".to_string())
                         .context("Strategy::withdraw")
                         .message(format!("Transfer to user error 1: {:?}", message))
                         .extra(HashMap::from([
@@ -381,7 +381,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         .shares(shares.clone())
                         .build();
 
-                    let internal_error = InternalErrorBuilder::external_service()
+                    let internal_error = InternalErrorBuilder::external_service("icrc1_transfer".to_string())
                         .context("Strategy::withdraw")
                         .message(format!("Transfer to user error 2: {:?}", message))
                         .extra(HashMap::from([

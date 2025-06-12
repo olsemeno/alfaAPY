@@ -41,9 +41,9 @@ impl InternalErrorBuilder {
             extra: None,
         }
     }
-    pub fn external_service() -> Self {
+    pub fn external_service(service: String) -> Self {
         Self {
-            kind: Some(InternalErrorKind::ExternalService),
+            kind: Some(InternalErrorKind::ExternalService { service }),
             context: None,
             message: None,
             extra: None,

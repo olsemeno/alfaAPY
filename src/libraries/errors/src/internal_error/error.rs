@@ -8,7 +8,7 @@ pub enum InternalErrorKind {
     NotFound,
     Validation,
     BusinessLogic,
-    ExternalService,
+    ExternalService { service: String },
     AccessDenied,
     Infrastructure,
     Timeout,
@@ -22,8 +22,6 @@ pub struct InternalError {
     pub context: String,
     pub message: String,
     pub extra: Option<HashMap<String, String>>,
-    // pub service: Option<String>,
-    // pub component: Option<String>,
 }
 
 impl InternalError {
