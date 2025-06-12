@@ -2,7 +2,7 @@ import {Ed25519KeyIdentity} from "@dfinity/identity";
 import {getTypedActor} from "../util/util";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {idlFactory as ledger_idl} from "../idl/ledger_idl";
-import {_SERVICE as VaultType, StrategyDepositResponse, StrategyWithdrawResponse} from "../idl/vault";
+import {_SERVICE as VaultType} from "../idl/vault";
 import {idlFactory} from "../idl/vault_idl";
 import {Principal} from "@dfinity/principal";
 import {ActorSubclass} from "@dfinity/agent";
@@ -81,10 +81,16 @@ describe("VR Test PROD", () => {
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
 
-                console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id)
+                if ('Ok' in result) {
+                    const depositResp = result.Ok;
+                    console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
 
-                expect(depositResp.amount).to.equal(depositAmount);
-                expect(depositResp.shares).to.equal(depositAmount);
+                    expect(depositResp.amount).to.equal(depositAmount);
+                    expect(depositResp.shares).to.equal(depositAmount);
+                } else {
+                    console.error("Deposit failed:", result.Err);
+                    throw new Error(`Deposit failed: ${JSON.stringify(result.Err)}`);
+                }
             } catch (e) {
                 console.log("Deposit error:", e);
                 throw new Error("Deposit failed with error: " + e);
@@ -105,27 +111,33 @@ describe("VR Test PROD", () => {
         let sharesToWithdraw: bigint;
         let remainingShares: bigint;
 
-        // beforeEach(async () => {
-        //     // Approve tokens
-        //     await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
+        beforeEach(async () => {
+            // Approve tokens
+            // await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 
-        //     try {
-        //         console.log("Deposit starting...");
+            // try {
+            //     console.log("Deposit starting...");
 
-        //         // Deposit tokens
-        //         let depositResp: DepositResponse = await actorVault.deposit({
-        //             amount: depositAmount,
-        //             strategy_id: strategyId,
-        //             ledger: Principal.fromText(ledgerCanisterId)
-        //         });
+            //     // Deposit tokens
+            //     const result = await actorVault.deposit({
+            //         amount: depositAmount,
+            //         strategy_id: strategyId,
+            //         ledger: Principal.fromText(ledgerCanisterId)
+            //     });
 
-        //         console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
+            //     if ('Ok' in result) {
+            //         const depositResp = result.Ok;
+            //         console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
 
-        //         shares = BigInt(depositResp.shares);
-        //     } catch (e) {
-        //         console.log("Deposit error:", e);
-        //     }
-        // });
+            //         shares = BigInt(depositResp.shares);
+            //     } else {
+            //         console.error("Deposit failed:", result.Err);
+            //         throw new Error(`Deposit failed: ${JSON.stringify(result.Err)}`);
+            //     }
+            // } catch (e) {
+            //     console.log("Deposit error:", e);
+            // }
+        });
 
         it("Withdraws full balance", async () => {
             console.log("== START \"Withdraws full balance\" TEST ==");
@@ -136,15 +148,21 @@ describe("VR Test PROD", () => {
             remainingShares = 0n; // No shares left
 
             try {
-                let withdrawResp: StrategyWithdrawResponse = await actorVault.withdraw({
+                const result = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
-                // @ts-ignore
-                console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
 
-                expect(withdrawResp.current_shares).to.equal(0n);
+                if ('Ok' in result) {
+                    const withdrawResp = result.Ok;
+                    console.log("Withdraw success:", withdrawResp.amount, withdrawResp.current_shares);
+
+                    expect(withdrawResp.current_shares).to.equal(0n);
+                } else {
+                    console.error("Withdraw failed:", result.Err);
+                    throw new Error(`Withdraw failed: ${JSON.stringify(result.Err)}`);
+                }
             } catch (e) {
                 console.log("Withdraw error: ", e);
                 throw new Error("Withdraw failed with error: " + e);
@@ -162,15 +180,21 @@ describe("VR Test PROD", () => {
             try {
                 console.log("Withdraw starting...");
 
-                let withdrawResp: StrategyWithdrawResponse = await actorVault.withdraw({
+                const result = await actorVault.withdraw({
                     amount: sharesToWithdraw,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
-                // @ts-ignore
-                console.log("Withdraw success :", withdrawResp.amount, withdrawResp.current_shares);
 
-                expect(withdrawResp.current_shares).to.equal(remainingShares);
+                if ('Ok' in result) {
+                    const withdrawResp = result.Ok;
+                    console.log("Withdraw success:", withdrawResp.amount, withdrawResp.current_shares);
+
+                    expect(withdrawResp.current_shares).to.equal(remainingShares);
+                } else {
+                    console.error("Withdraw failed:", result.Err);
+                    throw new Error(`Withdraw failed: ${JSON.stringify(result.Err)}`);
+                }
             } catch (e) {
                 console.log("Withdraw error: ", e);
                 throw new Error("Withdraw failed with error: " + e);
