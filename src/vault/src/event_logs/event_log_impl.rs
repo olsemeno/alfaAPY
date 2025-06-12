@@ -1,8 +1,8 @@
 use candid::Principal;
 use ic_cdk::api::time;
-use std::collections::HashMap;
 
-use crate::event_logs::event_log::{EventLog, EventLogType, EventLogParams, EventLogError, EventLogErrorKind};
+use crate::event_logs::event_log::{EventLog, EventLogType, EventLogParams};
+use crate::errors::internal_error::error::InternalError;
 use crate::repository::events_repo;
 
 impl EventLog {
@@ -13,7 +13,7 @@ impl EventLog {
         params: EventLogParams,
         timestamp: u64,
         user: Option<Principal>,
-        error: Option<EventLogError>,
+        error: Option<InternalError>,
     ) -> Self {
         Self {
             id,
@@ -31,7 +31,7 @@ impl EventLog {
         correlation_id: String,
         params: EventLogParams,
         user: Option<Principal>,
-        error: Option<EventLogError>,
+        error: Option<InternalError>,
     ) -> Self {
         Self::new(
             id,
@@ -48,7 +48,7 @@ impl EventLog {
         params: EventLogParams,
         correlation_id: String,
         user: Option<Principal>,
-        error: Option<EventLogError>,
+        error: Option<InternalError>,
     ) -> Self {
         let event = Self::build(
             Self::next_id(),
@@ -67,16 +67,5 @@ impl EventLog {
 
     fn next_id() -> u64 {
         events_repo::get_event_logs_count()
-    }
-}
-
-impl EventLogError {
-    pub fn new(
-        kind: EventLogErrorKind,
-        context: String,
-        message: String,
-        extra: Option<HashMap<String, String>>,
-    ) -> Self {
-        Self { kind, context, message, extra }
     }
 }

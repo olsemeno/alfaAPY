@@ -39,7 +39,7 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
         created_at_time: None,
     };
 
-    let bi = match icrc2_transfer_from(ledger, &transfer_args).await {
+    let block_index = match icrc2_transfer_from(ledger, &transfer_args).await {
         Ok(block_index) => {
             block_index
         }
@@ -52,7 +52,7 @@ pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) 
         amount,
         strategy: str_id,
         ledger: ledger.into(),
-        block_index: bi,
+        block_index: block_index,
         timestamp: time()
     };
 

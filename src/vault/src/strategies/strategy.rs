@@ -16,7 +16,9 @@ use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
 
-use crate::event_logs::event_log_builder::{EventLogErrorBuilder, EventLogParamsBuilder};
+use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
+use crate::errors::internal_error::builder::InternalErrorBuilder;
+use crate::errors::internal_error::error::InternalError;
 use crate::event_logs::event_log_service;
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
@@ -86,7 +88,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 6. Adds liquidity to the pool
     /// 7. Saves the updated strategy state
     ///
-    async fn deposit(&mut self, investor: Principal, amount: Nat) -> DepositResponse {
+    async fn deposit(&mut self, investor: Principal, amount: Nat) -> Result<DepositResponse, InternalError> {
         let correlation_id = "1".to_string(); // Uuid::new_v4().to_string();
         let pools_data = get_pools_data(self.get_pools()).await;
 
@@ -112,7 +114,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     .amount0(amount)
                     .build();
 
-                let event_log_error = EventLogErrorBuilder::business_logic()
+                let internal_error = InternalErrorBuilder::business_logic()
                     .context("Strategy::deposit")
                     .message("No pool found to deposit".to_string())
                     .build();
@@ -121,11 +123,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     event_log_params,
                     correlation_id.clone(),
                     Some(investor),
-                    Some(event_log_error),
+                    Some(internal_error.clone()),
                 );
                 // ========== Event log end ==========
 
-                trap("Strategy::deposit: No pool found to deposit");
+                return Err(internal_error);
             }
         }
 
@@ -182,12 +184,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             );
             // ========== Event log end ==========
 
-            DepositResponse {
+            Ok(DepositResponse {
                 amount: amount,
                 shares: self.get_user_shares().get(&investor).unwrap().clone(),
                 tx_id: 0,
                 request_id: add_liquidity_response.request_id,
-            }
+            })
         } else {
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_deposit_failed()
@@ -196,7 +198,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .amount0(amount)
                 .build();
 
-            let event_log_error = EventLogErrorBuilder::business_logic()
+            let internal_error = InternalErrorBuilder::business_logic()
                 .context("Strategy::deposit")
                 .message("No current pool found to deposit".to_string())
                 .build();
@@ -205,11 +207,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 event_log_params,
                 correlation_id.clone(),
                 Some(investor),
-                Some(event_log_error),
+                Some(internal_error.clone()),
             );
             // ========== Event log end ==========
 
-            trap("Strategy::deposit: No current pool found to deposit");
+            return Err(internal_error);
         }
     }
 
@@ -235,7 +237,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     /// TODO: Rename `shares` to `percentage`
-    async fn withdraw(&mut self, mut shares: Nat) -> WithdrawResponse {
+    async fn withdraw(&mut self, mut shares: Nat) -> Result<WithdrawResponse, InternalError> {
         let correlation_id = "2".to_string(); //Uuid::new_v4().to_string();
         let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
         let user_shares = self.get_user_shares_by_principal(investor.clone());
@@ -254,7 +256,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .shares(shares.clone())
                 .build();
 
-            let event_log_error = EventLogErrorBuilder::business_logic()
+            let internal_error = InternalErrorBuilder::business_logic()
                 .context("Strategy::withdraw")
                 .message("No shares found for user".to_string())
                 .extra(HashMap::from([
@@ -268,11 +270,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 event_log_params,
                 correlation_id.clone(),
                 Some(investor),
-                Some(event_log_error),
+                Some(internal_error.clone()),
             );
             // ========== Event log end ==========
 
-            trap("Strategy::withdraw: No shares found for user".into());
+            return Err(internal_error);
         }
 
         // Check if user has enough shares
@@ -284,7 +286,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .shares(shares.clone())
                 .build();
 
-            let event_log_error = EventLogErrorBuilder::business_logic()
+            let internal_error = InternalErrorBuilder::business_logic()
                 .context("Strategy::withdraw")
                 .message("Not sufficient shares for user".to_string())
                 .extra(HashMap::from([
@@ -298,11 +300,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 event_log_params,
                 correlation_id.clone(),
                 Some(investor),
-                Some(event_log_error),
+                Some(internal_error.clone()),
             );
             // ========== Event log end ==========
 
-            trap("Strategy::withdraw: Not sufficient shares for user".into());
+            return Err(internal_error);
         }
 
         if let Some(current_pool) = current_pool {
@@ -353,7 +355,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         .shares(shares.clone())
                         .build();
 
-                    let event_log_error = EventLogErrorBuilder::external_service()
+                    let internal_error = InternalErrorBuilder::external_service()
                         .context("Strategy::withdraw")
                         .message(format!("Transfer to user error 1: {:?}", message))
                         .extra(HashMap::from([
@@ -365,11 +367,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         event_log_params,
                         correlation_id.clone(),
                         Some(investor),
-                        Some(event_log_error),
+                        Some(internal_error.clone()),
                     );
                     // ========== Event log end ==========
 
-                    trap(format!("Strategy::withdraw: Transfer to user error 1: {:?}", message).as_str());
+                    return Err(internal_error);
                 }
                 Ok(Err(message)) => {
                     // ========== Event log begin ==========
@@ -379,7 +381,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         .shares(shares.clone())
                         .build();
 
-                    let event_log_error = EventLogErrorBuilder::external_service()
+                    let internal_error = InternalErrorBuilder::external_service()
                         .context("Strategy::withdraw")
                         .message(format!("Transfer to user error 2: {:?}", message))
                         .extra(HashMap::from([
@@ -391,11 +393,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         event_log_params,
                         correlation_id.clone(),
                         Some(investor),
-                        Some(event_log_error),
+                        Some(internal_error.clone()),
                     );
                     // ========== Event log end ==========
 
-                    trap(format!("Strategy::withdraw: Transfer to user error 2: {:?}", message).as_str());
+                    return Err(internal_error);
                 }
             };
 
@@ -448,10 +450,10 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             );
             // ========== Event log end ==========
 
-            WithdrawResponse {
+            Ok(WithdrawResponse {
                 amount: amount_0_to_withdraw,
                 current_shares: new_user_shares.clone(),
-            }
+            })
         } else {
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
@@ -460,7 +462,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .shares(shares.clone())
                 .build();
 
-            let event_log_error = EventLogErrorBuilder::business_logic()
+            let internal_error = InternalErrorBuilder::business_logic()
                 .context("Strategy::withdraw")
                 .message("No current pool found in strategy".to_string())
                 .build();
@@ -469,11 +471,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 event_log_params,
                 correlation_id.clone(),
                 Some(investor),
-                Some(event_log_error),
+                Some(internal_error.clone()),
             );
             // ========== Event log end ==========
 
-            trap("Strategy::withdraw: No current pool found in strategy");
+            return Err(internal_error);
         }
     }
 
@@ -494,7 +496,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// * `RebalanceResponse` - Contains:
     ///   * `pool` - The pool being used after rebalancing
     ///
-    async fn rebalance(&mut self) -> RebalanceResponse {
+    async fn rebalance(&mut self) -> Result<RebalanceResponse, InternalError> {
         let correlation_id = "3".to_string(); // Uuid::new_v4().to_string();
         let pools_data = get_pools_data(self.get_pools()).await;
         let mut max_apy = 0;
@@ -511,11 +513,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         let current_pool = self.get_current_pool();
 
         if max_apy_pool.is_none() {
-            return RebalanceResponse {
+            return Ok(RebalanceResponse {
                 previous_pool: current_pool.clone().unwrap(),
                 current_pool: current_pool.clone().unwrap(),
                 is_rebalanced: false,
-            };
+            });
         }
 
         let max_apy_pool = max_apy_pool.unwrap();
@@ -523,11 +525,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if let Some(current_pool) = &current_pool {
              // If current pool is the same as max APY pool, return
             if current_pool.is_same_pool(&max_apy_pool) {
-                return RebalanceResponse {
+                return Ok(RebalanceResponse {
                     previous_pool: current_pool.clone(),
                     current_pool: current_pool.clone(),
                     is_rebalanced: false,
-                };
+                });
             }
 
             let token0 = current_pool.token0.clone();
@@ -577,11 +579,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             // Update current pool
             self.set_current_pool(Some(max_apy_pool));
 
-            RebalanceResponse {
+            Ok(RebalanceResponse {
                 previous_pool: current_pool.clone(),
                 current_pool: self.get_current_pool().unwrap(),
                 is_rebalanced: true,
-            }
+            })
         } else {
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_rebalance_failed()
@@ -590,7 +592,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .new_pool_id(None)
                 .build();
 
-            let event_log_error = EventLogErrorBuilder::business_logic()
+            let internal_error = InternalErrorBuilder::business_logic()
                 .context("Strategy::rebalance")
                 .message("No current pool found in strategy".to_string())
                 .build();
@@ -599,11 +601,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 event_log_params,
                 correlation_id.clone(),
                 None,
-                Some(event_log_error),
+                Some(internal_error.clone()),
             );
             // ========== Event log end ==========
 
-            trap("Strategy::rebalance: No current pool");
+            return Err(internal_error);
         }
     }
 

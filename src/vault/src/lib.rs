@@ -6,6 +6,7 @@ mod types;
 mod event_logs;
 mod pools;
 mod pool_stats;
+mod errors;
 
 use serde::Serialize;
 use std::cell::RefCell;
@@ -23,6 +24,7 @@ use crate::strategies::strategy_service::{get_actual_strategies, init_strategies
 use crate::user::user_service::accept_deposit;
 use crate::event_logs::event_log_service;
 use crate::event_logs::event_log::EventLog;
+use crate::strategies::strategy::IStrategy;
 use crate::types::types::{
     AcceptInvestmentArgs,
     DepositResponse,
@@ -145,12 +147,21 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 /// # Errors
 ///
 /// This function will trap if the strategy ID is not found
+// TODO: Rename to deposit
 #[update]
 async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
     match accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await {
         Ok(_) => {
-            let mut strategy = strategies_repo::get_strategy_by_id(args.strategy_id).unwrap();
-            strategy.deposit(caller(), args.amount).await
+            let mut strategy = get_strategy_by_id(args.strategy_id);
+
+            // TODO: Add not found error
+
+            match strategy.deposit(caller(), args.amount).await {
+                Ok(response) => response,
+                Err(e) => {
+                    trap(format!("Error accepting investment: {}", e).as_str());
+                }
+            }
         }
         Err(e) => {
             trap(format!("Error accepting investment: {}", e).as_str());
@@ -173,8 +184,16 @@ async fn accept_investment(args: AcceptInvestmentArgs) -> DepositResponse {
 /// This function will trap if the strategy ID is not found.
 #[update]
 async fn withdraw(args: WithdrawArgs) -> WithdrawResponse {
-    let mut strategy = strategies_repo::get_strategy_by_id(args.strategy_id).unwrap();
-    let withdraw_response = strategy.withdraw(args.amount).await;
+    let mut strategy = get_strategy_by_id(args.strategy_id);
+
+    // TODO: Add not found error
+
+    let withdraw_response = match strategy.withdraw(args.amount).await {
+        Ok(response) => response,
+        Err(e) => {
+            trap(format!("Error withdrawing: {}", e).as_str());
+        }
+    };
 
     WithdrawResponse {
         amount: withdraw_response.amount,
@@ -237,6 +256,7 @@ fn get_config() -> Conf {
     CONF.with(|c| c.borrow().clone())
 }
 
+
 // =============== ICRC ===============
 
 /// Retrieves the supported standards for ICRC-10.
@@ -270,6 +290,20 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
     ];
 
     Icrc28TrustedOriginsResponse { trusted_origins }
+}
+
+
+/// Retrieves a strategy by its ID.
+///
+/// # Arguments
+///
+/// * `id` - The ID of the strategy to retrieve.
+///
+/// # Returns
+///
+/// A `Box<dyn IStrategy>` containing the strategy.
+fn get_strategy_by_id(id: u16) -> Box<dyn IStrategy> {
+    strategies_repo::get_strategy_by_id(id).unwrap()
 }
 
 // =============== Upgrade ===============

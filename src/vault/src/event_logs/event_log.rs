@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::Serialize;
 use types::CanisterId;
 
+use crate::errors::internal_error::error::InternalError;
+
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct EventLog {
     pub id: u64,
@@ -11,27 +13,7 @@ pub struct EventLog {
     pub params: EventLogParams,
     pub correlation_id: String,
     pub user: Option<Principal>,
-    pub error: Option<EventLogError>,
-}
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub enum EventLogErrorKind {
-    ExternalService,
-    BusinessLogic,
-    Validation,
-    Access,
-    Infrastructure,
-    Unknown,
-}
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub struct EventLogError {
-    pub kind: EventLogErrorKind,
-    pub context: String,
-    pub message: String,
-    pub extra: Option<HashMap<String, String>>,
-    // pub service: Option<String>,
-    // pub component: Option<String>,
+    pub error: Option<InternalError>,
 }
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
