@@ -11,7 +11,7 @@ use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
-use errors::response_error::builder::ResponseErrorBuilder;
+use errors::response_error::utils::response_error_internal_error;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
@@ -173,9 +173,7 @@ pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSna
 pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, ResponseError> {
     match liquidity_service::add_liquidity_to_pool(pool_id, amount).await {
         Ok(response) => Ok(response),
-        Err(error) => {
-            Err(ResponseErrorBuilder::internal_error().message(error.message).build())
-        }
+        Err(error) => response_error_internal_error(error.message)
     }
 }
 
@@ -183,9 +181,7 @@ pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLi
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
     match liquidity_service::remove_liquidity_from_pool(pool_id).await {
         Ok(response) => Ok(response),
-        Err(error) => {
-            Err(ResponseErrorBuilder::internal_error().message(error.message).build())
-        }
+        Err(error) => response_error_internal_error(error.message)
     }
 }
 

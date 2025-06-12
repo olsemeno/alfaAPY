@@ -17,7 +17,7 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 use providers::{icpswap as icpswap_provider};
 use ::types::CanisterId;
 use errors::response_error::error::ResponseError;
-use errors::response_error::builder::ResponseErrorBuilder;
+use errors::response_error::utils::{response_error_internal_error, response_error_not_found};
 
 use crate::repository::stable_state;
 use crate::repository::strategies_repo;
@@ -147,22 +147,25 @@ async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, R
             let mut strategy = match get_strategy_by_id(args.strategy_id) {
                 Some(strategy) => strategy,
                 None => {
-                    let message = format!("Strategy with id {} not found", args.strategy_id);
-                    return Err(ResponseErrorBuilder::not_found().message(message).build());
+                    return response_error_not_found(
+                        format!("Strategy with id {} not found", args.strategy_id)
+                    );
                 }
             };
 
             match strategy.deposit(caller(), args.amount).await {
                 Ok(response) => Ok(response),
                 Err(e) => {
-                    let message = format!("Error depositing to strategy: {}", e.message);
-                    Err(ResponseErrorBuilder::internal_error().message(message).build())
+                    response_error_internal_error(
+                        format!("Error depositing to strategy: {}", e.message)
+                    )
                 }
             }
         }
         Err(e) => {
-            let message = format!("Error accepting deposit to strategy: {}", e);
-            Err(ResponseErrorBuilder::internal_error().message(message).build())
+            response_error_internal_error(
+                format!("Error accepting deposit to strategy: {}", e)
+            )
         }
     }
 }
@@ -186,16 +189,18 @@ async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse
     let mut strategy = match get_strategy_by_id(args.strategy_id) {
         Some(strategy) => strategy,
         None => {
-            let message = format!("Strategy with id {} not found", args.strategy_id);
-            return Err(ResponseErrorBuilder::not_found().message(message).build());
+            return response_error_not_found(
+                format!("Strategy with id {} not found", args.strategy_id)
+            );
         }
     };
 
     match strategy.withdraw(args.amount).await {
         Ok(response) => Ok(response),
         Err(e) => {
-            let message = format!("Error withdrawing from strategy: {}", e.message);
-            Err(ResponseErrorBuilder::internal_error().message(message).build())
+            response_error_internal_error(
+                format!("Error withdrawing from strategy: {}", e.message)
+            )
         }
     }
 }
