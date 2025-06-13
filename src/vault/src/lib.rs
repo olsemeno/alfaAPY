@@ -16,6 +16,7 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
 use providers::{icpswap as icpswap_provider};
 use ::types::CanisterId;
+use ::types::context::Context;
 use errors::response_error::error::ResponseError;
 
 use crate::repository::stable_state;
@@ -141,7 +142,9 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 /// Returns a `ResponseError` if the strategy is not found or if the deposit operation fails.
 #[update]
 async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, ResponseError> {
-    match accept_deposit(args.amount.clone(), args.ledger, args.strategy_id).await {
+    let context = Context::generate(Some(caller()));
+
+    match accept_deposit(context.clone(), args.amount.clone(), args.ledger, args.strategy_id).await {
         Ok(_) => {
             let mut strategy = match get_strategy_by_id(args.strategy_id) {
                 Some(strategy) => strategy,
@@ -150,7 +153,7 @@ async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, R
                 }
             };
 
-            match strategy.deposit(caller(), args.amount).await {
+            match strategy.deposit(context.clone(), context.user.unwrap(), args.amount).await {
                 Ok(response) => Ok(response),
                 Err(error) => ResponseError::from_internal_error(error)
             }
@@ -175,6 +178,8 @@ async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, R
 /// Returns a `ResponseError` if the strategy is not found or if the withdrawal operation fails.
 #[update]
 async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse, ResponseError> {
+    let context = Context::generate(Some(caller()));
+
     let mut strategy = match get_strategy_by_id(args.strategy_id) {
         Some(strategy) => strategy,
         None => {
@@ -182,7 +187,7 @@ async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse
         }
     };
 
-    match strategy.withdraw(args.amount).await {
+    match strategy.withdraw(context.clone(), args.amount).await {
         Ok(response) => Ok(response),
         Err(error) => ResponseError::from_internal_error(error)
     }

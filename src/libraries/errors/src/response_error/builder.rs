@@ -27,15 +27,19 @@ impl ResponseErrorBuilder {
     pub fn not_found() -> Self {
         Self::new().code(ResponseErrorCode::NotFound)
     }
+
     pub fn validation() -> Self {
         Self::new().code(ResponseErrorCode::Validation)
     }
+
     pub fn access_denied() -> Self {
         Self::new().code(ResponseErrorCode::AccessDenied)
     }
+
     pub fn timeout() -> Self {
         Self::new().code(ResponseErrorCode::Timeout)
     }
+
     pub fn internal_error() -> Self {
         Self::new().code(ResponseErrorCode::InternalError)
     }
@@ -57,11 +61,13 @@ impl ResponseErrorBuilder {
         self
     }
 
+    // Build
+
     pub fn build(self) -> ResponseError {
-        ResponseError {
-            code: self.code.expect("code is required"),
-            message: self.message.unwrap_or_default(),
-            details: self.details,
-        }
+        ResponseError::new(
+            self.code.expect("code is required"),
+            self.message.unwrap_or_default(),
+            self.details,
+        )
     }
 }

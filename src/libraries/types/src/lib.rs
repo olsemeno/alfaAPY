@@ -6,6 +6,7 @@ pub mod exchange_id;
 pub mod liquidity;
 pub mod pool;
 pub mod pool_stats;
+pub mod context;
 
 use candid::{CandidType, Principal};
 use ic_ledger_types::Tokens;

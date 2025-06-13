@@ -27,8 +27,8 @@ impl AddLiquidityToPoolStartedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolStarted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -48,8 +48,8 @@ impl AddLiquidityToPoolCompletedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolCompleted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -69,8 +69,8 @@ impl AddLiquidityToPoolFailedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolFailed {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -90,8 +90,8 @@ impl RemoveLiquidityFromPoolStartedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolStarted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -111,8 +111,8 @@ impl RemoveLiquidityFromPoolCompletedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolCompleted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -132,8 +132,8 @@ impl RemoveLiquidityFromPoolFailedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolFailed {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }

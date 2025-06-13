@@ -9,6 +9,7 @@ use kongswap_canister::user_balances::UserBalancesReply;
 use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128};
 use swap::swap_service::{swap_icrc2_kongswap, quote_swap_icrc2_optimal, swap_icrc2};
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolData};
+use types::context::Context;
 
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
@@ -41,7 +42,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         self.canister_id
     }
 
-    async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, String> {
+    async fn add_liquidity_to_pool(&self, context: Context, amount: Nat) -> Result<AddLiquidityResponse, String> {
         // let token_0_str = self.token0.to_text();
         // let token_1_str = self.token1.to_text();
     
@@ -123,7 +124,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         }
     }
 
-    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
+    async fn withdraw_liquidity_from_pool(&self, context: Context, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
         // trap("Not implemented yet");
         let canister_id = ic_cdk::id();
     
@@ -176,7 +177,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         })
     }
 
-    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
+    async fn get_position_by_id(&self, context: Context, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
         let canister_id = ic_cdk::id();
 
         // Fetch LP positions in pool
@@ -216,7 +217,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         })
     }
 
-    async fn get_pool_data(&self) -> Result<GetPoolData, String> {
+    async fn get_pool_data(&self, context: Context) -> Result<GetPoolData, String> {
         let pools_response = match pools().await {
             Ok(reply) => reply,
             Err(err) => {

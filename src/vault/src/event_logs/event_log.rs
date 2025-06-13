@@ -46,34 +46,34 @@ pub enum EventLogParams {
     StrategyDepositStarted {
         strategy_id: String,
         pool_id: Option<String>,
-        amount0: Nat,
+        amount0: Option<Nat>,
     },
     StrategyDepositCompleted {
         strategy_id: String,
         pool_id: Option<String>,
-        amount0: Nat,
+        amount0: Option<Nat>,
     },
     StrategyDepositFailed {
         strategy_id: String,
         pool_id: Option<String>,
-        amount0: Nat,
+        amount0: Option<Nat>,
     },
     // Strategy Withdraw
     StrategyWithdrawStarted {
         strategy_id: String,
         pool_id: Option<String>,
-        shares: Nat,
+        shares: Option<Nat>,
     },
     StrategyWithdrawCompleted {
         strategy_id: String,
         pool_id: Option<String>,
-        shares: Nat,
-        amount0: Nat,
+        shares: Option<Nat>,
+        amount0: Option<Nat>,
     },
     StrategyWithdrawFailed {
         strategy_id: String,
         pool_id: Option<String>,
-        shares: Nat,
+        shares: Option<Nat>,
     },
     // Strategy Rebalance
     StrategyRebalanceStarted {
@@ -93,53 +93,53 @@ pub enum EventLogParams {
     // Add liquidity to pool
     AddLiquidityToPoolStarted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     AddLiquidityToPoolCompleted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     AddLiquidityToPoolFailed {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     // Remove liquidity from pool
     RemoveLiquidityFromPoolStarted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     RemoveLiquidityFromPoolCompleted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     RemoveLiquidityFromPoolFailed {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     // Swap token
     SwapTokenStarted {
         pool_id: String,
         token_in: CanisterId,
         token_out: CanisterId,
-        amount_in: Nat,
+        amount_in: Option<Nat>,
     },
     SwapTokenCompleted {
         token_in: CanisterId,
         token_out: CanisterId,
-        amount_in: Nat,
-        amount_out: Nat,
+        amount_in: Option<Nat>,
+        amount_out: Option<Nat>,
     },
     SwapTokenFailed {
         pool_id: String,
         token_in: CanisterId,
         token_out: CanisterId,
-        amount_in: Nat,
+        amount_in: Option<Nat>,
     },
     // External Call
     ExternalCallStarted {

@@ -36,6 +36,18 @@ impl ResponseError {
             details,
         }
     }
+
+    pub fn from_internal_error<T>(internal_error: InternalError) -> Result<T, Self> {
+        Err(ResponseErrorBuilder::from_internal_error(internal_error.clone()).message(internal_error.message).build())
+    }
+
+    pub fn internal_error<T>(message: impl Into<String>) -> Result<T, Self> {
+        Err(ResponseErrorBuilder::internal_error().message(message).build())
+    }
+
+    pub fn not_found<T>(message: impl Into<String>) -> Result<T, Self> {
+        Err(ResponseErrorBuilder::not_found().message(message).build())
+    }
 }
 
 impl From<InternalErrorKind> for ResponseErrorCode {
@@ -50,19 +62,5 @@ impl From<InternalErrorKind> for ResponseErrorCode {
             | InternalErrorKind::Infrastructure
             | InternalErrorKind::Unknown => ResponseErrorCode::InternalError,
         }
-    }
-}
-
-impl ResponseError {
-    pub fn from_internal_error<T>(internal_error: InternalError) -> Result<T, ResponseError> {
-        Err(ResponseErrorBuilder::from_internal_error(internal_error).build())
-    }
-
-    pub fn internal_error<T>(message: impl Into<String>) -> Result<T, ResponseError> {
-        Err(ResponseErrorBuilder::internal_error().message(message).build())
-    }
-
-    pub fn not_found<T>(message: impl Into<String>) -> Result<T, ResponseError> {
-        Err(ResponseErrorBuilder::not_found().message(message).build())
     }
 }

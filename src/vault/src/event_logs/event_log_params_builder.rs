@@ -41,7 +41,7 @@ impl StrategyDepositStartedParamsBuilder {
         EventLogParams::StrategyDepositStarted {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            amount0: self.amount0.expect("amount0 required"),
+            amount0: self.amount0,
         }
     }
 }
@@ -62,7 +62,7 @@ impl StrategyDepositCompletedParamsBuilder {
         EventLogParams::StrategyDepositCompleted {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            amount0: self.amount0.expect("amount0 required"),
+            amount0: self.amount0,
         }
     }
 }
@@ -83,7 +83,7 @@ impl StrategyDepositFailedParamsBuilder {
         EventLogParams::StrategyDepositFailed {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            amount0: self.amount0.expect("amount0 required"),
+            amount0: self.amount0,
         }
     }
 }
@@ -104,7 +104,7 @@ impl StrategyWithdrawStartedParamsBuilder {
         EventLogParams::StrategyWithdrawStarted {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            shares: self.shares.expect("shares required"),
+            shares: self.shares,
         }
     }
 }
@@ -127,8 +127,8 @@ impl StrategyWithdrawCompletedParamsBuilder {
         EventLogParams::StrategyWithdrawCompleted {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            shares: self.shares.expect("shares required"),
-            amount0: self.amount0.expect("amount0 required"),
+            shares: self.shares,
+            amount0: self.amount0,
         }
     }
 }
@@ -149,7 +149,7 @@ impl StrategyWithdrawFailedParamsBuilder {
         EventLogParams::StrategyWithdrawFailed {
             strategy_id: self.strategy_id.expect("strategy_id required"),
             pool_id: self.pool_id,
-            shares: self.shares.expect("shares required"),
+            shares: self.shares,
         }
     }
 }
@@ -229,8 +229,8 @@ impl AddLiquidityToPoolStartedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolStarted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -250,8 +250,8 @@ impl AddLiquidityToPoolCompletedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolCompleted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -271,8 +271,8 @@ impl AddLiquidityToPoolFailedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::AddLiquidityToPoolFailed {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -292,8 +292,8 @@ impl RemoveLiquidityFromPoolStartedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolStarted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -313,8 +313,8 @@ impl RemoveLiquidityFromPoolCompletedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolCompleted {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -334,8 +334,8 @@ impl RemoveLiquidityFromPoolFailedParamsBuilder {
     pub fn build(self) -> EventLogParams {
         EventLogParams::RemoveLiquidityFromPoolFailed {
             pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0.expect("amount0 required"),
-            amount1: self.amount1.expect("amount1 required"),
+            amount0: self.amount0,
+            amount1: self.amount1,
         }
     }
 }
@@ -359,7 +359,7 @@ impl SwapTokenStartedParamsBuilder {
             pool_id: self.pool_id.expect("pool_id required"),
             token_in: self.token_in.expect("token_in required"),
             token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in.expect("amount_in required"),
+            amount_in: self.amount_in,
         }
     }
 }
@@ -382,8 +382,8 @@ impl SwapTokenCompletedParamsBuilder {
         EventLogParams::SwapTokenCompleted {
             token_in: self.token_in.expect("token_in required"),
             token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in.expect("amount_in required"),
-            amount_out: self.amount_out.expect("amount_out required"),
+            amount_in: self.amount_in,
+            amount_out: self.amount_out,
         }
     }
 }
@@ -407,7 +407,7 @@ impl SwapTokenFailedParamsBuilder {
             pool_id: self.pool_id.expect("pool_id required"),
             token_in: self.token_in.expect("token_in required"),
             token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in.expect("amount_in required"),
+            amount_in: self.amount_in,
         }
     }
 }

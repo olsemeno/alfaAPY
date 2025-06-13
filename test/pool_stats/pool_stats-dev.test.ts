@@ -66,7 +66,8 @@ describe("Pool Stats Test DEV", () => {
 
             const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
             const approveAmount = BigInt(10000000000);
-            const depositAmount = BigInt(100_000_000);
+            // const depositAmount = BigInt(100_000_000);
+            const depositAmount = BigInt(0);
         
             await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 

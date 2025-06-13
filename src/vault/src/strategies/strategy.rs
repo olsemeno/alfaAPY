@@ -7,7 +7,6 @@ use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-// use uuid::Uuid;
 
 use swap::swap_service;
 use swap::token_swaps::nat_to_u128;
@@ -24,6 +23,7 @@ use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::types::types::{StrategyDepositResponse, StrategyRebalanceResponse, StrategyResponse, StrategyWithdrawResponse};
+use types::context::Context;
 use crate::liquidity::liquidity_service::{
     add_liquidity_to_pool,
     get_pools_data,
@@ -88,8 +88,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 6. Adds liquidity to the pool
     /// 7. Saves the updated strategy state
     ///
-    async fn deposit(&mut self, investor: Principal, amount: Nat) -> Result<StrategyDepositResponse, InternalError> {
-        let correlation_id = "1".to_string(); // Uuid::new_v4().to_string();
+    async fn deposit(&mut self, context: Context, investor: Principal, amount: Nat) -> Result<StrategyDepositResponse, InternalError> {
         let pools_data = get_pools_data(self.get_pools()).await;
 
         // // TODO: remove this after testing
@@ -121,7 +120,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
                 event_log_service::create_event_log(
                     event_log_params,
-                    correlation_id.clone(),
+                    context.correlation_id,
                     Some(investor),
                     Some(internal_error.clone()),
                 );
@@ -137,6 +136,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if let Some(ref current_pool) = self.get_current_pool() {
              // Add liquidity to pool
             let add_liquidity_response = add_liquidity_to_pool(
+                context.clone(),
                 amount.clone(),
                 current_pool.clone()
             ).await;
@@ -178,7 +178,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 None,
             );
@@ -205,7 +205,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 Some(internal_error.clone()),
             );
@@ -237,9 +237,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves updated strategy state
     ///
     /// TODO: Rename `shares` to `percentage`
-    async fn withdraw(&mut self, mut shares: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
-        let correlation_id = "2".to_string(); //Uuid::new_v4().to_string();
-        let investor = caller(); // <- "Ya ne halyavshchik, ya partner!"
+    async fn withdraw(&mut self, context: Context, mut shares: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
+        let investor = context.user.unwrap();
         let user_shares = self.get_user_shares_by_principal(investor.clone());
         let current_pool = self.get_current_pool().clone();
         let current_pool_id = current_pool.clone().unwrap().get_id();
@@ -268,7 +267,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 Some(internal_error.clone()),
             );
@@ -298,7 +297,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 Some(internal_error.clone()),
             );
@@ -313,6 +312,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // Withdraw liquidity from pool
             let withdraw_response = withdraw_liquidity_from_pool(
+                context.clone(),
                 self.get_total_shares(),
                 shares.clone(),
                 current_pool.clone(),
@@ -365,7 +365,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
                     event_log_service::create_event_log(
                         event_log_params,
-                        correlation_id.clone(),
+                        context.correlation_id,
                         Some(investor),
                         Some(internal_error.clone()),
                     );
@@ -391,7 +391,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
                     event_log_service::create_event_log(
                         event_log_params,
-                        correlation_id.clone(),
+                        context.correlation_id,
                         Some(investor),
                         Some(internal_error.clone()),
                     );
@@ -444,7 +444,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 None,
             );
@@ -469,7 +469,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 Some(investor),
                 Some(internal_error.clone()),
             );
@@ -497,7 +497,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     ///   * `pool` - The pool being used after rebalancing
     ///
     async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
-        let correlation_id = "3".to_string(); // Uuid::new_v4().to_string();
+        let context = Context::generate(None);
+
         let pools_data = get_pools_data(self.get_pools()).await;
         let mut max_apy = 0;
         let mut max_apy_pool = None;
@@ -537,6 +538,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // Withdraw liquidity from current pool
             let withdraw_response = withdraw_liquidity_from_pool(
+                context.clone(),
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),
@@ -557,6 +559,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             // Add liquidity to new pool
             add_liquidity_to_pool(
+                context.clone(),
                 token_0_to_pool_amount,
                 max_apy_pool.clone(),
             ).await;
@@ -570,7 +573,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 None,
                 None,
             );
@@ -599,7 +602,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
             event_log_service::create_event_log(
                 event_log_params,
-                correlation_id.clone(),
+                context.correlation_id,
                 None,
                 Some(internal_error.clone()),
             );

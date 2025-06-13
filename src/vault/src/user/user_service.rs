@@ -6,6 +6,7 @@ use std::convert::TryInto;
 use ic_cdk::api::time;
 use ic_cdk::{caller, id, trap};
 use types::CanisterId;
+use types::context::Context;
 use crate::types::types::StrategyId;
 
 thread_local! {
@@ -26,7 +27,12 @@ struct UserDeposit {
     timestamp: u64
 }
 
-pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) -> Result<(), String> {
+pub async fn accept_deposit(
+    context: Context,
+    amount: Nat,
+    ledger: Principal,
+    str_id: StrategyId
+) -> Result<(), String> {
     // TODO: use utils::icrc2_transfer_from_user
     let transfer_args: Icrc2TransferFromArgs = Icrc2TransferFromArgs {
         spender_subaccount: None,

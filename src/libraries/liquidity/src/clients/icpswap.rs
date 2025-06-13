@@ -6,6 +6,7 @@ use num_traits::ToPrimitive;
 
 use utils::util::{nat_to_u64};
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee, GetPositionByIdResponse, GetPoolData};
+use types::context::Context;
 use types::CanisterId;
 use providers::{icpswap as icpswap_provider};
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
@@ -352,7 +353,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         self.canister_id
     }
 
-    async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, String> {
+    async fn add_liquidity_to_pool(&self, context: Context, amount: Nat) -> Result<AddLiquidityResponse, String> {
         // Flow:
         // 1. Get user position ids
         // 2. Get token meta
@@ -508,7 +509,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // TODO: Withdraw remaining token0 and token1 from canister after adding liquidity
     }
 
-    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
+    async fn withdraw_liquidity_from_pool(&self, context: Context, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
         // Flow:
         // 1. Get user position ids
         // 2. Get token meta
@@ -644,7 +645,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
+    async fn get_position_by_id(&self, context: Context, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
         // 3. Get metadata
         let metadata = match self.metadata().await {
             Ok(metadata) => metadata,
@@ -717,7 +718,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_pool_data(&self) -> Result<GetPoolData, String> {
+    async fn get_pool_data(&self, context: Context) -> Result<GetPoolData, String> {
         let tvl_storage_canister_id  = match self.get_tvl_storage_canister().await {
             Ok(tvl_storage_canister_id) => Principal::from_text(tvl_storage_canister_id).unwrap(),
             Err(error) => {

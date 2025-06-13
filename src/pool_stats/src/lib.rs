@@ -8,6 +8,7 @@ use candid::export_service;
 
 use types::exchange_id::ExchangeId;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::context::Context;
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
@@ -111,8 +112,10 @@ pub fn delete_all_pools_and_snapshots() -> bool {
 // TODO: test method, remove after testing
 #[update]
 pub async fn create_pool_snapshot(pool_id: String) -> PoolSnapshot {
+    let context = Context::generate(None);
+
     let pool = pools_repo::get_pool_by_id(pool_id.clone()).unwrap();
-    pool_snapshot_service::create_pool_snapshot(&pool).await
+    pool_snapshot_service::create_pool_snapshot(context, &pool).await
 }
 
 // ========================== End of test method ==========================
@@ -176,9 +179,11 @@ pub async fn add_liquidity_to_pool(
     pool_id: String,
     amount: Nat
 ) -> Result<AddLiquidityResponse, ResponseError> {
-    match icrc2_transfer_from_user(caller(), ledger, amount.clone()).await {
+    let context = Context::generate(Some(caller()));
+
+    match icrc2_transfer_from_user(context.clone(), caller(), ledger, amount.clone()).await {
         Ok(_) => {
-            match liquidity_service::add_liquidity_to_pool(pool_id, amount).await {
+            match liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await {
                 Ok(response) => Ok(response),
                 Err(error) => ResponseError::from_internal_error(error),
             }
@@ -189,7 +194,9 @@ pub async fn add_liquidity_to_pool(
 
 #[update]
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
-    match liquidity_service::remove_liquidity_from_pool(pool_id).await {
+    let context = Context::generate(Some(caller()));
+
+    match liquidity_service::remove_liquidity_from_pool(context, pool_id).await {
         Ok(response) => Ok(response),
         Err(error) => ResponseError::from_internal_error(error)
     }

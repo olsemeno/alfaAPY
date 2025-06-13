@@ -4,6 +4,7 @@ use ic_cdk_timers::TimerId;
 
 use liquidity::liquidity_router;
 use liquidity::liquidity_client::LiquidityClient;
+use types::context::Context;
 
 use crate::pools::pool::Pool;
 use crate::pool_snapshots::pool_snapshot::{PoolSnapshot, PositionData, PoolData};
@@ -41,25 +42,27 @@ pub fn stop_pool_snapshots_timer() {
 }
 
 pub async fn create_all_pool_snapshots() {
+    let context = Context::generate(None);
+
     let pools = pools_repo::get_pools();
     // Iterate over pools with liquidity position
     for pool in pools.into_iter().filter(|p| p.position_id.is_some()) {
-        create_pool_snapshot(&pool).await;
+        create_pool_snapshot(context.clone(), &pool).await;
     }
 }
 
-pub async fn create_pool_snapshot(pool: &Pool) -> PoolSnapshot {
-    let pool_data = get_pool_data(pool).await;
-    let position_data = get_position_data(pool).await;
+pub async fn create_pool_snapshot(context: Context, pool: &Pool) -> PoolSnapshot {
+    let pool_data = get_pool_data(context.clone(), pool).await;
+    let position_data = get_position_data(context, pool).await;
 
     PoolSnapshot::create(pool.id.clone(), position_data, pool_data)
 }
 
-async fn get_position_data(pool: &Pool) -> Option<PositionData> {
+async fn get_position_data(context: Context, pool: &Pool) -> Option<PositionData> {
     let liquidity_client = get_liquidity_client(pool).await;
 
     if let Some(position_id) = pool.position_id.as_ref().cloned() {
-        match liquidity_client.get_position_by_id(position_id).await {
+        match liquidity_client.get_position_by_id(context, position_id).await {
             Ok(position) => {
                 let current_position = PositionData {
                     id: position.position_id,
@@ -79,10 +82,10 @@ async fn get_position_data(pool: &Pool) -> Option<PositionData> {
     }
 }
 
-async fn get_pool_data(pool: &Pool) -> Option<PoolData> {
+async fn get_pool_data(context: Context, pool: &Pool) -> Option<PoolData> {
     let liquidity_client = get_liquidity_client(pool).await;
 
-    match liquidity_client.get_pool_data().await {
+    match liquidity_client.get_pool_data(context).await {
         Ok(pool_data) => {
             let pool_data = PoolData {
                 tvl: pool_data.tvl,

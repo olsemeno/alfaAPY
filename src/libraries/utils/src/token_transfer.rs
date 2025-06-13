@@ -7,8 +7,10 @@ use icrc_ledger_types::icrc1::account::Account;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::builder::InternalErrorBuilder;
 use types::CanisterId;
+use types::context::Context;
 
 pub async fn icrc2_transfer_from_user(
+    context: Context,
     user: Principal,
     ledger: CanisterId,
     amount: Nat,

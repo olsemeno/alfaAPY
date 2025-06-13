@@ -23,34 +23,34 @@ pub enum EventLogParams {
     // Add liquidity to pool
     AddLiquidityToPoolStarted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     AddLiquidityToPoolCompleted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     AddLiquidityToPoolFailed {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     // Remove liquidity from pool
     RemoveLiquidityFromPoolStarted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     RemoveLiquidityFromPoolCompleted {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
     RemoveLiquidityFromPoolFailed {
         pool_id: String,
-        amount0: Nat,
-        amount1: Nat,
+        amount0: Option<Nat>,
+        amount1: Option<Nat>,
     },
 }
 

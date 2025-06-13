@@ -1,6 +1,7 @@
 use candid::Nat;
 use ic_cdk::trap;
 
+use types::context::Context;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use liquidity::liquidity_router::get_liquidity_client;
 
@@ -26,14 +27,14 @@ pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
     pool_data
 }
 
-pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityResponse {
+pub async fn add_liquidity_to_pool(context: Context, amount: Nat, pool: Pool) -> AddLiquidityResponse {
     let liquidity_client = get_liquidity_client(
         pool.token0.clone(),
         pool.token1.clone(),
         pool.provider.clone()
     ).await;
 
-    match liquidity_client.add_liquidity_to_pool(amount).await {
+    match liquidity_client.add_liquidity_to_pool(context, amount).await {
         Ok(response) => response,
         Err(error) => {
             trap(error.as_str());
@@ -41,14 +42,14 @@ pub async fn add_liquidity_to_pool(amount: Nat, pool: Pool) -> AddLiquidityRespo
     }
 }
 
-pub async fn withdraw_liquidity_from_pool(total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
+pub async fn withdraw_liquidity_from_pool(context: Context, total_shares: Nat, shares: Nat, pool: Pool) -> WithdrawFromPoolResponse {
     let liquidity_client = get_liquidity_client(
         pool.token0.clone(),
         pool.token1.clone(),
         pool.provider.clone()
     ).await;
 
-    match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
+    match liquidity_client.withdraw_liquidity_from_pool(context, total_shares, shares).await {
         Ok(response) => response,
         Err(error) => {
             trap(error.as_str());
