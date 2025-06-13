@@ -1,4 +1,4 @@
-import {_SERVICE as VaultType, DepositResponse, WithdrawResponse, StrategyResponse} from "../idl/vault";
+import {_SERVICE as VaultType, StrategyDepositResponse, StrategyWithdrawResponse, StrategyResponse} from "../idl/vault";
 import {_SERVICE as Kong, PoolsReply, PoolsResult} from "../idl/kong_backend";
 import {Actor, ActorSubclass, AnonymousIdentity, HttpAgent, Identity} from "@dfinity/agent";
 import {idlFactory} from "../idl/vault_idl";
@@ -30,13 +30,25 @@ export class StrategyWrapper {
     }
 
     //todo accept identity-kit actor
-    public async withdraw(strategy_id: number, ledger: string, amount: bigint): Promise<WithdrawResponse> {
-        return this.actor.withdraw({strategy_id, ledger: Principal.fromText(ledger), amount})
+    public async withdraw(strategy_id: number, ledger: string, amount: bigint): Promise<StrategyWithdrawResponse> {
+        const result = await this.actor.withdraw({strategy_id, ledger: Principal.fromText(ledger), amount});
+
+        if ('Ok' in result) {
+            return result.Ok;
+        } else {
+            throw new Error(result.Err.message);
+        }
     }
 
     //todo accept identity-kit actor
-    public async accept_investment(strategy_id: number, ledger: string, amount: bigint): Promise<DepositResponse> {
-        return this.actor.accept_investment({strategy_id, ledger: Principal.fromText(ledger), amount})
+    public async deposit(strategy_id: number, ledger: string, amount: bigint): Promise<StrategyDepositResponse> {
+        const result = await this.actor.deposit({strategy_id, ledger: Principal.fromText(ledger), amount});
+
+        if ('Ok' in result) {
+            return result.Ok;
+        } else {
+            throw new Error(result.Err.message);
+        }
     }
 
     public async get_pool_data(pools_symbols:Array<String>): Promise<any> {

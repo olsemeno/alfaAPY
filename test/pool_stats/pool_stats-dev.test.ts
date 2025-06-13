@@ -3,7 +3,7 @@ import {getTypedActor} from "../util/util";
 import {_SERVICE as ledgerService, ApproveArgs} from "../idl/ledger";
 import {idlFactory as ledger_idl} from "../idl/ledger_idl";
 import {_SERVICE as PoolStatsType} from "../idl/pool_stats";
-import {idlFactory} from "../idl/vault_idl";
+import {idlFactory} from "../idl/pool_stats_idl";
 import {Principal} from "@dfinity/principal";
 import {ActorSubclass} from "@dfinity/agent";
 import {AccountIdentifier} from '@dfinity/ledger-icp';
@@ -49,23 +49,48 @@ describe("Pool Stats Test DEV", () => {
         });
     });
 
-    describe(".deposit", () => {
-        it("Deposit liquidity to pool", async () => {
-            console.log("== START \"Deposit liquidity to pool\" TEST ==");
+    describe(".get_pool_by_id", () => {
+        it("Get pool by id", async () => {
+            console.log("== START \"Get pool by id\" TEST ==");
 
-            const poolId = "1";
+            const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+            const result = await actorPoolStats.get_pool_by_id(poolId);
+
+            console.log("Pool:", result);
+        });
+    });
+
+    describe(".add_liquidity_to_pool", () => {
+        it("Add liquidity to pool", async () => {
+            console.log("== START \"Add liquidity to pool\" TEST ==");
+
+            const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
             const approveAmount = BigInt(10000000000);
-            const depositAmount = BigInt(40_000_000);
+            const depositAmount = BigInt(100_000_000);
         
             await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 
             try {
-                console.log("Deposit starting...");
+                console.log("Add liquidity starting...");
 
-                const result = await actorPoolStats.add_liquidity_to_pool(poolId, depositAmount);
+                const result = await actorPoolStats.add_liquidity_to_pool(
+                    Principal.fromText(ledgerCanisterId),
+                    poolId,
+                    depositAmount
+                );
 
-                console.log("Pool snapshot:", result);
+                if ('Ok' in result) {
+                    const addLiquidityResp = result.Ok;
+                    console.log("Add liquidity success:", addLiquidityResp.token_0_amount, addLiquidityResp.token_1_amount, addLiquidityResp.request_id);
+
+                    expect(addLiquidityResp.token_0_amount).to.equal(depositAmount);
+                    expect(addLiquidityResp.token_1_amount).to.equal(depositAmount);
+                } else {
+                    console.error("Add liquidity failed:", result.Err);
+                    throw new Error(`Add liquidity failed: ${JSON.stringify(result.Err)}`);
+                }
             } catch (e) {
+                throw new Error("Add liquidity failed with error: " + e);
             }
         });
     });

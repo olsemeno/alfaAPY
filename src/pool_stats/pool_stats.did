@@ -57,9 +57,23 @@ type PositionData = record {
   amount1 : nat;
 };
 
-type Result = variant { Ok : AddLiquidityResponse; Err : text };
+type ResponseError = record {
+  code : ResponseErrorCode;
+  message : text;
+  details : opt vec record { text; text };
+};
 
-type Result_1 = variant { Ok : WithdrawFromPoolResponse; Err : text };
+type ResponseErrorCode = variant {
+  AccessDenied;
+  NotFound;
+  Timeout;
+  Validation;
+  InternalError;
+};
+
+type Result = variant { Ok : AddLiquidityResponse; Err : ResponseError };
+
+type Result_1 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
 
 type WithdrawFromPoolResponse = record {
   token_0_amount : nat;
@@ -67,9 +81,10 @@ type WithdrawFromPoolResponse = record {
 };
 
 service : () -> {
-  add_liquidity_to_pool : (text, nat) -> (Result);
+  add_liquidity_to_pool : (principal, text, nat) -> (Result);
   add_pool : (principal, principal, ExchangeId) -> (text);
   add_pool_snapshot : (PoolSnapshotArgs) -> ();
+  create_pool_snapshot : (text) -> (PoolSnapshot);
   delete_all_pools_and_snapshots : () -> (bool);
   delete_pool : (text) -> (bool);
   delete_pool_snapshot : (text, text) -> ();
@@ -80,6 +95,5 @@ service : () -> {
   get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
   remove_liquidity_from_pool : (text) -> (Result_1);
   set_operator : (principal) -> ();
-  create_pool_snapshot : (text) -> (PoolSnapshot);
   update_pool_ids : () -> (bool);
 }

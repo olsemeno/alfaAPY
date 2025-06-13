@@ -1,6 +1,8 @@
 use super::error::{ResponseError, ResponseErrorCode};
 use std::collections::HashMap;
 
+use crate::internal_error::error::InternalError;
+
 pub struct ResponseErrorBuilder {
     code: Option<ResponseErrorCode>,
     message: Option<String>,
@@ -17,6 +19,11 @@ impl ResponseErrorBuilder {
     }
 
     // Code setters
+
+    pub fn from_internal_error(internal_error: InternalError) -> Self {
+        Self::new().code(internal_error.kind.into())
+    }
+
     pub fn not_found() -> Self {
         Self::new().code(ResponseErrorCode::NotFound)
     }

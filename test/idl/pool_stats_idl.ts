@@ -4,7 +4,22 @@ export const idlFactory = ({ IDL }) => {
     'token_0_amount' : IDL.Nat,
     'token_1_amount' : IDL.Nat,
   });
-  const Result = IDL.Variant({ 'Ok' : AddLiquidityResponse, 'Err' : IDL.Text });
+  const ResponseErrorCode = IDL.Variant({
+    'AccessDenied' : IDL.Null,
+    'NotFound' : IDL.Null,
+    'Timeout' : IDL.Null,
+    'Validation' : IDL.Null,
+    'InternalError' : IDL.Null,
+  });
+  const ResponseError = IDL.Record({
+    'code' : ResponseErrorCode,
+    'message' : IDL.Text,
+    'details' : IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))),
+  });
+  const Result = IDL.Variant({
+    'Ok' : AddLiquidityResponse,
+    'Err' : ResponseError,
+  });
   const ExchangeId = IDL.Variant({
     'Sonic' : IDL.Null,
     'KongSwap' : IDL.Null,
@@ -51,10 +66,14 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_1 = IDL.Variant({
     'Ok' : WithdrawFromPoolResponse,
-    'Err' : IDL.Text,
+    'Err' : ResponseError,
   });
   return IDL.Service({
-    'add_liquidity_to_pool' : IDL.Func([IDL.Text, IDL.Nat], [Result], []),
+    'add_liquidity_to_pool' : IDL.Func(
+        [IDL.Principal, IDL.Text, IDL.Nat],
+        [Result],
+        [],
+      ),
     'add_pool' : IDL.Func(
         [IDL.Principal, IDL.Principal, ExchangeId],
         [IDL.Text],

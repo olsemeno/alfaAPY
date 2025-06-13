@@ -45,16 +45,26 @@ export interface PositionData {
   'amount0' : bigint,
   'amount1' : bigint,
 }
+export interface ResponseError {
+  'code' : ResponseErrorCode,
+  'message' : string,
+  'details' : [] | [Array<[string, string]>],
+}
+export type ResponseErrorCode = { 'AccessDenied' : null } |
+  { 'NotFound' : null } |
+  { 'Timeout' : null } |
+  { 'Validation' : null } |
+  { 'InternalError' : null };
 export type Result = { 'Ok' : AddLiquidityResponse } |
-  { 'Err' : string };
+  { 'Err' : ResponseError };
 export type Result_1 = { 'Ok' : WithdrawFromPoolResponse } |
-  { 'Err' : string };
+  { 'Err' : ResponseError };
 export interface WithdrawFromPoolResponse {
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
 }
 export interface _SERVICE {
-  'add_liquidity_to_pool' : ActorMethod<[string, bigint], Result>,
+  'add_liquidity_to_pool' : ActorMethod<[Principal, string, bigint], Result>,
   'add_pool' : ActorMethod<[Principal, Principal, ExchangeId], string>,
   'add_pool_snapshot' : ActorMethod<[PoolSnapshotArgs], undefined>,
   'create_pool_snapshot' : ActorMethod<[string], PoolSnapshot>,

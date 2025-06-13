@@ -23,7 +23,7 @@ describe("VR Test PROD", () => {
     const icsCanisterId = "ca6gz-lqaaa-aaaaq-aacwa-cai";
 
     // const ledgerCanisterId = icpCanisterId; // ICP
-    const ledgerCanisterId = icsCanisterId; // PANDA
+    const ledgerCanisterId = icsCanisterId;
 
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
@@ -144,7 +144,7 @@ describe("VR Test PROD", () => {
             console.log("== START \"Withdraws full balance\" TEST ==");
             console.log("Shares:", shares);
 
-            shares = depositAmount; // For testing without deposit
+            shares = 100n; // For testing without deposit
             sharesToWithdraw = shares; // All shares
             remainingShares = 0n; // No shares left
 

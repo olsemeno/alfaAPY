@@ -68,7 +68,7 @@ describe("VR Test", () => {
 
         })
         let actorVault = await getTypedActor<VaultType>(canister_id, member_identity, idlFactory);
-        let accept = await actorVault.accept_investment({
+        let accept = await actorVault.deposit({
             ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"), amount: BigInt(100000000),
             strategy_id: 1
         })

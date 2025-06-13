@@ -1237,8 +1237,12 @@ name = "utils"
 version = "0.1.0"
 dependencies = [
  "candid",
+ "errors",
  "hex",
  "ic-cdk 0.17.1",
+ "icrc-ledger-types",
+ "icrc_ledger_canister",
+ "icrc_ledger_canister_c2c_client",
  "serde_json",
  "types",
 ]

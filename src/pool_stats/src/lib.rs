@@ -2,7 +2,7 @@ use candid::{CandidType, Deserialize, Principal, Nat};
 use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use ic_cdk::{call, id, trap, update};
+use ic_cdk::{call, id, trap, update, caller};
 use ic_cdk::api::call::CallResult;
 use candid::export_service;
 
@@ -11,7 +11,7 @@ use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
-use errors::response_error::utils::response_error_internal_error;
+use utils::token_transfer::icrc2_transfer_from_user;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
@@ -51,6 +51,7 @@ thread_local! {
     );
 }
 
+// ========================== Test methods ==========================
 
 // TODO: test method, remove after testing
 use crate::pool_snapshots::pool_snapshot::{PositionData, PoolData};
@@ -114,9 +115,9 @@ pub async fn create_pool_snapshot(pool_id: String) -> PoolSnapshot {
     pool_snapshot_service::create_pool_snapshot(&pool).await
 }
 
-// End of test method
+// ========================== End of test method ==========================
 
-// Pools management
+// ========================== Pools management ==========================
 
 #[update]
 pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> String {
@@ -145,7 +146,7 @@ pub fn get_pool_by_id(id: String) -> Option<Pool> {
     pools_repo::get_pool_by_id(id)
 }
 
-// Pool metrics
+// ========================== Pool metrics ==========================
 
 #[update]
 pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
@@ -167,13 +168,22 @@ pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSna
         .collect()
 }
 
-// Liquidity management
+// ========================== Liquidity management ==========================
 
 #[update]
-pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, ResponseError> {
-    match liquidity_service::add_liquidity_to_pool(pool_id, amount).await {
-        Ok(response) => Ok(response),
-        Err(error) => response_error_internal_error(error.message)
+pub async fn add_liquidity_to_pool(
+    ledger: CanisterId,
+    pool_id: String,
+    amount: Nat
+) -> Result<AddLiquidityResponse, ResponseError> {
+    match icrc2_transfer_from_user(caller(), ledger, amount.clone()).await {
+        Ok(_) => {
+            match liquidity_service::add_liquidity_to_pool(pool_id, amount).await {
+                Ok(response) => Ok(response),
+                Err(error) => ResponseError::from_internal_error(error),
+            }
+        },
+        Err(error) => ResponseError::from_internal_error(error),
     }
 }
 
@@ -181,11 +191,11 @@ pub async fn add_liquidity_to_pool(pool_id: String, amount: Nat) -> Result<AddLi
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
     match liquidity_service::remove_liquidity_from_pool(pool_id).await {
         Ok(response) => Ok(response),
-        Err(error) => response_error_internal_error(error.message)
+        Err(error) => ResponseError::from_internal_error(error)
     }
 }
 
-// Vault management
+// ========================== Vault management ==========================
 
 #[ic_cdk::init]
 async fn init() {

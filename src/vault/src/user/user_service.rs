@@ -27,6 +27,7 @@ struct UserDeposit {
 }
 
 pub async fn accept_deposit(amount: Nat, ledger: Principal, str_id: StrategyId) -> Result<(), String> {
+    // TODO: use utils::icrc2_transfer_from_user
     let transfer_args: Icrc2TransferFromArgs = Icrc2TransferFromArgs {
         spender_subaccount: None,
         from: Account { owner: caller(), subaccount: None },
