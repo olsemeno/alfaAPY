@@ -1,21 +1,15 @@
 use async_trait::async_trait;
 use candid::{Nat, Principal};
-use ic_cdk::caller;
-use icrc_ledger_canister_c2c_client::icrc1_transfer;
-use icrc_ledger_types::icrc1::account::Account;
-use icrc_ledger_types::icrc1::transfer::TransferArg;
 use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use swap::swap_service;
-use swap::token_swaps::nat_to_u128;
-use utils::util::nat_to_f64;
 use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
-use errors::internal_error::builder::InternalErrorBuilder;
 use errors::internal_error::error::InternalError;
+use utils::token_transfer::icrc1_transfer_to_user;
 
 use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
 use crate::event_logs::event_log_service;
@@ -24,11 +18,7 @@ use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::types::types::{StrategyDepositResponse, StrategyRebalanceResponse, StrategyResponse, StrategyWithdrawResponse};
 use types::context::Context;
-use crate::liquidity::liquidity_service::{
-    add_liquidity_to_pool,
-    get_pools_data,
-    withdraw_liquidity_from_pool,
-};
+use crate::liquidity::liquidity_service;
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
@@ -89,13 +79,14 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// 7. Saves the updated strategy state
     ///
     async fn deposit(&mut self, context: Context, investor: Principal, amount: Nat) -> Result<StrategyDepositResponse, InternalError> {
-        let pools_data = get_pools_data(self.get_pools()).await;
+        let pools_data = liquidity_service::get_pools_data(self.get_pools()).await;
 
         // // TODO: remove this after testing
         // self.set_current_pool(None);
 
         // Set current pool to the best APY pool if not set
         if self.get_current_pool().is_none() {
+            // Find the best APY pool
             let best_apy_pool = pools_data
                 .iter()
                 .filter(|x| x.pool.provider == ExchangeId::KongSwap) // TODO: remove this after testing
@@ -113,10 +104,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     .amount0(amount)
                     .build();
 
-                let internal_error = InternalErrorBuilder::business_logic()
-                    .context("Strategy::deposit")
-                    .message("No pool found to deposit".to_string())
-                    .build();
+                let internal_error = InternalError::not_found(
+                    "BasicStrategy::deposit".to_string(),
+                    "No pool found to deposit".to_string(),
+                    None,
+                    None,
+                );
 
                 event_log_service::create_event_log(
                     event_log_params,
@@ -135,11 +128,22 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
         if let Some(ref current_pool) = self.get_current_pool() {
              // Add liquidity to pool
-            let add_liquidity_response = add_liquidity_to_pool(
+            let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
                 context.clone(),
                 amount.clone(),
                 current_pool.clone()
-            ).await;
+            ).await
+            .map_err(|error| {
+                // TODO: Add event log
+                error.wrap(
+                    "BasicStrategy::deposit".to_string(),
+                    "Error calling 'liquidity_service::add_liquidity_to_pool'".to_string(),
+                    Some(HashMap::from([
+                        ("pool_id".to_string(), current_pool.get_id()),
+                        ("amount".to_string(), amount.to_string()),
+                    ])),
+                )
+            })?;
 
             // Calculate new shares for investor's deposit
             let new_shares = LiquidityCalculator::calculate_shares_for_deposit(
@@ -198,10 +202,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .amount0(amount)
                 .build();
 
-            let internal_error = InternalErrorBuilder::business_logic()
-                .context("Strategy::deposit")
-                .message("No current pool found to deposit".to_string())
-                .build();
+            let internal_error = InternalError::not_found(
+                "BasicStrategy::deposit".to_string(),
+                "No current pool found to deposit".to_string(),
+                None,
+                None,
+            );
 
             event_log_service::create_event_log(
                 event_log_params,
@@ -246,7 +252,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         let percentage = shares; // TODO: Fix naming
         shares = user_shares.clone() * percentage.clone() / Nat::from(100u64); // TODO: Check this operation
 
-
         if user_shares == Nat::from(0u8) {
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
@@ -255,15 +260,16 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .shares(shares.clone())
                 .build();
 
-            let internal_error = InternalErrorBuilder::business_logic()
-                .context("Strategy::withdraw")
-                .message("No shares found for user".to_string())
-                .extra(HashMap::from([
+            let internal_error = InternalError::business_logic(
+                "BasicStrategy::withdraw".to_string(),
+                "No shares found for user".to_string(),
+                None,
+                Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
                     ("user_shares".to_string(), user_shares.to_string()),
                     ("shares".to_string(), shares.to_string()),
                 ]))
-                .build();
+            );
 
             event_log_service::create_event_log(
                 event_log_params,
@@ -285,15 +291,16 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .shares(shares.clone())
                 .build();
 
-            let internal_error = InternalErrorBuilder::business_logic()
-                .context("Strategy::withdraw")
-                .message("Not sufficient shares for user".to_string())
-                .extra(HashMap::from([
+            let internal_error = InternalError::business_logic(
+                "BasicStrategy::withdraw".to_string(),
+                "Not sufficient shares for user".to_string(),
+                None,
+                Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
                     ("user_shares".to_string(), user_shares.to_string()),
                     ("shares".to_string(), shares.to_string()),
                 ]))
-                .build();
+            );
 
             event_log_service::create_event_log(
                 event_log_params,
@@ -311,95 +318,67 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let token1 = current_pool.token1.clone();
 
             // Withdraw liquidity from pool
-            let withdraw_response = withdraw_liquidity_from_pool(
+            let withdraw_response = liquidity_service::withdraw_liquidity_from_pool(
                 context.clone(),
                 self.get_total_shares(),
                 shares.clone(),
                 current_pool.clone(),
-            )
-            .await;
+            ).await
+                .map_err(|error| {
+                    error.wrap(
+                        "BasicStrategy::withdraw".to_string(),
+                        "Error calling 'liquidity_service::withdraw_liquidity_from_pool'".to_string(),
+                        Some(HashMap::from([
+                            ("pool_id".to_string(), current_pool_id.to_string()),
+                            ("shares".to_string(), shares.to_string()),
+                        ])),
+                    )
+                })?;
 
             // Swap withdrawn token_1 to token_0 (base token)
             let swap_response = swap_service::swap_icrc2_optimal(
                 token1.clone(),
                 token0.clone(),
-                nat_to_f64(&withdraw_response.token_1_amount) as u128,
-            ).await;
+                withdraw_response.token_1_amount.clone(),
+            ).await?;
 
             // Sum of token_0 amount and token_1 amount after swap to token_0 (base token)
             let amount_0_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
 
             // Transfer amount of token_0 (base token) to user
-            let transfer_result = icrc1_transfer(
+            icrc1_transfer_to_user(
+                investor,
                 token0,
-                &TransferArg {
-                    from_subaccount: None,
-                    to: Account {
-                        owner: caller(),
-                        subaccount: None,
-                    },
-                    fee: None,
-                    created_at_time: None,
-                    memo: None,
-                    amount: amount_0_to_withdraw.clone(),
-                },
-            ).await;
+                amount_0_to_withdraw.clone(),
+            ).await
+                .map_err(|error| {
+                    let internal_error = error.wrap(
+                        "BasicStrategy::withdraw".to_string(),
+                        "Error calling 'icrc1_transfer'".to_string(),
+                        Some(HashMap::from([
+                            ("user".to_string(), investor.to_string()),
+                            ("canister_id".to_string(), token0.to_string()),
+                            ("amount".to_string(), amount_0_to_withdraw.to_string()),
+                        ])),
+                    );
 
-            match transfer_result {
-                Ok(Ok(x)) => x,
-                Err(message) => {
                     // ========== Event log begin ==========
                     let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
                         .strategy_id(self.get_id().to_string())
-                        .pool_id(Some(current_pool.clone().get_id()))
+                        .pool_id(Some(current_pool_id.to_string()))
                         .shares(shares.clone())
-                        .build();
-
-                    let internal_error = InternalErrorBuilder::external_service("icrc1_transfer".to_string())
-                        .context("Strategy::withdraw")
-                        .message(format!("Transfer to user error 1: {:?}", message))
-                        .extra(HashMap::from([
-                            ("amount".to_string(), amount_0_to_withdraw.to_string()),
-                        ]))
                         .build();
 
                     event_log_service::create_event_log(
                         event_log_params,
-                        context.correlation_id,
+                        context.correlation_id.clone(),
                         Some(investor),
                         Some(internal_error.clone()),
                     );
                     // ========== Event log end ==========
 
-                    return Err(internal_error);
-                }
-                Ok(Err(message)) => {
-                    // ========== Event log begin ==========
-                    let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
-                        .strategy_id(self.get_id().to_string())
-                        .pool_id(Some(current_pool.clone().get_id()))
-                        .shares(shares.clone())
-                        .build();
-
-                    let internal_error = InternalErrorBuilder::external_service("icrc1_transfer".to_string())
-                        .context("Strategy::withdraw")
-                        .message(format!("Transfer to user error 2: {:?}", message))
-                        .extra(HashMap::from([
-                            ("amount".to_string(), amount_0_to_withdraw.to_string()),
-                        ]))
-                        .build();
-
-                    event_log_service::create_event_log(
-                        event_log_params,
-                        context.correlation_id,
-                        Some(investor),
-                        Some(internal_error.clone()),
-                    );
-                    // ========== Event log end ==========
-
-                    return Err(internal_error);
-                }
-            };
+                    internal_error
+                })?;
 
             // Update total shares
             let new_total_shares = self.get_total_shares() - shares.clone();
@@ -455,16 +434,18 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 current_shares: new_user_shares.clone(),
             })
         } else {
+            let internal_error = InternalError::not_found(
+                "BasicStrategy::withdraw".to_string(),
+                "No current pool found in strategy".to_string(),
+                None,
+                None,
+            );
+
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
                 .strategy_id(self.get_id().to_string())
                 .pool_id(None)
                 .shares(shares.clone())
-                .build();
-
-            let internal_error = InternalErrorBuilder::business_logic()
-                .context("Strategy::withdraw")
-                .message("No current pool found in strategy".to_string())
                 .build();
 
             event_log_service::create_event_log(
@@ -475,7 +456,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             );
             // ========== Event log end ==========
 
-            return Err(internal_error);
+            Err(internal_error)
         }
     }
 
@@ -499,7 +480,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
         let context = Context::generate(None);
 
-        let pools_data = get_pools_data(self.get_pools()).await;
+        let pools_data = liquidity_service::get_pools_data(self.get_pools()).await;
         let mut max_apy = 0;
         let mut max_apy_pool = None;
 
@@ -537,12 +518,22 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let token1 = current_pool.token1.clone();
 
             // Withdraw liquidity from current pool
-            let withdraw_response = withdraw_liquidity_from_pool(
+            let withdraw_response = liquidity_service::withdraw_liquidity_from_pool(
                 context.clone(),
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),
-            ).await;
+            ).await
+                .map_err(|error| {
+                    error.wrap(
+                        "BasicStrategy::rebalance".to_string(),
+                        "Error calling 'liquidity_service::withdraw_liquidity_from_pool'".to_string(),
+                        Some(HashMap::from([
+                            ("pool_id".to_string(), current_pool.get_id()),
+                            ("shares".to_string(), self.get_total_shares().to_string()),
+                        ])),
+                    )
+                })?;
 
             let token_0_withdrawn_amount = withdraw_response.token_0_amount;
             let token_1_withdrawn_amount = withdraw_response.token_1_amount;
@@ -551,18 +542,39 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let swap_response = swap_service::swap_icrc2_optimal(
                 token1.clone(),
                 token0.clone(),
-                nat_to_u128(token_1_withdrawn_amount),
-            ).await;
+                token_1_withdrawn_amount.clone(),
+            ).await
+                .map_err(|error| {
+                    error.wrap(
+                        "BasicStrategy::rebalance".to_string(),
+                        "Error calling 'swap_service::swap_icrc2_optimal'".to_string(),
+                        Some(HashMap::from([
+                            ("token0".to_string(), token0.to_string()),
+                            ("token1".to_string(), token1.to_string()),
+                            ("amount".to_string(), token_1_withdrawn_amount.to_string()),
+                        ])),
+                    )
+                })?;
 
             // Calculate total token_0 to send in new pool after swap
             let token_0_to_pool_amount = token_0_withdrawn_amount + swap_response.amount_out;
 
             // Add liquidity to new pool
-            add_liquidity_to_pool(
+            liquidity_service::add_liquidity_to_pool(
                 context.clone(),
-                token_0_to_pool_amount,
+                token_0_to_pool_amount.clone(),
                 max_apy_pool.clone(),
-            ).await;
+            ).await
+                .map_err(|error| {
+                    error.wrap(
+                        "BasicStrategy::rebalance".to_string(),
+                        "Error calling 'liquidity_service::add_liquidity_to_pool'".to_string(),
+                        Some(HashMap::from([
+                            ("pool_id".to_string(), max_apy_pool.get_id()),
+                            ("token_0_to_pool_amount".to_string(), token_0_to_pool_amount.to_string()),
+                        ])),
+                    )
+                })?;
 
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_rebalance_completed()
@@ -595,10 +607,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 .new_pool_id(None)
                 .build();
 
-            let internal_error = InternalErrorBuilder::business_logic()
-                .context("Strategy::rebalance")
-                .message("No current pool found in strategy".to_string())
-                .build();
+            let internal_error = InternalError::not_found(
+                "BasicStrategy::rebalance".to_string(),
+                "No current pool found in strategy".to_string(),
+                None,
+                None,
+            );
 
             event_log_service::create_event_log(
                 event_log_params,

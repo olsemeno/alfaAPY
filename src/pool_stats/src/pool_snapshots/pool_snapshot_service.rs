@@ -62,7 +62,7 @@ async fn get_position_data(context: Context, pool: &Pool) -> Option<PositionData
     let liquidity_client = get_liquidity_client(pool).await;
 
     if let Some(position_id) = pool.position_id.as_ref().cloned() {
-        match liquidity_client.get_position_by_id(context, position_id).await {
+        match liquidity_client.get_position_by_id(position_id).await {
             Ok(position) => {
                 let current_position = PositionData {
                     id: position.position_id,
@@ -85,7 +85,7 @@ async fn get_position_data(context: Context, pool: &Pool) -> Option<PositionData
 async fn get_pool_data(context: Context, pool: &Pool) -> Option<PoolData> {
     let liquidity_client = get_liquidity_client(pool).await;
 
-    match liquidity_client.get_pool_data(context).await {
+    match liquidity_client.get_pool_data().await {
         Ok(pool_data) => {
             let pool_data = PoolData {
                 tvl: pool_data.tvl,

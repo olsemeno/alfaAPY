@@ -9,6 +9,7 @@ pub struct InternalErrorBuilder {
     kind: Option<InternalErrorKind>,
     context: Option<String>,
     message: Option<String>,
+    source: Option<Box<InternalError>>,
     extra: Option<HashMap<String, String>>,
 }
 
@@ -18,6 +19,7 @@ impl InternalErrorBuilder {
             kind: None,
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -29,6 +31,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::NotFound),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -38,6 +41,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::BusinessLogic),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -46,6 +50,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::ExternalService { service }),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -54,6 +59,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::Validation),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -62,6 +68,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::AccessDenied),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -70,6 +77,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::Infrastructure),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -78,6 +86,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::Timeout),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -86,6 +95,7 @@ impl InternalErrorBuilder {
             kind: Some(InternalErrorKind::Unknown),
             context: None,
             message: None,
+            source: None,
             extra: None,
         }
     }
@@ -104,6 +114,10 @@ impl InternalErrorBuilder {
         self.message = Some(message.into());
         self
     }
+    pub fn source(mut self, source: Box<InternalError>) -> Self {
+        self.source = Some(source);
+        self
+    }
     pub fn extra(mut self, extra: HashMap<String, String>) -> Self {
         self.extra = Some(extra);
         self
@@ -115,6 +129,7 @@ impl InternalErrorBuilder {
             kind: self.kind.expect("kind is required"),
             context: self.context.unwrap_or_default(),
             message: self.message.unwrap_or_default(),
+            source: self.source,
             extra: self.extra,
         }
     }

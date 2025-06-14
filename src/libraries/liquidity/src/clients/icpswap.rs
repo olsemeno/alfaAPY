@@ -1,12 +1,10 @@
 use async_trait::async_trait;
-use ic_cdk::trap;
 use candid::{Nat, Int, Principal};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
+use std::collections::HashMap;
 
 use utils::util::{nat_to_u64};
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, TokensFee, GetPositionByIdResponse, GetPoolData};
-use types::context::Context;
 use types::CanisterId;
 use providers::{icpswap as icpswap_provider};
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
@@ -23,6 +21,14 @@ use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
 use utils::token_fees::get_token_fee;
+use errors::internal_error::error::InternalError;
+use types::liquidity::{
+    AddLiquidityResponse,
+    WithdrawFromPoolResponse,
+    TokensFee,
+    GetPositionByIdResponse,
+    GetPoolData,
+};
 
 use crate::liquidity_client::LiquidityClient;
 
@@ -31,27 +37,40 @@ const TICK_LOWER: i32 = -887220;
 const TICK_UPPER: i32 = 887220;
 
 pub struct ICPSwapLiquidityClient {
-    canister_id: CanisterId,
+    canister_id: Option<CanisterId>,
     token0: CanisterId, // token0 may be token1 in the pool and vice versa
     token1: CanisterId, // token1 may be token0 in the pool and vice versa
-    pool: ICPSwapPool,
+    pool: Option<ICPSwapPool>,
 }
 
 impl ICPSwapLiquidityClient {
-    pub async fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapLiquidityClient {
-        let pool = match Self::get_pool(token0.clone(), token1.clone()).await {
-            Ok(pool) => pool,
-            Err(e) => trap(format!("Failed to get pool (ICPSWAP): {}", e).as_str()),
-        };
-
-        let canister_id = pool.canisterId;
-
+    pub fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapLiquidityClient {
         ICPSwapLiquidityClient {
-            canister_id,
+            canister_id: None,
             token0,
             token1,
-            pool,
+            pool: None,
         }
+    }
+
+    pub async fn with_pool(mut self) -> Result<Self, InternalError> {
+        let pool = Self::get_pool(self.token0.clone(), self.token1.clone())
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::with_pool".to_string(),
+                    "Error calling 'ICPSwapLiquidityClient::get_pool'".to_string(),
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("token1".to_string(), self.token1.to_text()),
+                    ])),
+                )
+            })?;
+
+        self.pool = Some(pool.clone());
+        self.canister_id = Some(pool.canisterId);
+
+        Ok(self)
     }
 
     fn extract_token_decimals(&self, meta: &Vec<(String, TokenMetadataValue)>) -> Option<u128> {
@@ -69,231 +88,476 @@ impl ICPSwapLiquidityClient {
             })
     }
 
-    fn get_tokens_fee(&self, token_meta: &TokenMeta) -> TokensFee {
+    fn get_tokens_fee(&self, token_meta: &TokenMeta) -> Result<TokensFee, InternalError> {
         let token_in_str = self.token0.to_text();
         let token_out_str = self.token1.to_text();
 
-        match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
-            (t0, t1) if t0 == token_in_str && t1 == token_out_str => TokensFee {
+        let pool = self.pool.as_ref().unwrap();
+
+        match (pool.token0.address.as_str(), pool.token1.address.as_str()) {
+            (t0, t1) if t0 == token_in_str && t1 == token_out_str => Ok(TokensFee {
                 token0_fee: token_meta.token0Fee.clone(),
                 token1_fee: token_meta.token1Fee.clone(),
-            },
-            (t0, t1) if t0 == token_out_str && t1 == token_in_str => TokensFee {
+            }),
+            (t0, t1) if t0 == token_out_str && t1 == token_in_str => Ok(TokensFee {
                 token0_fee: token_meta.token1Fee.clone(),
                 token1_fee: token_meta.token0Fee.clone(),
-            },
-            (t0, t1) => trap(
-                format!(
-                    "ICPSwapLiquidityClient.get_tokens_fee: invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}", 
-                    self.token0,
-                    self.token1,
-                    t0,
-                    t1
-                ).as_str()
-            ),
+            }),
+            (t0, t1) => Err(InternalError::business_logic(
+                "ICPSwapLiquidityClient::get_tokens_fee".to_string(),
+                "Invalid token configuration for ICPSwap pool".to_string(),
+                None,
+                Some(HashMap::from([
+                    ("token0".to_string(), self.token0.to_text()),
+                    ("token1".to_string(), self.token1.to_text()),
+                    ("t0".to_string(), t0.to_string()),
+                    ("t1".to_string(), t1.to_string()),
+                ])),
+            )),
         }
     }
     
-    fn is_zero_for_one_swap_direction(&self) -> bool {
+    fn is_zero_for_one_swap_direction(&self) -> Result<bool, InternalError> {
         let token_in_str = self.token0.to_text();
         let token_out_str = self.token1.to_text();
 
-        match (self.pool.token0.address.as_str(), self.pool.token1.address.as_str()) {
-            (t0, t1) if t0 == token_in_str && t1 == token_out_str => true,
-            (t0, t1) if t0 == token_out_str && t1 == token_in_str => false,
-            (t0, t1) => trap(
-                format!(
-                    "ICPSwapLiquidityClient.is_zero_for_one_swap_direction: invalid token configuration for ICPSwap pool: Expected tokens {:?} and {:?}, but got pool with token0={}, token1={}",
-                    self.token0,
-                    self.token1,
-                    t0,
-                    t1
-                ).as_str()
-            ),
+        let pool = self.pool.as_ref().unwrap();
+
+        match (pool.token0.address.as_str(), pool.token1.address.as_str()) {
+            (t0, t1) if t0 == token_in_str && t1 == token_out_str => Ok(true),
+            (t0, t1) if t0 == token_out_str && t1 == token_in_str => Ok(false),
+            (t0, t1) => Err(InternalError::business_logic(
+                "ICPSwapLiquidityClient::is_zero_for_one_swap_direction".to_string(),
+                "Invalid token configuration for ICPSwap pool".to_string(),
+                None,
+                Some(HashMap::from([
+                    ("token0".to_string(), self.token0.to_text()),
+                    ("token1".to_string(), self.token1.to_text()),
+                    ("t0".to_string(), t0.to_string()),
+                    ("t1".to_string(), t1.to_string()),
+                ])),
+            )),
         }
     }
 
-    async fn icrc2_approve(&self, token: CanisterId, amount: Nat) -> Result<(), String> {
-        let approve_result = match icrc_ledger_canister_c2c_client::icrc2_approve(
-            token.clone(),
-            &ApproveArgs {
-                from_subaccount: None,
+    async fn icrc2_approve(&self, token: CanisterId, amount: Nat) -> Result<Nat, InternalError> {
+        let args = ApproveArgs {
+            from_subaccount: None,
                 spender: self.canister_id().into(),
-                // amount: amount,
-                amount: Nat::from(99999999999999 as u128), //TODO
+                amount: Nat::from(99999999999999 as u128), //TODO: amount + fee
                 expected_allowance: None,
                 expires_at: None,
                 fee: None,
                 memo: None,
                 created_at_time: None,
-            },
-        )
-        .await
-        {
-            Ok(Ok(index)) => Ok(index),
-            Ok(Err(error)) => Err(format!("ICPSwapLiquidityClient.icrc2_approve: icrc2_approve error: {:?}", error)),
-            Err(error) => Err(format!("ICPSwapLiquidityClient.icrc2_approve: icrc2_approve error: {:?}", error)),
         };
+
+        let result = icrc_ledger_canister_c2c_client::icrc2_approve(
+            token.clone(),
+            &args,
+        ).await
+            .map_err(|error| {
+                InternalError::external_service(
+                    "icrc_ledger_canister_c2c_client".to_string(),
+                    "ICPSwapLiquidityClient::icrc2_approve".to_string(),
+                    format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+                    None,
+                    Some(HashMap::from([
+                        ("token".to_string(), token.to_text()),
+                        ("amount".to_string(), amount.to_string()),
+                    ]))
+                )
+            })?
+            .map_err(|error| {
+                InternalError::business_logic(
+                    "ICPSwapLiquidityClient::icrc2_approve".to_string(),
+                    format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+                    None,
+                    Some(HashMap::from([
+                        ("token".to_string(), token.to_text()),
+                        ("amount".to_string(), amount.to_string()),
+                    ]))
+                )
+            })?;
+
+        Ok(result)
+    }
+
+    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
+        let pool = icpswap_provider::get_pool(token0, token1)
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_pool".to_string(),
+                    "Error calling 'icpswap_provider::get_pool'".to_string(),
+                    Some(HashMap::from([
+                        ("token0".to_string(), token0.to_text()),
+                        ("token1".to_string(), token1.to_text()),
+                    ])),
+                )
+            })?;
+
+        Ok(pool)
+    }
+
+    async fn get_token_meta(&self) -> Result<TokenMeta, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let token_meta = icpswap_provider::get_token_meta(canister_id.clone())
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_token_meta".to_string(),
+                    "Error calling 'icpswap_provider::get_token_meta'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                    ])),
+                )
+            })?;
+
+        Ok(token_meta)
+    }
+
+    async fn deposit_from(&self, token: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let deposited_amount = icpswap_provider::deposit_from(
+            canister_id.clone(),
+            token.clone(),
+            amount.clone(),
+            token_fee.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::deposit_from".to_string(),
+                    "Error calling 'icpswap_provider::deposit_from'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("token".to_string(), token.to_text()),
+                        ("amount".to_string(), amount.to_string()),
+                        ("token_fee".to_string(), token_fee.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(Nat::from(deposited_amount))
+    }
+
+    async fn metadata(&self) -> Result<Metadata, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let metadata = icpswap_provider::metadata(canister_id.clone())
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::metadata".to_string(),
+                    "Error calling 'icpswap_provider::metadata'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                    ])),
+                )
+            })?;
+
+        Ok(metadata)
+    }
     
-        match approve_result {
-            Ok(_) => Ok(()),
-            Err(a) => {
-                let c = token.to_text();
-                trap(format!("ICRC2 approve SWAP (ICPSWAP) {a:?} : {c:?}").as_str());
-            }
-        }
+    async fn get_price(
+        &self,
+        sqrt_price_x96: Nat,
+        token_0_decimals: Nat,
+        token_1_decimals: Nat
+    ) -> Result<f64, InternalError> {
+        let price = icpswap_provider::get_price(
+            sqrt_price_x96.clone(),
+            token_0_decimals.clone(),
+            token_1_decimals.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_price".to_string(),
+                    "Error calling 'icpswap_provider::get_price'".to_string(),
+                    Some(HashMap::from([
+                        ("sqrt_price_x96".to_string(), sqrt_price_x96.to_string()),
+                        ("token_0_decimals".to_string(), token_0_decimals.to_string()),
+                        ("token_1_decimals".to_string(), token_1_decimals.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(price)
     }
 
-    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, String> {
-        match icpswap_provider::get_pool(token0, token1).await {
-            Ok(pool) => Ok(pool),
-            Err(e) => Err(format!("ICPSwapLiquidityClient.get_pool: get_pool error: {:?}", e)),
-        }
+    async fn quote(
+        &self,
+        amount_in: Nat,
+        zero_for_one: bool,
+        amount_out_minimum: Nat
+    ) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let amount_out = icpswap_provider::quote(canister_id.clone(), amount_in, zero_for_one, amount_out_minimum)
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::quote".to_string(),
+                    "Error calling 'icpswap_provider::quote'".to_string(),
+                    None,
+                )
+            })?;
+        Ok(amount_out)
     }
 
-    async fn get_token_meta(&self) -> Result<TokenMeta, String> {
-        match icpswap_provider::get_token_meta(self.canister_id).await {
-            Ok(token_meta) => Ok(token_meta),
-            Err(e) => Err(format!("ICPSwapLiquidityClient.get_token_meta: get_token_meta error: {:?}", e)),
-        }
-    }
-
-    async fn deposit_from(&self, token: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
-        match icpswap_provider::deposit_from(self.canister_id, token.clone(), amount, token_fee).await {
-            Ok(deposited_amount) => Ok(Nat::from(deposited_amount)),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.deposit_from: deposit_from error: {:?}", error));
-            }
-        }
-    }
-
-    async fn metadata(&self) -> Result<Metadata, String> {
-        match icpswap_provider::metadata(self.canister_id).await {
-            Ok(metadata) => Ok(metadata),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.metadata: metadata error: {:?}", error));
-            }
-        }
-    }
-    
-    async fn get_price(&self, sqrt_price_x96: Nat, token_0_decimals: Nat, token_1_decimals: Nat) -> Result<f64, String> {
-        match icpswap_provider::get_price(sqrt_price_x96, token_0_decimals, token_1_decimals).await {
-            Ok(price) => Ok(price),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_price: get_price error: {:?}", error));
-            }
-        }
-    }
-
-    async fn quote(&self, amount_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, String> {
-        match icpswap_provider::quote(self.canister_id, amount_in, zero_for_one, amount_out_minimum).await {
-            Ok(amount_out) => Ok(amount_out),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.quote: quote error: {:?}", error));
-            }
-        }
-    }
-
-    async fn mint(&self,
-        token0: String, 
-        token1: String, 
+    async fn mint(
+        &self,
+        token0: String,
+        token1: String,
         amount0_desired: String,
         amount1_desired: String,
-        fee: Nat, 
-        tick_lower: i32, 
+        fee: Nat,
+        tick_lower: i32,
         tick_upper: i32
-    ) -> Result<Nat, String> {
-        match icpswap_provider::mint(
-            self.canister_id,
-            token0,
-            token1,
-            amount0_desired,
-            amount1_desired,
-            fee,
+    ) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let minted_amount = icpswap_provider::mint(
+            canister_id.clone(),
+            token0.clone(),
+            token1.clone(),
+            amount0_desired.clone(),
+            amount1_desired.clone(),
+            fee.clone(),
             Int::from(tick_lower),
             Int::from(tick_upper)
-        ).await {
-            Ok(minted_amount) => Ok(minted_amount),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.mint: mint error: {:?}", error));
-            }
-        }
+        )
+        .await
+        .map_err(|error| {
+            error.wrap(
+                "ICPSwapLiquidityClient::mint".to_string(),
+                "Error calling 'icpswap_provider::mint'".to_string(),
+                Some(HashMap::from([
+                    ("canister_id".to_string(), canister_id.to_text()),
+                    ("token0".to_string(), token0),
+                    ("token1".to_string(), token1),
+                    ("amount0_desired".to_string(), amount0_desired),
+                    ("amount1_desired".to_string(), amount1_desired),
+                    ("fee".to_string(), fee.to_string()),
+                    ("tick_lower".to_string(), tick_lower.to_string()),
+                    ("tick_upper".to_string(), tick_upper.to_string()),
+                ])),
+            )
+        })?;
+
+        Ok(minted_amount)
     }
 
-    async fn swap(&self, token_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, String> {
-        match icpswap_provider::swap(self.canister_id, token_in, zero_for_one, amount_out_minimum).await {
-            Ok(amount_out_nat) => Ok(amount_out_nat),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.swap: swap error: {:?}", error));
-            }
-        }
+    async fn swap(
+        &self,
+        token_in: Nat,
+        zero_for_one: bool,
+        amount_out_minimum: Nat
+    ) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let amount_out_nat = icpswap_provider::swap(
+            canister_id.clone(),
+            token_in.clone(),
+            zero_for_one,
+            amount_out_minimum.clone()
+        )
+        .await
+        .map_err(|error| {
+            error.wrap(
+                "ICPSwapLiquidityClient::swap".to_string(),
+                "Error calling 'icpswap_provider::swap'".to_string(),
+                Some(HashMap::from([
+                    ("canister_id".to_string(), canister_id.to_text()),
+                    ("token_in".to_string(), token_in.to_string()),
+                    ("zero_for_one".to_string(), zero_for_one.to_string()),
+                    ("amount_out_minimum".to_string(), amount_out_minimum.to_string()),
+                ])),
+            )
+        })?;
+
+        Ok(amount_out_nat)
     }
 
-    async fn increase_liquidity(&self, position_id: Nat, amount0_desired: String, amount1_desired: String) -> Result<Nat, String> {
-        match icpswap_provider::increase_liquidity(self.canister_id, position_id, amount0_desired, amount1_desired).await {
-            Ok(amount_out_nat) => Ok(amount_out_nat),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.increase_liquidity: increase_liquidity error: {:?}", error));
-            }
-        }
+    async fn increase_liquidity(
+        &self,
+        position_id: Nat,
+        amount0_desired: String,
+        amount1_desired: String
+    ) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let amount_out_nat = icpswap_provider::increase_liquidity(
+            canister_id.clone(),
+            position_id.clone(),
+            amount0_desired.clone(),
+            amount1_desired.clone()
+        )
+        .await
+        .map_err(|error| {
+            error.wrap(
+                "ICPSwapLiquidityClient::increase_liquidity".to_string(),
+                "Error calling 'icpswap_provider::increase_liquidity'".to_string(),
+                Some(HashMap::from([
+                    ("canister_id".to_string(), canister_id.to_text()),
+                    ("position_id".to_string(), position_id.to_string()),
+                    ("amount0_desired".to_string(), amount0_desired),
+                    ("amount1_desired".to_string(), amount1_desired),
+                ])),
+            )
+        })?;
+
+        Ok(amount_out_nat)
     }
 
-    async fn decrease_liquidity(&self, position_id: Nat, liquidity: String) -> Result<DecreaseLiquidityResponse, String> {
-        match icpswap_provider::decrease_liquidity(self.canister_id, position_id, liquidity).await {
-            Ok(amount_out_nat) => Ok(amount_out_nat),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.decrease_liquidity: decrease_liquidity error: {:?}", error));
-            }
-        }
+    async fn decrease_liquidity(
+        &self,
+        position_id: Nat,
+        liquidity: String
+    ) -> Result<DecreaseLiquidityResponse, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let amount_out_nat = icpswap_provider::decrease_liquidity(
+            canister_id.clone(),
+            position_id.clone(),
+            liquidity.clone()
+        )
+        .await
+        .map_err(|error| {
+            error.wrap(
+                "ICPSwapLiquidityClient::decrease_liquidity".to_string(),
+                "Error calling 'icpswap_provider::decrease_liquidity'".to_string(),
+                Some(HashMap::from([
+                    ("canister_id".to_string(), canister_id.to_text()),
+                    ("position_id".to_string(), position_id.to_string()),
+                    ("liquidity".to_string(), liquidity),
+                ])),
+            )
+        })?;
+
+        Ok(amount_out_nat)
     }
 
-    async fn withdraw(&self, token_out: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, String> {
-        match icpswap_provider::withdraw(self.canister_id, token_out, amount, token_fee).await {
-            Ok(amount_out_nat) => Ok(amount_out_nat),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.withdraw: withdraw error: {:?}", error));
-            }
-        }
+    async fn withdraw(
+        &self,
+        token_out: CanisterId,
+        amount: Nat,
+        token_fee: Nat
+    ) -> Result<Nat, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let amount_out_nat = icpswap_provider::withdraw(
+            canister_id.clone(),
+            token_out.clone(),
+            amount.clone(),
+            token_fee.clone()
+        )
+        .await
+        .map_err(|error| {
+            error.wrap(
+                "ICPSwapLiquidityClient::withdraw".to_string(),
+                "Error calling 'icpswap_provider::withdraw'".to_string(),
+                Some(HashMap::from([
+                    ("canister_id".to_string(), canister_id.to_text()),
+                    ("token_out".to_string(), token_out.to_text()),
+                    ("amount".to_string(), amount.to_string()),
+                    ("token_fee".to_string(), token_fee.to_string()),
+                ])),
+            )
+        })?;
+
+        Ok(amount_out_nat)
     }
 
-    async fn claim(&self, position_id: Nat) -> Result<ClaimResponse, String> {
-        match icpswap_provider::claim(self.canister_id, position_id).await {
-            Ok(claim_response) => Ok(claim_response),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.claim: claim error: {:?}", error));
-            }
-        }
+    async fn claim(
+        &self,
+        position_id: Nat
+    ) -> Result<ClaimResponse, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let claim_response = icpswap_provider::claim(
+            canister_id.clone(),
+            position_id.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::claim".to_string(),
+                    "Error calling 'icpswap_provider::claim'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("position_id".to_string(), position_id.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(claim_response)
     }
 
-    async fn get_user_position_ids_by_principal(&self) -> Result<Vec<Nat>, String> {
+    async fn get_user_position_ids_by_principal(&self) -> Result<Vec<Nat>, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
         let principal = ic_cdk::api::id();
 
-        match icpswap_provider::get_user_position_ids_by_principal(self.canister_id, principal).await {
-            Ok(position_ids) => Ok(position_ids),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_user_position_ids_by_principal: get_user_position_ids_by_principal error: {:?}", error));
-            }
-        }
+        let position_ids = icpswap_provider::get_user_position_ids_by_principal(
+            canister_id.clone(),
+            principal
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_user_position_ids_by_principal".to_string(),
+                    "Error calling 'icpswap_provider::get_user_position_ids_by_principal'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("principal".to_string(), principal.to_text()),
+                    ])),
+                )
+            })?;
+
+        Ok(position_ids)
     }
 
-    async fn get_user_positions_by_principal(&self) -> Result<Vec<UserPositionWithId>, String> {
+    async fn get_user_positions_by_principal(&self) -> Result<Vec<UserPositionWithId>, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
         let principal = ic_cdk::api::id();
 
-        match icpswap_provider::get_user_positions_by_principal(self.canister_id, principal).await {
-            Ok(user_positions) => Ok(user_positions),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_user_positions_by_principal: get_user_positions_by_principal error: {:?}", error));
-            }
-        }
+        let user_positions = icpswap_provider::get_user_positions_by_principal(
+            canister_id.clone(),
+            principal
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_user_positions_by_principal".to_string(),
+                    "Error calling 'icpswap_provider::get_user_positions_by_principal'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("principal".to_string(), principal.to_text()),
+                    ])),
+                )
+            })?;
+
+        Ok(user_positions)
     }
 
-    async fn get_user_position(&self, position_id: Nat) -> Result<UserPosition, String> {
-        match icpswap_provider::get_user_position(self.canister_id, position_id).await {
-            Ok(user_position) => Ok(user_position),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_user_position: get_user_position error: {:?}", error));
-            }
-        }
+    async fn get_user_position(&self, position_id: Nat) -> Result<UserPosition, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
+
+        let user_position = icpswap_provider::get_user_position(
+            canister_id.clone(),
+            position_id.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_user_position".to_string(),
+                    "Error calling 'icpswap_provider::get_user_position'".to_string(),
+                    Some(HashMap::from([
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("position_id".to_string(), position_id.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(user_position)
     }
 
     async fn get_token_amount_by_liquidity(
@@ -302,58 +566,92 @@ impl ICPSwapLiquidityClient {
         tick_lower: Int,
         tick_upper: Int,
         liquidity: Nat
-    ) -> Result<GetTokenAmountByLiquidityResponse, String> {
-        match icpswap_provider::get_token_amount_by_liquidity(sqrt_price_x96, tick_lower, tick_upper, liquidity).await {
-            Ok(token_amount) => Ok(token_amount),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_token_amount_by_liquidity: get_token_amount_by_liquidity error: {:?}", error));
-            }
-        }
+    ) -> Result<GetTokenAmountByLiquidityResponse, InternalError> {
+        let token_amount = icpswap_provider::get_token_amount_by_liquidity(
+            sqrt_price_x96.clone(),
+            tick_lower.clone(),
+            tick_upper.clone(),
+            liquidity.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_token_amount_by_liquidity".to_string(),
+                    "Error calling 'icpswap_provider::get_token_amount_by_liquidity'".to_string(),
+                    Some(HashMap::from([
+                        ("sqrt_price_x96".to_string(), sqrt_price_x96.to_string()),
+                        ("tick_lower".to_string(), tick_lower.to_string()),
+                        ("tick_upper".to_string(), tick_upper.to_string()),
+                        ("liquidity".to_string(), liquidity.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(token_amount)
     }
 
-    async fn get_all_tokens(&self) -> Result<Vec<TokenData>, String> {
-        match icpswap_provider::get_all_tokens().await {
-            Ok(tokens) => Ok(tokens),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_all_tokens: get_all_tokens error: {:?}", error));
-            }
-        }
+    async fn get_all_tokens(&self) -> Result<Vec<TokenData>, InternalError> {
+        let tokens = icpswap_provider::get_all_tokens()
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_all_tokens".to_string(),
+                    "Error calling 'icpswap_provider::get_all_tokens'".to_string(),
+                    None,
+                )
+            })?;
+
+        Ok(tokens)
     }
 
-    async fn get_tvl_storage_canister(&self) -> Result<String, String> {
-        match icpswap_provider::get_tvl_storage_canister().await {
-            Ok(tvl_storage_canister_response) => Ok(tvl_storage_canister_response[0].clone()),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_tvl_storage_canister: get_tvl_storage_canister error: {:?}", error));
-            }
-        }
+    async fn get_tvl_storage_canister(&self) -> Result<String, InternalError> {
+        let tvl_storage_canister_response = icpswap_provider::get_tvl_storage_canister()
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_tvl_storage_canister".to_string(),
+                    "Error calling 'icpswap_provider::get_tvl_storage_canister'".to_string(),
+                    None,
+                )
+            })?;
+
+        Ok(tvl_storage_canister_response[0].clone())
     }
 
-    async fn get_pool_chart_tvl(&self, tvl_storage_canister_id: Principal) -> Result<Vec<PoolChartTvl>, String> {
+    async fn get_pool_chart_tvl(&self, tvl_storage_canister_id: Principal) -> Result<Vec<PoolChartTvl>, InternalError> {
+        let canister_id = self.canister_id.as_ref().unwrap();
         let offset = Nat::from(0u128);
         let limit = Nat::from(0u128);
 
-        match icpswap_provider::get_pool_chart_tvl(
-            tvl_storage_canister_id,
-            self.canister_id.to_string(),
-            offset,
-            limit
-        ).await {
-            Ok(pool_chart_tvl) => Ok(pool_chart_tvl),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_pool_data: get_pool_chart_tvl error: {:?}", error));
-            }
-        }
+        let pool_chart_tvl = icpswap_provider::get_pool_chart_tvl(
+            tvl_storage_canister_id.clone(),
+            canister_id.to_string(),
+            offset.clone(),
+            limit.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_pool_chart_tvl".to_string(),
+                    "Error calling 'icpswap_provider::get_pool_chart_tvl'".to_string(),
+                    Some(HashMap::from([
+                        ("tvl_storage_canister_id".to_string(), tvl_storage_canister_id.to_string()),
+                        ("canister_id".to_string(), canister_id.to_text()),
+                        ("offset".to_string(), offset.to_string()),
+                        ("limit".to_string(), limit.to_string()),
+                    ])),
+                )
+            })?;
+
+        Ok(pool_chart_tvl)
     }
 }
 
 #[async_trait]
 impl LiquidityClient for ICPSwapLiquidityClient {
     fn canister_id(&self) -> CanisterId {
-        self.canister_id
+        self.canister_id.as_ref().unwrap().clone()
     }
 
-    async fn add_liquidity_to_pool(&self, context: Context, amount: Nat) -> Result<AddLiquidityResponse, String> {
+    async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
         // Flow:
         // 1. Get user position ids
         // 2. Get token meta
@@ -364,14 +662,17 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // 7. Swap half of the token0 amount for the pool
         // 8. Mint new position or increase liquidity
 
+        let error_context = "ICPSwapLiquidityClient::add_liquidity_to_pool".to_string();
 
         // 1. Get user position ids
-        let user_position_ids = match self.get_user_position_ids_by_principal().await {
-            Ok(position_ids) => position_ids,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: get_user_position_ids_by_principal error: {:?}", error));
-            }
-        };
+        let user_position_ids = self.get_user_position_ids_by_principal().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_user_position_ids_by_principal'".to_string(),
+                    None,
+                )
+            })?;
 
         // 2. Get token meta
         // TODO: Fix token meta fetching
@@ -391,66 +692,92 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let token0_fee = get_token_fee(self.token0.clone()).await;
 
         // 3. Get metadata
-        let metadata = match self.metadata().await {
-            Ok(metadata) => metadata,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: metadata fetching error: {:?}", error));
-            }
-        };
+        let metadata = self.metadata().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::metadata'".to_string(),
+                    None,
+                )
+            })?;
         
         // 4. Approve before deposit
-        match self.icrc2_approve(self.token0.clone(), amount.clone()).await {
-            Ok(_) => (),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: icrc2_approve error: {:?}", error));
-            }
-        };
+        self.icrc2_approve(self.token0.clone(), amount.clone()).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::icrc2_approve'".to_string(),
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("amount".to_string(), amount.to_string()),
+                    ])),
+                )
+            })?;
 
         // 5. Deposit
-        let amount0_deposited = match self.deposit_from(
+        let amount0_deposited = self.deposit_from(
             self.token0.clone(),
             amount.clone(),
-            token0_fee
-        ).await {
-            Ok(amount0_deposited) => amount0_deposited,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: deposit_from error: {:?}", error));
-            }
-        };
+            token0_fee.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::deposit_from'".to_string(),
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("amount".to_string(), amount.to_string()),
+                        ("token0_fee".to_string(), token0_fee.to_string()),
+                    ])),
+                )
+            })?;
 
+        // Divided by 2 to swap half of the token0 amount to token1 for the pool
         let amount0_for_swap = amount0_deposited.clone().div(2u32);
         let amount0_for_pool = amount0_deposited.clone() - amount0_for_swap.clone();
+        let amount1_out_minimum = Nat::from(0u128);
+        let is_zero_for_one_swap_direction = self.is_zero_for_one_swap_direction()?;
 
         // 6. Quote
         // ICPSWAP provider is more convenient for swap for adding liquidity to ICPSwap pool
-        let quote_amount = match self.quote(
+        let quote_amount = self.quote(
             amount0_for_swap.clone(),
-            self.is_zero_for_one_swap_direction(),
-            Nat::from(0u128)
-        ).await {
-            Ok(quote_amount) => quote_amount,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: quote error: {:?}", error));
-            }
-        };
+            is_zero_for_one_swap_direction,
+            amount1_out_minimum.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::quote'".to_string(),
+                    Some(HashMap::from([
+                        ("amount0_for_swap".to_string(), amount0_for_swap.to_string()),
+                        ("is_zero_for_one_swap_direction".to_string(), is_zero_for_one_swap_direction.to_string()),
+                        ("amount1_out_minimum".to_string(), amount1_out_minimum.to_string()),
+                    ])),
+                )
+            })?;
 
-        let amount1_min_after_swap = quote_amount.clone()
-            .div(1000u128) * (1000u128 - SLIPPAGE_TOLERANCE); // consider slippage tolerance
-
-        // panic!("amount0_for_swap {:?}, amount0_for_pool {:?}, amount1_min_after_swap {:?}, quote_amount {:?}", amount0_for_swap, amount0_for_pool, amount1_min_after_swap, quote_amount);
+        // Considering slippage tolerance
+        let amount1_min_after_swap = quote_amount.clone().div(1000u128) * (1000u128 - SLIPPAGE_TOLERANCE);
 
         // 7. Swap half of the token0 amount for the pool
         // ICPSWAP provider is more convenient for swap for adding liquidity to ICPSwap pool
-        let amount1_swapped_for_pool = match self.swap(
+        let amount1_swapped_for_pool = self.swap(
             amount0_for_swap.clone(),
-            self.is_zero_for_one_swap_direction(),
-            amount1_min_after_swap
-        ).await {
-            Ok(amount1_swapped) => amount1_swapped,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: swap error: {:?}", error));
-            }
-        };
+            is_zero_for_one_swap_direction,
+            amount1_min_after_swap.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::swap'".to_string(),
+                    Some(HashMap::from([
+                        ("amount0_for_swap".to_string(), amount0_for_swap.to_string()),
+                        ("is_zero_for_one_swap_direction".to_string(), is_zero_for_one_swap_direction.to_string()),
+                        ("amount1_min_after_swap".to_string(), amount1_min_after_swap.to_string()),
+                    ])),
+                )
+            })?;
 
         // Token0 and token1 in the pool are determined by the token0 and token1 in the metadata
         // So we need to determine the tokens amount order in the pool for minting new position or increasing liquidity
@@ -465,51 +792,81 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             // Token1 is token0 in the pool and token0 is token1 in the pool
             (_, _, true, true) => (amount1_swapped_for_pool.to_string(), amount0_for_pool.to_string()),
             _ => {
-                return Err("ICPSwapLiquidityClient.add_liquidity_to_pool: token order does not match pool metadata".to_string());
+                return Err(InternalError::business_logic(
+                    error_context.clone(),
+                    "Token order does not match pool metadata".to_string(),
+                    None,
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("token1".to_string(), self.token1.to_text()),
+                        ("metadata_token0".to_string(), metadata.token0.address),
+                        ("metadata_token1".to_string(), metadata.token1.address),
+                    ])),
+                ));
             }
         };
 
-        match user_position_ids.as_slice() {
+        // In case of no position exists, mint new position
+        // In case of position exists, increase liquidity
+        let position_id = match user_position_ids.as_slice() {
             [] => {
                 // 8. Mint new position if no position exists
-                match self.mint(
+                self.mint(
                     metadata.token0.address.clone(),
                     metadata.token1.address.clone(),
                     amount0_for_position.to_string(),
                     amount1_for_position.to_string(),
-                    Nat::from(metadata.fee),
+                    Nat::from(metadata.fee.clone()),
                     TICK_LOWER,
                     TICK_UPPER,
-                ).await {
-                    Ok(position_id) => Ok(AddLiquidityResponse {
-                        token_0_amount: Nat::from(amount0_for_pool),
-                        token_1_amount: Nat::from(amount1_swapped_for_pool),
-                        request_id: nat_to_u64(&position_id),
-                    }),
-                    Err(e) => Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: mint error: {:?}", e)),
-                }
+                ).await
+                    .map_err(|error| {
+                        error.wrap(
+                            error_context.clone(),
+                            "Error calling 'ICPSwapLiquidityClient::mint'".to_string(),
+                            Some(HashMap::from([
+                                ("token0".to_string(), metadata.token0.address),
+                                ("token1".to_string(), metadata.token1.address),
+                                ("amount0_for_position".to_string(), amount0_for_position),
+                                ("amount1_for_position".to_string(), amount1_for_position),
+                                ("fee".to_string(), metadata.fee.to_string()),
+                            ])),
+                        )
+                    })?
             }
             [position_id, ..] => {
                 // 8. Increase liquidity if position already exists
-                match self.increase_liquidity(
+                self.increase_liquidity(
                     position_id.clone(),
                     amount0_for_position.to_string(),
                     amount1_for_position.to_string(),
-                ).await {
-                    Ok(position_id) => Ok(AddLiquidityResponse {
-                        token_0_amount: Nat::from(amount0_for_pool),
-                        token_1_amount: Nat::from(amount1_swapped_for_pool),
-                        request_id: nat_to_u64(&position_id),
-                    }),
-                    Err(e) => Err(format!("ICPSwapLiquidityClient.add_liquidity_to_pool: increase_liquidity error: {:?}", e)),
-                }
+                ).await
+                    .map_err(|error| {
+                        error.wrap(
+                            error_context.clone(),
+                            "Error calling 'ICPSwapLiquidityClient::increase_liquidity'".to_string(),
+                            Some(HashMap::from([
+                                ("position_id".to_string(), position_id.to_string()),
+                                ("amount0_for_position".to_string(), amount0_for_position),
+                                ("amount1_for_position".to_string(), amount1_for_position),
+                            ])),
+                        )
+                    })?
             }
-        }
+        };
 
-        // TODO: Withdraw remaining token0 and token1 from canister after adding liquidity
+        Ok(AddLiquidityResponse {
+            token_0_amount: Nat::from(amount0_for_pool),
+            token_1_amount: Nat::from(amount1_swapped_for_pool),
+            request_id: nat_to_u64(&position_id),
+        })
     }
 
-    async fn withdraw_liquidity_from_pool(&self, context: Context, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, String> {
+    async fn withdraw_liquidity_from_pool(
+        &self,
+        total_shares: Nat,
+        shares: Nat
+    ) -> Result<WithdrawFromPoolResponse, InternalError> {
         // Flow:
         // 1. Get user position ids
         // 2. Get token meta
@@ -520,26 +877,37 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // 7. Withdraw token0
         // 8. Withdraw token1
 
+        let error_context = "ICPSwapLiquidityClient::withdraw_liquidity_from_pool".to_string();
+
         // 1. Get user position ids
-        let user_position_ids = match self.get_user_position_ids_by_principal().await {
-            Ok(position_ids) => position_ids,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: get user position ids error: {:?}", error));
-            }
-        };
+        let user_position_ids = self.get_user_position_ids_by_principal().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_user_position_ids_by_principal'".to_string(),
+                    None,
+                )
+            })?;
 
         if user_position_ids.is_empty() {
-            return Err(format!("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: no position ids found"));
+            return Err(InternalError::business_logic(
+                error_context.clone(),
+                "No position ids found for user".to_string(),
+                None,
+                None,
+            ));
         }
 
         let position_id = user_position_ids[0].clone();
 
-        let metadata = match self.metadata().await {
-            Ok(metadata) => metadata,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: metadata fetching error: {:?}", error));
-            }
-        };
+        let metadata = self.metadata().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::metadata'".to_string(),
+                    None,
+                )
+            })?;
 
         // 2. Get token meta
         // TODO: Fix token meta fetching
@@ -557,12 +925,16 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let token1_fee = get_token_fee(self.token1.clone()).await;
 
         // 3. Get user position
-        let user_position = match self.get_user_position(position_id.clone()).await {
-            Ok(user_position) => user_position,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: get_user_position error: {:?}", error));
-            }
-        };
+        let user_position = self.get_user_position(position_id.clone()).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_user_position'".to_string(),
+                    Some(HashMap::from([
+                        ("position_id".to_string(), position_id.to_string()),
+                    ])),
+                )
+            })?;
 
         let liquidity = user_position.liquidity;
 
@@ -573,15 +945,21 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             .div(total_shares.clone());
 
         // 5. Decrease liquidity
-        let decrease_liquidity_response = match self.decrease_liquidity(
-            position_id,
+        let decrease_liquidity_response = self.decrease_liquidity(
+            position_id.clone(),
             liquidity_to_withdraw.to_string()
-        ).await {
-            Ok(decrease_liquidity_response) => decrease_liquidity_response,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: decrease_liquidity error: {:?}", error));
-            }
-        };
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::decrease_liquidity'".to_string(),
+                    Some(HashMap::from([
+                        ("position_id".to_string(), position_id.to_string()),
+                        ("liquidity".to_string(), liquidity.to_string()),
+                        ("liquidity_to_withdraw".to_string(), liquidity_to_withdraw.to_string()),
+                    ])),
+                )
+            })?;
 
         // Determine which token is token0 and which is token1
         let (amount0_to_withdraw, amount1_to_withdraw) = match (
@@ -599,45 +977,57 @@ impl LiquidityClient for ICPSwapLiquidityClient {
                 Nat::from(decrease_liquidity_response.amount0)
             ),
             _ => {
-                return Err("ICPSwapLiquidityClient.withdraw_liquidity_from_pool: token order does not match pool metadata".to_string());
+                return Err(InternalError::business_logic(
+                    error_context.clone(),
+                    "Token order does not match pool metadata".to_string(),
+                    None,
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("token1".to_string(), self.token1.to_text()),
+                        ("metadata_token0".to_string(), metadata.token0.address),
+                        ("metadata_token1".to_string(), metadata.token1.address),
+                    ])),
+                ));
             }
         };
 
         // 6. Withdraw token0
-        let token_0_amount_out = match self.withdraw(
+        let token_0_amount_out = self.withdraw(
             self.token0.clone(),
             amount0_to_withdraw.clone(),
-            token0_fee
-        ).await {
-            Ok(amount_out) => amount_out,
-            Err(error) => {
-                return Err(format!(
-                    "ICPSwapLiquidityClient.withdraw_liquidity_from_pool: \
-                    withdrawing token0 error with amount0_to_withdraw={:?}, token0={:?}: {:?}",
-                    amount0_to_withdraw,
-                    self.token0.to_text(),
-                    error
-                ));
-            }
-        };
+            token0_fee.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::withdraw'".to_string(),
+                    Some(HashMap::from([
+                        ("token0".to_string(), self.token0.to_text()),
+                        ("amount0_to_withdraw".to_string(), amount0_to_withdraw.to_string()),
+                        ("token0_fee".to_string(), token0_fee.to_string()),
+                    ])),
+                )
+            })?;
 
         // 7. Withdraw token1
-        let token_1_amount_out = match self.withdraw(
+        let token_1_amount_out = self.withdraw(
             self.token1.clone(),
             amount1_to_withdraw.clone(),
-            token1_fee
-        ).await {
-            Ok(amount_out) => amount_out,
-            Err(error) => {
-                return Err(format!(
-                    "ICPSwapLiquidityClient.withdraw_liquidity_from_pool: \
-                    withdrawing token1 error with amount1_to_withdraw={:?}, token1={:?}: {:?}",
-                    amount1_to_withdraw,
-                    self.token1.to_text(),
-                    error
-                ));
-            }
-        };
+            token1_fee.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::withdraw'".to_string(),
+                    Some(HashMap::from([
+                        ("token1".to_string(), self.token1.to_text()),
+                        ("amount1_to_withdraw".to_string(), amount1_to_withdraw.to_string()),
+                        ("token1_fee".to_string(), token1_fee.to_string()),
+                    ])),
+                )
+            })?;
+
+        // TODO: move withdrawn tokens to user
 
         Ok(WithdrawFromPoolResponse {
             token_0_amount: token_0_amount_out,
@@ -645,24 +1035,32 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_position_by_id(&self, context: Context, position_id: Nat) -> Result<GetPositionByIdResponse, String> {
-        // 3. Get metadata
-        let metadata = match self.metadata().await {
-            Ok(metadata) => metadata,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_position_by_id: metadata fetching error: {:?}", error));
-            }
-        };
+    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, InternalError> {
+        let error_context = "ICPSwapLiquidityClient::get_position_by_id".to_string();
+
+        // 1. Get metadata
+        let metadata = self.metadata().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::metadata'".to_string(),
+                    None,
+                )
+            })?;
 
         let sqrt_price_x96 = metadata.sqrtPriceX96;
 
-        // 3. Get user position
-        let user_position = match self.get_user_position(position_id.clone()).await {
-            Ok(user_position) => user_position,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_position_by_id: get_user_position error: {:?}", error));
-            }
-        };
+        // 2. Get user position
+        let user_position = self.get_user_position(position_id.clone()).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_user_position'".to_string(),
+                    Some(HashMap::from([
+                        ("position_id".to_string(), position_id.to_string()),
+                    ])),
+                )
+            })?;
 
         let token0_owed = user_position.tokensOwed0; // Amount of token0 from fees
         let token1_owed = user_position.tokensOwed1; // Amount of token1 from fees
@@ -670,31 +1068,43 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let tick_lower = user_position.tickLower;
         let tick_upper = user_position.tickUpper;
 
-        let token_amounts = match self.get_token_amount_by_liquidity(
-            sqrt_price_x96,
-            tick_lower,
-            tick_upper,
-            liquidity
-        ).await {
-            Ok(token_amount) => token_amount,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_position_by_id: get_token_amount_by_liquidity error: {:?}", error));
-            }
-        };
+        // 3. Get token amounts by liquidity
+        let token_amounts = self.get_token_amount_by_liquidity(
+            sqrt_price_x96.clone(),
+            tick_lower.clone(),
+            tick_upper.clone(),
+            liquidity.clone()
+        ).await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_token_amount_by_liquidity'".to_string(),
+                    Some(HashMap::from([
+                        ("sqrt_price_x96".to_string(), sqrt_price_x96.to_string()),
+                        ("tick_lower".to_string(), tick_lower.to_string()),
+                        ("tick_upper".to_string(), tick_upper.to_string()),
+                        ("liquidity".to_string(), liquidity.to_string()),
+                    ])),
+                )
+            })?;
 
         let token0_amount = token_amounts.amount0 + token0_owed;
         let token1_amount = token_amounts.amount1 + token1_owed;
 
-        let all_tokens = match self.get_all_tokens().await {
-            Ok(tokens) => tokens,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_position_by_id: get_all_tokens error: {:?}", error));
-            }
-        };
+        // 4. Get all tokens
+        let all_tokens = self.get_all_tokens().await
+            .map_err(|error| {
+                error.wrap(
+                    error_context.clone(),
+                    "Error calling 'ICPSwapLiquidityClient::get_all_tokens'".to_string(),
+                    None,
+                )
+            })?;
 
         let mut token0_price = 0.0;
         let mut token1_price = 0.0;
 
+        // Select token0 and token1 prices from all tokens
         for token in &all_tokens {
             match token.address.as_str() {
                 addr if addr == self.token0.to_text() => token0_price = token.priceUSD,
@@ -718,25 +1128,31 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_pool_data(&self, context: Context) -> Result<GetPoolData, String> {
-        let tvl_storage_canister_id  = match self.get_tvl_storage_canister().await {
-            Ok(tvl_storage_canister_id) => Principal::from_text(tvl_storage_canister_id).unwrap(),
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_pool_data: get_tvl_storage_canister error: {:?}", error));
-            }
-        };
+    async fn get_pool_data(&self) -> Result<GetPoolData, InternalError> {
+        let tvl_storage_canister_id = self
+            .get_tvl_storage_canister()
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_pool_data".to_string(),
+                    "Error calling 'ICPSwapLiquidityClient::get_tvl_storage_canister'".to_string(),
+                    None,
+                )
+            })?;
 
-        let pool_chart_tvl_response = match self.get_pool_chart_tvl(tvl_storage_canister_id).await {
-            Ok(pool_chart_tvl) => pool_chart_tvl,
-            Err(error) => {
-                return Err(format!("ICPSwapLiquidityClient.get_pool_data: get_pool_chart_tvl error: {:?}", error));
-            }
-        };
+        let pool_chart_tvl_response = self
+            .get_pool_chart_tvl(Principal::from_text(tvl_storage_canister_id).unwrap())
+            .await
+            .map_err(|error| {
+                error.wrap(
+                    "ICPSwapLiquidityClient::get_pool_data".to_string(),
+                    "Error calling 'ICPSwapLiquidityClient::get_pool_chart_tvl'".to_string(),
+                    None,
+                )
+            })?;
 
         let tvl = Nat::from(pool_chart_tvl_response.last().unwrap().tvlUSD as u128);
 
-        Ok(GetPoolData {
-            tvl: tvl,
-        })
+        Ok(GetPoolData { tvl })
     }
 }

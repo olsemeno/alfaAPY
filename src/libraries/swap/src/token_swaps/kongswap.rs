@@ -1,29 +1,28 @@
 use super::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 use utils::util::nat_to_u128;
 use async_trait::async_trait;
-use ic_cdk::trap;
-use ic_response_codes::RejectCode;
 use types::CanisterId;
+use std::collections::HashMap;
+use candid::Nat;
+
+use errors::internal_error::error::InternalError;
+use providers::kongswap as kongswap_provider;
 
 const SLIPPAGE_PERCENTAGE: f64 = 40.0; // TODO: Fix this
 
-pub struct KongSwapClient {
+pub struct KongSwapSwapClient {
     canister_id: CanisterId,
     token_in: CanisterId,
     token_out: CanisterId,
 }
 
-impl KongSwapClient {
-    pub fn new(canister_id: CanisterId, token_in: CanisterId, token_out: CanisterId) -> KongSwapClient {
-        KongSwapClient {
+impl KongSwapSwapClient {
+    pub fn new(canister_id: CanisterId, token_in: CanisterId, token_out: CanisterId) -> KongSwapSwapClient {
+        KongSwapSwapClient {
             canister_id,
             token_in,
             token_out,
         }
-    }
-
-    fn token_kongswap_format(&self, token: CanisterId) -> String {
-        format!("IC.{}", token.to_text())
     }
 }
 
@@ -41,74 +40,57 @@ impl KongSwapClient {
 
 
 #[async_trait]
-impl SwapClient for KongSwapClient {
+impl SwapClient for KongSwapSwapClient {
     fn canister_id(&self) -> CanisterId {
         self.canister_id
     }
 
-    async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)> {
-        let args = &kongswap_canister::swap::Args {
-            pay_amount: amount.into(),
-            pay_token: self.token_kongswap_format(self.token_in.clone()),
-            receive_token: self.token_kongswap_format(self.token_out.clone()),
-            max_slippage: Some(SLIPPAGE_PERCENTAGE),
-        };
+    async fn swap(&self, amount: Nat) -> Result<SwapSuccess, InternalError> {
+        let result = kongswap_provider::swap(
+            self.token_in.clone(),
+            amount.clone(),
+            self.token_out.clone(),
+            Some(SLIPPAGE_PERCENTAGE),
+        ).await
+        .map_err(|error| {
+            error.wrap(
+                "KongSwapSwapClient::swap".to_string(),
+                "Error calling 'kongswap_provider::swap'".to_string(),
+                Some(HashMap::from([
+                    ("token_in".to_string(), self.token_in.to_text()),
+                    ("token_out".to_string(), self.token_out.to_text()),
+                    ("amount".to_string(), amount.to_string()),
+                    ("max_slippage".to_string(), SLIPPAGE_PERCENTAGE.to_string()),
+                ])),
+            )
+        })?;
 
-        match kongswap_canister_c2c_client::swap(
-            self.canister_id,
-            args,
-        )
-        .await
-        {
-            Ok(response) => {
-                match response {
-                    Ok(response) => {
-                        let amount_out = nat_to_u128(&response.receive_amount);
-                        Ok(Ok(SwapSuccess {
-                            amount_out,
-                            withdrawal_success: Some(response.claim_ids.is_empty()),
-                        }))
-                    }
-                    Err(error) => {
-                        trap(format!("KongSwapClient::swap: swap error 1: {:?} arguments {:?}", error, args).as_str());
-                    }
-                }
-            }
-            Err(error) => {
-                trap(format!("KongSwapClient::swap: swap error 2: {:?} arguments {:?}", error, args).as_str());
-            },
-        }
+        Ok(SwapSuccess {
+            amount_out: nat_to_u128(&result.receive_amount),
+            withdrawal_success: Some(result.claim_ids.is_empty()),
+        })
     }
 
-    async fn quote(&self, amount: u128) -> Result<Result<QuoteSuccess, String>, (RejectCode, String)> {
-        let pay_token = self.token_kongswap_format(self.token_in.clone());
-        let amount_nat = candid::Nat::from(amount);
-        let receive_token = self.token_kongswap_format(self.token_out.clone());
+    async fn quote(&self, amount: Nat) -> Result<QuoteSuccess, InternalError> {
+        let result = kongswap_provider::swap_amounts(
+            self.token_in.clone(),
+            amount.clone(),
+            self.token_out.clone(),
+        ).await
+        .map_err(|error| {
+            error.wrap(
+                "KongSwapSwapClient::quote".to_string(),
+                "Error calling 'kongswap_provider::swap_amounts'".to_string(),
+                Some(HashMap::from([
+                    ("token_in".to_string(), self.token_in.to_text()),
+                    ("token_out".to_string(), self.token_out.to_text()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })?;
 
-        let args = (
-            pay_token,
-            amount_nat,
-            receive_token,
-        );
-
-        let args_debug = format!("{:?}", args);
-
-        match kongswap_canister_c2c_client::swap_amounts(self.canister_id, args).await {
-            Ok((response,)) => {
-                match response {
-                    Ok(response) => {
-                        Ok(Ok(QuoteSuccess {
-                            amount_out: nat_to_u128(&response.receive_amount),
-                        }))
-                    }
-                    Err(error) => {
-                        trap(format!("Quote error 1 (KONGSWAP) : {:?} arguments {}", error, args_debug).as_str());
-                    }
-                }
-            }
-            Err(error) => {
-                trap(format!("Quote error 2 (KONGSWAP) : {:?} arguments {}", error, args_debug).as_str());
-            }
-        }
+        Ok(QuoteSuccess {
+            amount_out: nat_to_u128(&result.receive_amount),
+        })
     }
 }

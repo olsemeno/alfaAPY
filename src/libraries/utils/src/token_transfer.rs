@@ -1,21 +1,21 @@
 use candid::{Nat, Principal};
 use ic_cdk::id;
+use std::{collections::HashMap, convert::TryInto};
 
-use std::convert::TryInto;
 use icrc_ledger_canister::updates::icrc2_transfer_from::Args as Icrc2TransferFromArgs;
 use icrc_ledger_types::icrc1::account::Account;
+use icrc_ledger_types::icrc1::transfer::TransferArg;
+use icrc_ledger_canister::updates::icrc1_transfer::Response as Icrc1TransferResponse;
+use canister_client;
 use errors::internal_error::error::InternalError;
-use errors::internal_error::builder::InternalErrorBuilder;
 use types::CanisterId;
-use types::context::Context;
 
 pub async fn icrc2_transfer_from_user(
-    context: Context,
     user: Principal,
-    ledger: CanisterId,
+    canister_id: CanisterId,
     amount: Nat,
-) -> Result<u64, InternalError> {
-    let transfer_args: Icrc2TransferFromArgs = Icrc2TransferFromArgs {
+) -> Result<Nat, InternalError> {
+    let transfer_args = Icrc2TransferFromArgs {
         spender_subaccount: None,
         from: Account { owner: user, subaccount: None },
         to: Account { owner: id(), subaccount: None },
@@ -25,23 +25,83 @@ pub async fn icrc2_transfer_from_user(
         created_at_time: None,
     };
 
-    match icrc_ledger_canister_c2c_client::icrc2_transfer_from(ledger, &transfer_args).await {
-        Ok(Ok(block_index)) => Ok(block_index.0.try_into().unwrap()),
-        Ok(Err(err)) => {
-            Err(
-                InternalErrorBuilder::business_logic()
-                    .context("Utils: icrc2_transfer_from_user")
-                    .message(format!("Error calling 'icrc2_transfer_from': {err:?}"))
-                    .build()
+    icrc_ledger_canister_c2c_client::icrc2_transfer_from(
+        canister_id,
+        &transfer_args,
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "icrc_ledger_canister_c2c_client".to_string(),
+                "Utils::icrc2_transfer_from_user".to_string(),
+                format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("user".to_string(), user.to_string()),
+                    ("canister_id".to_string(), canister_id.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ]))
             )
-        }
-        Err(error) => {
-            Err(
-                InternalErrorBuilder::external_service("icrc_ledger_canister_c2c_client::icrc2_transfer_from".to_string())
-                    .context("Utils: icrc2_transfer_from_user")
-                    .message(format!("IC error calling 'icrc2_transfer_from': {error:?}"))
-                    .build()
+        })?
+        .map_err(|err| {
+            InternalError::business_logic(
+                "Utils::icrc2_transfer_from_user".to_string(),
+                format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {err:?}"),
+                None,
+                Some(HashMap::from([
+                    ("user".to_string(), user.to_string()),
+                    ("canister_id".to_string(), canister_id.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ]))
             )
-        }
-    }
+        })
+        .map(|block_index| block_index.0.try_into().unwrap())
+}
+
+pub async fn icrc1_transfer_to_user(
+    user: Principal,
+    canister_id: CanisterId,
+    amount: Nat,
+) -> Result<Nat, InternalError> {
+    let args = TransferArg {
+        from_subaccount: None,
+        to: Account { owner: user, subaccount: None },
+        fee: None,
+        created_at_time: None,
+        memo: None,
+        amount: amount.clone(),
+    };
+
+    canister_client::make_c2c_call(
+        canister_id,
+        "icrc1_transfer",
+        &args,
+        ::candid::encode_one,
+        |r| ::candid::decode_one::<Icrc1TransferResponse>(r)
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "canister_client".to_string(),
+                "Utils::icrc1_transfer_to_user".to_string(),
+                format!("IC error calling 'canister_client::make_c2c_call': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("user".to_string(), user.to_string()),
+                    ("canister_id".to_string(), canister_id.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })?
+        .map_err(|err| {
+            InternalError::business_logic(
+                "Utils::icrc1_transfer_to_user".to_string(),
+                format!("Error calling 'canister_client::make_c2c_call': {err:?}"),
+                None,
+                Some(HashMap::from([
+                    ("user".to_string(), user.to_string()),
+                    ("canister_id".to_string(), canister_id.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })
+        .map(|response| response.0.try_into().unwrap())
 }

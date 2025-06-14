@@ -46,28 +46,7 @@ impl EventLog {
         )
     }
 
-    pub fn create(
-        params: EventLogParams,
-        correlation_id: String,
-        user: Option<Principal>,
-        error: Option<InternalError>,
-    ) -> Self {
-        let event = Self::build(
-            Self::next_id(),
-            correlation_id,
-            params,
-            user,
-            error,
-        );
-        event.save();
-        event
-    }
-
     pub fn save(&self) {
         event_logs_repo::save_event_log(self.clone());
-    }
-
-    fn next_id() -> u64 {
-        event_logs_repo::get_event_logs_count()
     }
 }

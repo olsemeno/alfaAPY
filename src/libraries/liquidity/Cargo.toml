@@ -21,3 +21,4 @@ providers = { path = "../providers" }
 utils = { path = "../utils" }
 swap = { path = "../swap" }
 types = { path = "../types" }
+errors = { path = "../errors" }

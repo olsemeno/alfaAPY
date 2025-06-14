@@ -25,3 +25,4 @@ icpswap_node_index_canister_c2c_client = { path = "../../external_canisters/icps
 icpswap_tvl_storage_canister = { path = "../../external_canisters/icpswap_tvl_storage/api" }
 icpswap_tvl_storage_canister_c2c_client = { path = "../../external_canisters/icpswap_tvl_storage/c2c_client" }
 utils = { path = "../utils" }
+errors = { path = "../errors" }

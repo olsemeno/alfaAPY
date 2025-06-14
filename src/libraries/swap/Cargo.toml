@@ -20,3 +20,4 @@ kongswap_canister = { path = "../../external_canisters/kongswap/api" }
 kongswap_canister_c2c_client = { path = "../../external_canisters/kongswap/c2c_client" }
 providers = { path = "../providers" }
 utils = { path = "../utils" }
+errors = { path = "../errors" }

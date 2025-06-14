@@ -1,12 +1,15 @@
 use std::cell::RefCell;
 use candid::{Nat, Principal};
-use icrc_ledger_canister::updates::icrc2_transfer_from::Args as Icrc2TransferFromArgs;
-use icrc_ledger_types::icrc1::account::Account;
-use std::convert::TryInto;
+use std::collections::HashMap;
 use ic_cdk::api::time;
 use ic_cdk::{caller, id, trap};
+
 use types::CanisterId;
 use types::context::Context;
+use errors::internal_error::error::InternalError;
+use ::utils::token_transfer::icrc2_transfer_from_user;
+use ::utils::util::nat_to_u64;
+
 use crate::types::types::StrategyId;
 
 thread_local! {
@@ -31,35 +34,29 @@ pub async fn accept_deposit(
     context: Context,
     amount: Nat,
     ledger: Principal,
-    str_id: StrategyId
-) -> Result<(), String> {
-    // TODO: use utils::icrc2_transfer_from_user
-    let transfer_args: Icrc2TransferFromArgs = Icrc2TransferFromArgs {
-        spender_subaccount: None,
-        from: Account { owner: caller(), subaccount: None },
-        to: {
-            Account { owner: id(), subaccount: None }
-        },
-        amount: amount.clone(),
-        fee: None,
-        memo: None,
-        created_at_time: None,
-    };
-
-    let block_index = match icrc2_transfer_from(ledger, &transfer_args).await {
-        Ok(block_index) => {
-            block_index
-        }
-        Err(message) => {
-            trap(format!("Error transferring deposit: {message}").as_str());
-        }
-    };
+    strategy_id: StrategyId
+) -> Result<bool, InternalError> {
+    let block_index = icrc2_transfer_from_user(
+        context.user.unwrap(),
+        ledger,
+        amount.clone()
+    ).await
+        .map_err(|error| {
+            error.wrap(
+                "user_service::accept_deposit".to_string(),
+                format!("Error calling 'Utils::icrc2_transfer_from_user'"),
+                Some(HashMap::from([
+                    ("ledger".to_string(), ledger.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })?;
 
     let deposit = UserDeposit {
         amount,
-        strategy: str_id,
+        strategy: strategy_id,
         ledger: ledger.into(),
-        block_index: block_index,
+        block_index: nat_to_u64(&block_index),
         timestamp: time()
     };
 
@@ -76,15 +73,5 @@ pub async fn accept_deposit(
         }
     });
 
-    Ok(())
-}
-
-
-
-async fn icrc2_transfer_from(ledger_canister_id: CanisterId, transfer_args: &icrc_ledger_canister::updates::icrc2_transfer_from::Args) -> Result<u64, String> {
-    match icrc_ledger_canister_c2c_client::icrc2_transfer_from(ledger_canister_id, transfer_args).await {
-        Ok(Ok(block_index)) => Ok(block_index.0.try_into().unwrap()),
-        Ok(Err(err)) => Err(format!("Error calling 'icrc2_transfer_from': {err:?}")),
-        Err(error) => Err(format!("IC error calling 'icrc2_transfer_from': {error:?}")),
-    }
+    Ok(true)
 }

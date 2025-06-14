@@ -18,7 +18,7 @@ pub async fn get_liquidity_client(token0: CanisterId, token1: CanisterId, provid
             ICPSwapLiquidityClient::new(
                 token0.clone(), 
                 token1.clone()
-            ).await
+            ).with_pool().await.unwrap() // TODO: handle error
         ),
         _ => panic!("Unsupported provider"),
     }

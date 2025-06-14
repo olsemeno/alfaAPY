@@ -158,7 +158,7 @@ async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, R
                 Err(error) => ResponseError::from_internal_error(error)
             }
         },
-        Err(message) => ResponseError::internal_error(message)
+        Err(error) => ResponseError::from_internal_error(error)
     }
 }
 

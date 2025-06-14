@@ -1,5 +1,5 @@
 use candid::Nat;
-use ic_cdk::trap;
+use std::collections::HashMap;
 
 use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::swap_tokens::{SuccessResult, QuoteResult};
@@ -7,55 +7,65 @@ use types::exchange_id::ExchangeId;
 use providers::kongswap::KONGSWAP_CANISTER;
 use types::CanisterId;
 
-use crate::token_swaps::kongswap::KongSwapClient;
-use crate::token_swaps::icpswap::ICPSwapClient;
+use crate::token_swaps::kongswap::KongSwapSwapClient;
+use crate::token_swaps::icpswap::ICPSwapSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
+use errors::internal_error::error::InternalError;
 
 pub async fn swap_icrc2_optimal(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> SuccessResult {
-    let provider = quote_swap_icrc2_optimal(input_token.clone(), output_token.clone(), amount).await.provider;
+    amount: Nat,
+) -> Result<SuccessResult, InternalError> {
+    let provider = quote_swap_icrc2_optimal(
+        input_token.clone(),
+        output_token.clone(),
+        amount.clone()
+    ).await?.provider;
+
     swap_icrc2(input_token, output_token, amount, provider).await
 }
 
 pub async fn swap_icrc2(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
+    amount: Nat,
     provider: ExchangeId,
-) -> SuccessResult {
+) -> Result<SuccessResult, InternalError> {
     match provider {
-        ExchangeId::KongSwap => {
-            swap_icrc2_kongswap(input_token, output_token, amount).await
-        },
-        ExchangeId::ICPSwap => {
-            swap_icrc2_icpswap(input_token, output_token, amount).await
-        },
-        _ => {
-            trap("Quote services failed.");
-        },
+        ExchangeId::KongSwap => swap_icrc2_kongswap(input_token, output_token, amount).await,
+        ExchangeId::ICPSwap => swap_icrc2_icpswap(input_token, output_token, amount).await,
+        _ => Err(InternalError::business_logic(
+            "swap_service::swap_icrc2".to_string(),
+            "Invalid provider".to_string(),
+            None,
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("output_token".to_string(), output_token.to_text()),
+                ("amount".to_string(), amount.to_string()),
+                ("provider".to_string(), provider.to_string()),
+            ])),
+        )),
     }
 }
 
 pub async fn quote_swap_icrc2_optimal(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> QuoteResult {
+    amount: Nat,
+) -> Result<QuoteResult, InternalError> {
     let kong_quote = quote_swap_kongswap(input_token.clone(), output_token.clone(), amount).await;
     // let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
 
-    // Return the quote with the highest amount_out
+    //Return the quote with the highest amount_out
     // std::cmp::max_by(
-    //     kong_quote,
-    //     icp_quote,
+    //     kong_quote.unwrap(),
+    //     icp_quote.unwrap(),
     //     |a, b| a.amount_out.cmp(&b.amount_out)
     // )
 
     // TODO: remove this after testing and return the quote with the highest amount_out
-    return kong_quote;
+    Ok(kong_quote?)
 }
 
 
@@ -65,17 +75,17 @@ pub async fn quote_swap_icrc2_optimal(
 pub async fn swap_icrc2_icpswap(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> SuccessResult {
+    amount: Nat,
+) -> Result<SuccessResult, InternalError> {
     let swap_client = Box::new(
-        ICPSwapClient::new(
+        ICPSwapSwapClient::new(
             input_token.clone(),
             output_token
-        ).await
+        ).with_pool().await?
     );
 
     // ICRC2 APPROVE
-    let approve_result = match icrc_ledger_canister_c2c_client::icrc2_approve(
+    icrc_ledger_canister_c2c_client::icrc2_approve(
         input_token.clone(),
         &ApproveArgs {
             from_subaccount: None,
@@ -89,59 +99,66 @@ pub async fn swap_icrc2_icpswap(
         },
     )
     .await
-    {
-        Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve SWAP (ICPSWAP) {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve SWAP (ICPSWAP) {error:?}")),
-    };
+    .map_err(|error| {
+        InternalError::external_service(
+            "icrc_ledger_canister_c2c_client".to_string(),
+            "swap_service::swap_icrc2_icpswap".to_string(),
+            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+            None,
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("output_token".to_string(), output_token.to_text()),
+                ("amount".to_string(), amount.to_string()),
+            ])),
+        )
+    })?
+    .map_err(|error| {
+        InternalError::business_logic(
+            "swap_service::swap_icrc2_icpswap".to_string(),
+            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+            None,
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("output_token".to_string(), output_token.to_text()),
+                ("amount".to_string(), amount.to_string()),
+            ])),
+        )
+    })?;
 
-    match approve_result {
-        Ok(_) => {}
-        Err(a) => {
-            let c = input_token.to_text();
-            trap(format!("ICRC2 approve SWAP (ICPSWAP) {a:?} : {c:?}").as_str());
-        }
-    }
+    let swap_result = swap_client.swap(amount.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "swap_service::swap_icrc2_icpswap".to_string(),
+                "Error calling 'swap_client::swap'".to_string(),
+                Some(HashMap::from([
+                    ("input_token".to_string(), input_token.to_text()),
+                    ("output_token".to_string(), output_token.to_text()),
+                    ("amount".to_string(), amount.clone().to_string()),
+                ])),
+            )
+        })?;
 
-    let swap_result = match swap_client.swap(amount).await {
-        Ok(r) => {
-            r
-        }
-        Err(error) => {
-            let msg = format!("Swap error 1 (ICPSWAP): {error:?}");
-            trap(msg.as_str());
-        }
-    };
-
-    match swap_result {
-        Ok(x) => {
-            SuccessResult {
-                provider: ExchangeId::ICPSwap,
-                amount_out: x.amount_out
-            }
-        }
-        Err(e) => {
-            let msg = format!("Swap error 2 (ICPSWAP): {e:?}");
-            trap(msg.as_str());
-        }
-    }
+    Ok(SuccessResult {
+        provider: ExchangeId::ICPSwap,
+        amount_out: swap_result.amount_out,
+    })
 }
 
 // TODO: make private
 pub async fn swap_icrc2_kongswap(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> SuccessResult {
+    amount: Nat,
+) -> Result<SuccessResult, InternalError> {
     let swap_client = Box::new(
-        KongSwapClient::new(
+        KongSwapSwapClient::new(
             *KONGSWAP_CANISTER,
             input_token.clone(),
             output_token
         )
     );
 
-    let x = match icrc_ledger_canister_c2c_client::icrc2_approve(
+    icrc_ledger_canister_c2c_client::icrc2_approve(
         input_token.clone(),
         &ApproveArgs {
             from_subaccount: None,
@@ -154,112 +171,111 @@ pub async fn swap_icrc2_kongswap(
             created_at_time: None,
         },
     )
-        .await
-    {
-        Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve SWAP (KONGSWAP) {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve SWAP (KONGSWAP) {error:?}")),
-    };
+    .await
+    .map_err(|error| {
+        InternalError::external_service(
+            "icrc_ledger_canister_c2c_client".to_string(),
+            "swap_service::swap_icrc2_kongswap".to_string(),
+            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+            None,
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("amount".to_string(), amount.clone().to_string()),
+            ])),
+        )
+    })?
+    .map_err(|error| {
+        InternalError::business_logic(
+            "swap_service::swap_icrc2_kongswap".to_string(),
+            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+            None,
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("amount".to_string(), amount.clone().to_string()),
+            ])),
+        )
+    })?;
 
-    match x {
-        Ok(_) => {}
-        Err(a) => {
-            let c = input_token.to_text();
-            trap(format!("ICRC2 approve SWAP (KONGSWAP) {a:?} : {c:?}").as_str());
-        }
-    }
+    let swap_result = swap_client.swap(amount.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "swap_service::swap_icrc2_kongswap".to_string(),
+                "Error calling 'swap_client::swap'".to_string(),
+                Some(HashMap::from([
+                    ("input_token".to_string(), input_token.to_text()),
+                    ("output_token".to_string(), output_token.to_text()),
+                    ("amount".to_string(), amount.clone().to_string()),
+                ])),
+            )
+        })?;
 
-    let swap_result = match swap_client.swap(amount).await {
-        Ok(r) => {
-            r
-        }
-        Err(error) => {
-            let msg = format!("Swap error 1 (KONGSWAP): {error:?}");
-            trap(msg.as_str());
-        }
-    };
-
-    match swap_result {
-        Ok(x) => {
-            SuccessResult {
-                provider: ExchangeId::KongSwap,
-                amount_out: x.amount_out
-            }
-        }
-        Err(e) => {
-            let msg = format!("Swap error 2 (KONGSWAP): {e:?} arguments: {}", amount);
-            trap(msg.as_str());
-        }
-    }
+    Ok(SuccessResult {
+        provider: ExchangeId::KongSwap,
+        amount_out: swap_result.amount_out,
+    })
 }
 
 // TODO: make private
 pub async fn quote_swap_kongswap(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> QuoteResult {
+    amount: Nat,
+) -> Result<QuoteResult, InternalError> {
     let swap_client = Box::new(
-        KongSwapClient::new(
+        KongSwapSwapClient::new(
             *KONGSWAP_CANISTER,
             input_token.clone(),
             output_token.clone()
         )
     );
 
-    let quote_result = match swap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => Ok(quote),
-            Err(e) => Err(format!("KongSwap quote error: {:?}", e)),
-        },
-        Err(e) => Err(format!("KongSwap quote failed: {:?}", e)),
-    };
+    let result = swap_client.quote(amount.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "swap_service::quote_kongswap".to_string(),
+                "Error calling 'swap_client::quote'".to_string(),
+                Some(HashMap::from([
+                    ("input_token".to_string(), input_token.to_text()),
+                    ("output_token".to_string(), output_token.to_text()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })?;
 
-    match quote_result {
-        Ok(quote) => {
-            QuoteResult {
-                provider: ExchangeId::KongSwap,
-                amount_out: quote.amount_out
-            }
-        }
-        Err(e) => {
-            let msg = format!("KongSwap quote error: {e:?}");
-            trap(msg.as_str());
-        }
-    }
+    Ok(QuoteResult {
+        provider: ExchangeId::KongSwap,
+        amount_out: result.amount_out,
+    })
 }
 
 // TODO: make private
 pub async fn quote_swap_icpswap(
     input_token: CanisterId,
     output_token: CanisterId,
-    amount: u128,
-) -> QuoteResult {
+    amount: Nat,
+) -> Result<QuoteResult, InternalError> {
     let swap_client = Box::new(
-        ICPSwapClient::new(
+        ICPSwapSwapClient::new(
             input_token.clone(),
             output_token.clone()
-        ).await
+        ).with_pool().await?
     );
 
-    let quote_result = match swap_client.quote(amount).await {
-        Ok(result) => match result {
-            Ok(quote) => Ok(quote),
-            Err(e) => Err(format!("ICPSwap quote error: {:?}", e)),
-        },
-        Err(e) => Err(format!("ICPSwap quote failed: {:?}", e)),
-    };
+    let result = swap_client.quote(amount.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "swap_service::quote".to_string(),
+                "Error calling 'swap_client::quote'".to_string(),
+                Some(HashMap::from([
+                    ("input_token".to_string(), input_token.to_text()),
+                    ("output_token".to_string(), output_token.to_text()),
+                    ("amount".to_string(), amount.to_string()),
+                ])),
+            )
+        })?;
 
-    match quote_result {
-        Ok(quote) => {
-            QuoteResult {
-                provider: ExchangeId::ICPSwap,
-                amount_out: quote.amount_out
-            }
-        }
-        Err(e) => {
-            let msg = format!("ICPSwap quote error: {e:?}");
-            trap(msg.as_str());
-        }
-    }
+    Ok(QuoteResult {
+        provider: ExchangeId::ICPSwap,
+        amount_out: result.amount_out,
+    })
 }

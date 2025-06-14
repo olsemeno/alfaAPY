@@ -1,9 +1,9 @@
 use candid::Nat;
+use std::collections::HashMap;
 
 use liquidity::liquidity_router::get_liquidity_client;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
 use errors::internal_error::error::InternalError;
-use errors::internal_error::builder::InternalErrorBuilder;
 use liquidity::liquidity_client::LiquidityClient;
 use types::context::Context;
 
@@ -18,7 +18,7 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
     if let Some(pool) = pool {
         let liquidity_client = liquidity_client(pool.clone()).await;
 
-        match liquidity_client.add_liquidity_to_pool(context.clone(), amount.clone()).await {
+        match liquidity_client.add_liquidity_to_pool(amount.clone()).await {
             Ok(response) => {
                 pool_snapshot_service::create_pool_snapshot(context, &pool).await;
                 Ok(response)
@@ -26,14 +26,18 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
             Err(error) => {
                 // ========== Event log begin ==========
                 let event_log_params = EventLogParamsBuilder::add_liquidity_to_pool_failed()
-                    .pool_id(pool_id)
-                    .amount0(amount)
+                    .pool_id(pool_id.clone())
+                    .amount0(amount.clone())
                     .build();
 
-                let internal_error = InternalErrorBuilder::business_logic()
-                    .context("Liquidity service: add_liquidity_to_pool")
-                    .message(format!("Error adding liquidity to pool: {}", error))
-                    .build();
+                let internal_error = error.wrap(
+                    "liquidity_service::add_liquidity_to_pool".to_string(),
+                    "Error calling 'liquidity_client::add_liquidity_to_pool'".to_string(),
+                    Some(HashMap::from([
+                        ("pool_id".to_string(), pool_id),
+                        ("amount".to_string(), amount.to_string()),
+                    ])),
+                );
 
                 event_log_service::create_event_log(
                     event_log_params,
@@ -52,10 +56,14 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
             .amount0(amount)
             .build();
 
-        let internal_error = InternalErrorBuilder::not_found()
-            .context("Liquidity service: add_liquidity_to_pool")
-            .message(format!("Pool not found: {}", pool_id))
-            .build();
+        let internal_error = InternalError::not_found(
+            "liquidity_service::add_liquidity_to_pool".to_string(),
+            "Pool not found".to_string(),
+            None,
+            Some(HashMap::from([
+                ("pool_id".to_string(), pool_id),
+            ])),
+        );
 
         event_log_service::create_event_log(
             event_log_params,
@@ -78,18 +86,21 @@ pub async fn remove_liquidity_from_pool(context: Context, pool_id: String) -> Re
         let total_shares = Nat::from(1 as u8);
         let shares = Nat::from(1 as u8);
 
-        match liquidity_client.withdraw_liquidity_from_pool(context.clone(), total_shares, shares).await {
+        match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
             Ok(response) => Ok(response),
             Err(error) => {
                 // ========== Event log begin ==========
                 let event_log_params = EventLogParamsBuilder::remove_liquidity_from_pool_failed()
-                    .pool_id(pool_id)
+                    .pool_id(pool_id.clone())
                     .build();
 
-                let internal_error = InternalErrorBuilder::business_logic()
-                    .context("Liquidity service: remove_liquidity_from_pool")
-                    .message(format!("Error withdrawing from pool: {}", error))
-                    .build();
+                let internal_error = error.wrap(
+                    "liquidity_service::remove_liquidity_from_pool".to_string(),
+                    "Error calling 'liquidity_client::withdraw_liquidity_from_pool'".to_string(),
+                    Some(HashMap::from([
+                        ("pool_id".to_string(), pool_id),
+                    ])),
+                );
 
                 event_log_service::create_event_log(
                     event_log_params,
@@ -108,10 +119,14 @@ pub async fn remove_liquidity_from_pool(context: Context, pool_id: String) -> Re
             .pool_id(pool_id.clone())
             .build();
 
-        let internal_error = InternalErrorBuilder::not_found()
-            .context("Liquidity service: remove_liquidity_from_pool")
-            .message(format!("Pool not found: {}", pool_id))
-            .build();
+        let internal_error = InternalError::not_found(
+            "liquidity_service::remove_liquidity_from_pool".to_string(),
+            "Pool not found".to_string(),
+            None,
+            Some(HashMap::from([
+                ("pool_id".to_string(), pool_id),
+            ])),
+        );
 
         event_log_service::create_event_log(
             event_log_params,

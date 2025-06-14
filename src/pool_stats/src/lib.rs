@@ -181,7 +181,7 @@ pub async fn add_liquidity_to_pool(
 ) -> Result<AddLiquidityResponse, ResponseError> {
     let context = Context::generate(Some(caller()));
 
-    match icrc2_transfer_from_user(context.clone(), caller(), ledger, amount.clone()).await {
+    match icrc2_transfer_from_user(caller(), ledger, amount.clone()).await {
         Ok(_) => {
             match liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await {
                 Ok(response) => Ok(response),

@@ -1,165 +1,409 @@
 use candid::{Nat, Principal};
 use types::CanisterId;
-use ic_cdk::trap;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
 use icrc_ledger_types::icrc2::approve::ApproveArgs;
-use kongswap_canister::add_liquidity::{Args, Response as AddLiquidityResponse};
-use kongswap_canister::pools::Response as PoolsResponse;
-use kongswap_canister::queries::add_liquidity_amounts::Response as AddLiquidityAmountsResponse;
-use kongswap_canister::swap_amounts::Response as SwapAmountsResponse;
+use kongswap_canister::add_liquidity::{Args as AddLiquidityArgs, AddLiquidityReply};
+use kongswap_canister::remove_liquidity::{Args as RemoveLiquidityArgs, RemoveLiquidityReply};
+use kongswap_canister::remove_liquidity_amounts::{Args as RemoveLiquidityAmountsArgs, RemoveLiquidityAmountsReply};
+use kongswap_canister::pools::PoolsReply;
+use kongswap_canister::queries::add_liquidity_amounts::AddLiquidityAmountsReply;
+use kongswap_canister::swap_amounts::SwapAmountsReply;
 use kongswap_canister::user_balances::UserBalancesReply;
+use kongswap_canister::swap::SwapReply;
+use kongswap_canister::swap::Args as SwapArgs;
 use utils::util::principal_to_canister_id;
+use errors::internal_error::error::InternalError;
 
+// TODO: move to constants
 pub static KONGSWAP_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("2ipq2-uqaaa-aaaar-qailq-cai"));
 
-pub async fn pools() -> PoolsResponse {
-    kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the pools call: {}: {}",
-            code as u8, msg
-        ).as_str())
+fn token_kongswap_format(token: CanisterId) -> String {
+    format!("IC.{}", token.to_text())
+}
+
+pub async fn pools() -> Result<PoolsReply, InternalError> {
+    kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::pools".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::pools': {error:?}"),
+                None,
+                None
+            )
+        })?
+        .map_err(|error_message| {
+            InternalError::business_logic(
+                "KongSwapProvider::pools".to_string(),
+                format!("Error calling 'kongswap_canister_c2c_client::pools': {error_message:?}"),
+                None,
+                None
+            )
+        })
+}
+
+pub async fn swap_amounts(
+    token_in: CanisterId,
+    amount: Nat,
+    token_out: CanisterId,
+) -> Result<SwapAmountsReply, InternalError> {
+
+    let token_in = token_kongswap_format(token_in.clone());
+    let token_out = token_kongswap_format(token_out.clone());
+
+    let (result,) = kongswap_canister_c2c_client::swap_amounts(
+        *KONGSWAP_CANISTER,
+        (token_in.clone(), amount.clone(), token_out.clone())
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::swap_amounts".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::swap_amounts': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("token_in".to_string(), token_in.clone()),
+                    ("token_out".to_string(), token_out.clone()),
+                    ("amount".to_string(), amount.to_string()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::swap_amounts".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::swap_amounts': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("token_in".to_string(), token_in),
+                ("token_out".to_string(), token_out),
+                ("amount".to_string(), amount.to_string()),
+            ]))
+        )
     })
 }
 
-pub async fn swap_amounts(pay_token: String, pay_amount: Nat, receive_token: String) -> SwapAmountsResponse {
-    kongswap_canister_c2c_client::swap_amounts(*KONGSWAP_CANISTER, (pay_token, pay_amount, receive_token)).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the swap_amounts call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    })
-}
-
-pub async fn add_liquidity_amounts(token_0: String, amount: Nat, token_1: String) -> AddLiquidityAmountsResponse {
-    kongswap_canister_c2c_client::add_liquidity_amounts(*KONGSWAP_CANISTER, (token_0, amount, token_1)).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the swap_amounts call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    })
-}
-
-pub async fn add_liquidity(token_0: String, amount_0: Nat, token_1: String, amount_1: Nat, ledger1: Principal,ledger2: Principal) -> AddLiquidityResponse {
-
-    let x = match icrc_ledger_canister_c2c_client::icrc2_approve(
-        ledger1,
-        &ApproveArgs {
-            from_subaccount: None,
-            spender: KONGSWAP_CANISTER.clone().into(),
-            amount: Nat::from(99999999999999 as u128), // TODO: amount + fee
-            expected_allowance: None,
-            expires_at: None,
-            fee: None,
-            memo: None,
-            created_at_time: None,
-        },
-    )
-        .await
-    {
-        Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve ledger 1 {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve ledger 1  {error:?}")),
+pub async fn swap(
+    token_in: CanisterId,
+    amount: Nat,
+    token_out: CanisterId,
+    max_slippage: Option<f64>
+) -> Result<SwapReply, InternalError> {
+    let args = SwapArgs {
+        pay_amount: amount.into(),
+        pay_token: token_kongswap_format(token_in.clone()),
+        receive_token: token_kongswap_format(token_out.clone()),
+        max_slippage,
     };
 
-    match x {
-        Ok(_) => {}
-        Err(a) => {
-            trap(format!("ICRC2 approve  {a:?}").as_str());
-        }
-    }
+    let result = kongswap_canister_c2c_client::swap(
+        *KONGSWAP_CANISTER,
+        &args
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::swap".to_string(),
+                format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("pay_amount".to_string(), args.pay_amount.to_string()),
+                    ("pay_token".to_string(), args.pay_token.to_string()),
+                    ("receive_token".to_string(), args.receive_token.to_string()),
+                    ("max_slippage".to_string(), args.max_slippage.unwrap_or(0.0).to_string()),
+                ])),
+            )
+        })?
+        .map_err(|error| {
+            InternalError::business_logic(
+                "KongSwapProvider::swap".to_string(),
+                format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("pay_amount".to_string(), args.pay_amount.to_string()),
+                    ("pay_token".to_string(), args.pay_token.to_string()),
+                    ("receive_token".to_string(), args.receive_token.to_string()),
+                    ("max_slippage".to_string(), args.max_slippage.unwrap_or(0.0).to_string()),
+                ])),
+            )
+        })?;
 
-    let x2 = match icrc_ledger_canister_c2c_client::icrc2_approve(
-        ledger2,
-        &ApproveArgs {
-            from_subaccount: None,
-            spender: KONGSWAP_CANISTER.clone().into(),
-            amount: Nat::from(99999999999999 as u128), //TODO
-            expected_allowance: None,
-            expires_at: None,
-            fee: None,
-            memo: None,
-            created_at_time: None,
-        },
-    )
-        .await
-    {
-        Ok(Ok(index)) => Ok(index),
-        Ok(Err(error)) => Err(format!("ICRC2 approve ledger 2 {error:?}")),
-        Err(error) => Err(format!("ICRC2 approve ledger 2  {error:?}")),
-    };
+    Ok(result)
+}
 
-    match x2 {
-        Ok(_) => {}
-        Err(a) => {
-            trap(format!("ICRC2 approve  {a:?}").as_str());
-        }
-    }
+pub async fn add_liquidity_amounts(
+    token_0: String,
+    amount: Nat,
+    token_1: String
+) -> Result<AddLiquidityAmountsReply, InternalError> {
+    let (result,) = kongswap_canister_c2c_client::add_liquidity_amounts(
+        *KONGSWAP_CANISTER,
+        (token_0.clone(), amount.clone(), token_1.clone())
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::add_liquidity_amounts".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("token0".to_string(), token_0.clone()),
+                    ("amount".to_string(), amount.to_string()),
+                    ("token1".to_string(), token_1.clone()),
+                ]))
+            )
+        })?;
 
-    kongswap_canister_c2c_client::add_liquidity(*KONGSWAP_CANISTER, &Args {
-        token_0,
-        amount_0,
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::add_liquidity_amounts".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("token0".to_string(), token_0),
+                ("amount".to_string(), amount.to_string()),
+                ("token1".to_string(), token_1),
+            ]))
+        )
+    })
+}
+
+pub async fn add_liquidity(
+    token_0: String, 
+    amount_0: Nat, 
+    token_1: String, 
+    amount_1: Nat, 
+    ledger0: Principal,
+    ledger1: Principal
+) -> Result<AddLiquidityReply, InternalError> {
+    icrc2_approve(ledger0, amount_0.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "KongSwapProvider::add_liquidity".to_string(),
+                "Error calling 'kongswap_canister_c2c_client::add_liquidity'".to_string(),
+                Some(HashMap::from([
+                    ("token0".to_string(), token_0.clone()),
+                    ("amount0".to_string(), amount_0.to_string()),
+                    ("ledger0".to_string(), ledger0.to_string()),
+                ]))
+            )
+        })?;
+
+    icrc2_approve(ledger1, amount_1.clone()).await
+        .map_err(|error| {
+            error.wrap(
+                "KongSwapProvider::add_liquidity".to_string(),
+                "Error calling 'kongswap_canister_c2c_client::add_liquidity'".to_string(),
+                Some(HashMap::from([
+                    ("token1".to_string(), token_1.clone()),
+                    ("amount1".to_string(), amount_1.to_string()),
+                    ("ledger1".to_string(), ledger1.to_string()),
+                ]))
+            )
+        })?;
+
+    let args = AddLiquidityArgs {
+        token_0: token_0.clone(),
+        amount_0: amount_0.clone(),
         tx_id_0: None, //use icrc2
-        token_1,
-        amount_1,
+        token_1: token_1.clone(),
+        amount_1: amount_1.clone(),
         tx_id_1: None,
-    }).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the add_liquidity call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    }
-    )
+    };
+
+    let result = kongswap_canister_c2c_client::add_liquidity(
+        *KONGSWAP_CANISTER, 
+        &args
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::add_liquidity".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("token_0".to_string(), token_0.clone()),
+                    ("amount_0".to_string(), amount_0.to_string()),
+                    ("token_1".to_string(), token_1.clone()),
+                    ("amount_1".to_string(), amount_1.to_string()),
+                    ("ledger0".to_string(), ledger0.to_string()),
+                    ("ledger1".to_string(), ledger1.to_string()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::add_liquidity".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::add_liquidity': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("token_0".to_string(), token_0),
+                ("amount_0".to_string(), amount_0.to_string()),
+                ("token_1".to_string(), token_1),
+                ("amount_1".to_string(), amount_1.to_string()),
+                ("ledger0".to_string(), ledger0.to_string()),
+                ("ledger1".to_string(), ledger1.to_string()),
+            ]))
+        )
+    })
 }
 
-pub async fn user_balances(principal_id: String) -> (Result<Vec<UserBalancesReply>, String>,) {
-    kongswap_canister_c2c_client::user_balances(*KONGSWAP_CANISTER, (principal_id,)).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the user_balances call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    }
-    )
+pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply>, InternalError> {
+    let (result,) = kongswap_canister_c2c_client::user_balances(
+        *KONGSWAP_CANISTER,
+        (principal_id.clone(),)
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::user_balances".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::user_balances': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("principal_id".to_string(), principal_id.clone()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::user_balances".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::user_balances': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("principal_id".to_string(), principal_id),
+            ]))
+        )
+    })
 }
 
-#[allow(unused)]
-pub async fn requests(request_id: Option<u64>) -> kongswap_canister::queries::requests::Response {
-    kongswap_canister_c2c_client::requests(*KONGSWAP_CANISTER, &kongswap_canister::queries::requests::Args {
-        request_id
-    } ).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the requests call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    }
-    )
+pub async fn remove_liquidity_amounts(
+    token_0: String, 
+    token_1: String, 
+    remove_lp_token_amount: Nat
+) -> Result<RemoveLiquidityAmountsReply, InternalError> {
+    let args = RemoveLiquidityAmountsArgs {
+        token_0: token_0.clone(),
+        token_1: token_1.clone(),
+        remove_lp_token_amount: remove_lp_token_amount.clone(),
+    };
+
+    let result = kongswap_canister_c2c_client::remove_liquidity_amounts(
+        *KONGSWAP_CANISTER,
+        &args
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::remove_liquidity_amounts".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("token_0".to_string(), token_0.clone()),
+                    ("token_1".to_string(), token_1.clone()),
+                    ("remove_lp_token_amount".to_string(), remove_lp_token_amount.to_string()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::remove_liquidity_amounts".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("token_0".to_string(), token_0),
+                ("token_1".to_string(), token_1),
+                ("remove_lp_token_amount".to_string(), remove_lp_token_amount.to_string()),
+            ]))
+        )
+    })
 }
 
-#[allow(unused)]
-pub async fn remove_liquidity_amounts(token_0: String, token_1: String, remove_lp_token_amount: Nat) -> kongswap_canister::remove_liquidity_amounts::Response {
-    kongswap_canister_c2c_client::remove_liquidity_amounts(*KONGSWAP_CANISTER, &kongswap_canister::remove_liquidity_amounts::Args {
-        token_0,
-        token_1,
-        remove_lp_token_amount,
-    }).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the remove_liquidity_amounts call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    }
-    )
+pub async fn remove_liquidity(
+    token_0: String, 
+    token_1: String, 
+    remove_lp_token_amount: Nat
+) -> Result<RemoveLiquidityReply, InternalError> {
+    let args = RemoveLiquidityArgs {
+        token_0: token_0.clone(),
+        token_1: token_1.clone(),
+        remove_lp_token_amount: remove_lp_token_amount.clone(),
+    };
+
+    let result = kongswap_canister_c2c_client::remove_liquidity(
+        *KONGSWAP_CANISTER,
+        &args
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "kongswap_canister_c2c_client".to_string(),
+                "KongSwapProvider::remove_liquidity".to_string(),
+                format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("token_0".to_string(), token_0.clone()),
+                    ("token_1".to_string(), token_1.clone()),
+                    ("remove_lp_token_amount".to_string(), remove_lp_token_amount.to_string()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error_message| {
+        InternalError::business_logic(
+            "KongSwapProvider::remove_liquidity".to_string(),
+            format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity': {error_message:?}"),
+            None,
+            Some(HashMap::from([
+                ("token_0".to_string(), token_0),
+                ("token_1".to_string(), token_1),
+                ("remove_lp_token_amount".to_string(), remove_lp_token_amount.to_string()),
+            ]))
+        )
+    })
 }
 
-pub async fn remove_liquidity(token_0: String, token_1: String, remove_lp_token_amount: Nat) -> kongswap_canister::remove_liquidity::Response {
-    kongswap_canister_c2c_client::remove_liquidity(*KONGSWAP_CANISTER, &kongswap_canister::remove_liquidity::Args {
-        token_0,
-        token_1,
-        remove_lp_token_amount,
-    }).await.unwrap_or_else(|(code, msg)| {
-        trap(format!(
-            "An error happened during the remove_liquidity call: {}: {}",
-            code as u8, msg
-        ).as_str())
-    }
-    )
+async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalError> {
+    let args = ApproveArgs {
+        from_subaccount: None,
+        spender: KONGSWAP_CANISTER.clone().into(),
+        amount: Nat::from(99999999999999 as u128), // TODO: amount + fee
+        expected_allowance: None,
+        expires_at: None,
+        fee: None,
+        memo: None,
+        created_at_time: None,
+    };
+
+    let result = icrc_ledger_canister_c2c_client::icrc2_approve(
+        ledger,
+        &args
+    ).await
+        .map_err(|error| {
+            InternalError::external_service(
+                "icrc_ledger_canister_c2c_client".to_string(),
+                "KongSwapProvider::icrc2_approve".to_string(),
+                format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+                None,
+                Some(HashMap::from([
+                    ("ledger".to_string(), ledger.to_string()),
+                    ("amount".to_string(), amount.to_string()),
+                ]))
+            )
+        })?;
+
+    result.map_err(|error| {
+        InternalError::business_logic(
+            "KongSwapProvider::icrc2_approve".to_string(),
+            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
+            None,
+            Some(HashMap::from([
+                ("ledger".to_string(), ledger.to_string()),
+                ("amount".to_string(), amount.to_string()),
+            ]))
+        )
+    })
 }

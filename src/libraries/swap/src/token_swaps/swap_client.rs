@@ -1,14 +1,15 @@
 use async_trait::async_trait;
-use candid::Deserialize;
-use ic_response_codes::RejectCode;
+use candid::{Deserialize, Nat};
 use serde::Serialize;
 use types::CanisterId;
+
+use errors::internal_error::error::InternalError;
 
 #[async_trait]
 pub trait SwapClient {
     fn canister_id(&self) -> CanisterId;
-    async fn swap(&self, amount: u128) -> Result<Result<SwapSuccess, String>, (RejectCode, String)>;
-    async fn quote(&self, amount: u128) -> Result<Result<QuoteSuccess, String>, (RejectCode, String)>;
+    async fn swap(&self, amount: Nat) -> Result<SwapSuccess, InternalError>;
+    async fn quote(&self, amount: Nat) -> Result<QuoteSuccess, InternalError>;
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

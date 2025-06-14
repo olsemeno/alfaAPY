@@ -42,6 +42,14 @@ impl<T: PartialEq> PushIfNotContains<T> for Vec<T> {
     }
 }
 
+pub fn is_default<T: Default + PartialEq>(value: &T) -> bool {
+    *value == Default::default()
+}
+
+pub trait Fallback: Sized {
+    type FallbackType: Into<Self>;
+}
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub enum ResultLowercase<T, E> {
     #[serde(rename = "ok")]
@@ -50,10 +58,50 @@ pub enum ResultLowercase<T, E> {
     Err(E),
 }
 
-pub fn is_default<T: Default + PartialEq>(value: &T) -> bool {
-    *value == Default::default()
+impl<T, E> ResultLowercase<T, E> {
+    pub fn into_std(self) -> Result<T, E> {
+        match self {
+            ResultLowercase::Ok(val) => Ok(val),
+            ResultLowercase::Err(err) => Err(err),
+        }
+    }
+
+    pub fn map_err<F, O>(self, op: O) -> ResultLowercase<T, F>
+    where
+        O: FnOnce(E) -> F,
+    {
+        match self {
+            ResultLowercase::Ok(val) => ResultLowercase::Ok(val),
+            ResultLowercase::Err(err) => ResultLowercase::Err(op(err)),
+        }
+    }
+
+    pub fn map<U, F>(self, op: F) -> ResultLowercase<U, E>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            ResultLowercase::Ok(val) => ResultLowercase::Ok(op(val)),
+            ResultLowercase::Err(err) => ResultLowercase::Err(err),
+        }
+    }
+
+    pub fn and_then<U, F>(self, op: F) -> ResultLowercase<U, E>
+    where
+        F: FnOnce(T) -> ResultLowercase<U, E>,
+    {
+        match self {
+            ResultLowercase::Ok(val) => op(val),
+            ResultLowercase::Err(err) => ResultLowercase::Err(err),
+        }
+    }
 }
 
-pub trait Fallback: Sized {
-    type FallbackType: Into<Self>;
+impl<T, E> From<Result<T, E>> for ResultLowercase<T, E> {
+    fn from(res: Result<T, E>) -> Self {
+        match res {
+            Ok(val) => ResultLowercase::Ok(val),
+            Err(err) => ResultLowercase::Err(err),
+        }
+    }
 }
