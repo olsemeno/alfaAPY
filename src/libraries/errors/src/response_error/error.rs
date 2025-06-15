@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use derive_more::Display;
 
 use crate::internal_error::error::{InternalError, InternalErrorKind};
-use crate::response_error::builder::ResponseErrorBuilder;
 
 #[derive(CandidType, Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, Display)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -16,11 +15,12 @@ pub enum ResponseErrorCode {
     InternalError,   // INTERNAL_ERROR
 }
 
-#[derive(CandidType, Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Display)]
+#[derive(CandidType, Deserialize, Serialize, Debug, Clone, Display)]
 #[display("{:?}: {} ({:?})", code, message, details)]
 pub struct ResponseError {
     pub code: ResponseErrorCode,
     pub message: String,
+    pub source: Option<Box<InternalError>>,
     pub details: Option<HashMap<String, String>>,
 }
 
@@ -28,26 +28,51 @@ impl ResponseError {
     pub fn new(
         code: ResponseErrorCode,
         message: impl Into<String>,
+        source: Option<Box<InternalError>>,
         details: Option<HashMap<String, String>>
     ) -> Self {
         Self {
             code,
             message: message.into(),
+            source,
             details,
         }
     }
 
-    pub fn from_internal_error<T>(internal_error: InternalError) -> Result<T, Self> {
-        Err(ResponseErrorBuilder::from_internal_error(internal_error.clone()).message(internal_error.message).build())
+    pub fn from_internal_error(internal_error: InternalError) -> Self {
+        Self::new(
+            internal_error.kind.clone().into(),
+            internal_error.message.clone(),
+            Some(Box::new(internal_error.clone())),
+            internal_error.extra.clone()
+        )
     }
 
-    pub fn internal_error<T>(message: impl Into<String>) -> Result<T, Self> {
-        Err(ResponseErrorBuilder::internal_error().message(message).build())
+    pub fn err_from_internal<T>(internal_error: InternalError) -> Result<T, Self> {
+        Err(Self::from_internal_error(internal_error))
     }
 
-    pub fn not_found<T>(message: impl Into<String>) -> Result<T, Self> {
-        Err(ResponseErrorBuilder::not_found().message(message).build())
-    }
+    // pub fn internal_error<T>(message: impl Into<String>) -> Result<T, Self> {
+    //     Err(Self::new(
+    //         ResponseErrorCode::InternalError,
+    //         message.into(),
+    //         None,
+    //         None
+    //     ))
+    // }
+
+    // pub fn not_found<T>(message: impl Into<String>, details: Option<HashMap<String, String>>) -> Result<T, Self> {
+    //     Err(Self::new(
+    //         ResponseErrorCode::NotFound,
+    //         message.into(),
+    //         None,
+    //         details
+    //     ))
+    // }
+
+    // pub fn err_not_found<T>(message: impl Into<String>, details: Option<HashMap<String, String>>) -> Result<T, Self> {
+    //     Err(Self::not_found(message, details))
+    // }
 }
 
 impl From<InternalErrorKind> for ResponseErrorCode {

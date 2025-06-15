@@ -179,27 +179,25 @@ pub async fn add_liquidity_to_pool(
     pool_id: String,
     amount: Nat
 ) -> Result<AddLiquidityResponse, ResponseError> {
-    let context = Context::generate(Some(caller()));
+    let context = generate_context();
 
-    match icrc2_transfer_from_user(caller(), ledger, amount.clone()).await {
-        Ok(_) => {
-            match liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await {
-                Ok(response) => Ok(response),
-                Err(error) => ResponseError::from_internal_error(error),
-            }
-        },
-        Err(error) => ResponseError::from_internal_error(error),
-    }
+    icrc2_transfer_from_user(caller(), ledger, amount.clone()).await
+        .map_err(|error| ResponseError::from_internal_error(error))?;
+
+    liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
-    let context = Context::generate(Some(caller()));
+    let context = generate_context();
 
-    match liquidity_service::remove_liquidity_from_pool(context, pool_id).await {
-        Ok(response) => Ok(response),
-        Err(error) => ResponseError::from_internal_error(error)
-    }
+    liquidity_service::remove_liquidity_from_pool(context, pool_id).await
+        .map_err(|error| ResponseError::from_internal_error(error))
+}
+
+fn generate_context() -> Context {
+    Context::generate(Some(caller()))
 }
 
 // ========================== Vault management ==========================

@@ -35,7 +35,7 @@ pub async fn accept_deposit(
     amount: Nat,
     ledger: Principal,
     strategy_id: StrategyId
-) -> Result<bool, InternalError> {
+) -> Result<(), InternalError> {
     let block_index = icrc2_transfer_from_user(
         context.user.unwrap(),
         ledger,
@@ -73,5 +73,5 @@ pub async fn accept_deposit(
         }
     });
 
-    Ok(true)
+    Ok(())
 }

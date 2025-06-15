@@ -6,6 +6,7 @@ mod types;
 mod event_logs;
 mod pools;
 mod pool_stats;
+mod service;
 
 use serde::Serialize;
 use std::cell::RefCell;
@@ -21,11 +22,9 @@ use errors::response_error::error::ResponseError;
 
 use crate::repository::stable_state;
 use crate::repository::strategies_repo;
-use crate::strategies::strategy_service::{get_actual_strategies, init_strategies};
-use crate::user::user_service::accept_deposit;
+use crate::strategies::strategy_service;
 use crate::event_logs::event_log_service;
 use crate::event_logs::event_log::EventLog;
-use crate::strategies::strategy::IStrategy;
 use crate::types::types::*;
 
 thread_local! {
@@ -56,7 +55,7 @@ impl Default for Conf {
 ///
 /// This function sets the initial configuration for the canister. If a configuration
 /// is provided, it replaces the default configuration with the provided one. It also
-/// initializes the strategies by calling `init_strategies()`.
+/// initializes the strategies by calling ` strategy_service::init_strategies()`.
 #[init]
 #[candid_method(init)]
 fn init(conf: Option<Conf>) {
@@ -66,7 +65,7 @@ fn init(conf: Option<Conf>) {
             CONF.with(|c| c.replace(conf));
         }
     };
-    init_strategies();
+    strategy_service::init_strategies();
 }
 
 /// The heartbeat function is called periodically to perform maintenance tasks.
@@ -126,71 +125,21 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 
 // =============== Strategies ===============
 
-/// Accepts an investment into a specified strategy.
-///
-/// # Arguments
-///
-/// * `args` - An `StrategyDepositArgs` struct containing the ledger, amount, and strategy ID.
-///
-/// # Returns
-///
-/// A `Result` containing a `DepositResponse` struct (with the amount, shares, transaction ID, and request ID)
-/// or a `ResponseError` if the strategy is not found or the deposit fails.
-///
-/// # Errors
-///
-/// Returns a `ResponseError` if the strategy is not found or if the deposit operation fails.
+
 #[update]
 async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, ResponseError> {
     let context = Context::generate(Some(caller()));
 
-    match accept_deposit(context.clone(), args.amount.clone(), args.ledger, args.strategy_id).await {
-        Ok(_) => {
-            let mut strategy = match get_strategy_by_id(args.strategy_id) {
-                Some(strategy) => strategy,
-                None => {
-                    return ResponseError::not_found(format!("Strategy with id {} not found", args.strategy_id));
-                }
-            };
-
-            match strategy.deposit(context.clone(), context.user.unwrap(), args.amount).await {
-                Ok(response) => Ok(response),
-                Err(error) => ResponseError::from_internal_error(error)
-            }
-        },
-        Err(error) => ResponseError::from_internal_error(error)
-    }
+    service::deposit(context, args).await
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
-/// Withdraws an amount from a specified strategy.
-///
-/// # Arguments
-///
-/// * `args` - A `StrategyWithdrawArgs` struct containing the ledger, amount, and strategy ID.
-///
-/// # Returns
-///
-/// A `Result` containing a `StrategyWithdrawResponse` struct (with the withdrawn amount and current shares)
-/// or a `ResponseError` if the strategy is not found or the withdrawal fails.
-///
-/// # Errors
-///
-/// Returns a `ResponseError` if the strategy is not found or if the withdrawal operation fails.
 #[update]
 async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse, ResponseError> {
     let context = Context::generate(Some(caller()));
 
-    let mut strategy = match get_strategy_by_id(args.strategy_id) {
-        Some(strategy) => strategy,
-        None => {
-            return ResponseError::not_found(format!("Strategy with id {} not found", args.strategy_id));
-        }
-    };
-
-    match strategy.withdraw(context.clone(), args.amount).await {
-        Ok(response) => Ok(response),
-        Err(error) => ResponseError::from_internal_error(error)
-    }
+    service::withdraw(context, args).await
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 /// Retrieves the strategies for a specific user.
@@ -235,7 +184,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
 
 #[query]
 fn get_strategies() -> Vec<StrategyResponse> {
-    get_actual_strategies()
+    strategy_service::get_actual_strategies()
 }
 
 /// Retrieves the current configuration.
@@ -282,20 +231,6 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
     ];
 
     Icrc28TrustedOriginsResponse { trusted_origins }
-}
-
-
-/// Retrieves a strategy by its ID.
-///
-/// # Arguments
-///
-/// * `id` - The ID of the strategy to retrieve.
-///
-/// # Returns
-///
-/// A `Box<dyn IStrategy>` containing the strategy.
-fn get_strategy_by_id(id: u16) -> Option<Box<dyn IStrategy>> {
-    strategies_repo::get_strategy_by_id(id)
 }
 
 // =============== Upgrade ===============
