@@ -67,4 +67,28 @@ impl EventLogParams {
             EventLogParams::RemoveLiquidityFromPoolFailed { .. } => EventLogType::RemoveLiquidityFromPoolFailed,
         }
     }
+
+    pub fn add_liquidity_to_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolStarted { pool_id, amount0, amount1 }
+    }
+
+    pub fn add_liquidity_to_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolCompleted { pool_id, amount0, amount1 }
+    }
+
+    pub fn add_liquidity_to_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolFailed { pool_id, amount0, amount1 }
+    }
+
+    pub fn remove_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolStarted { pool_id, amount0, amount1 }
+    }
+
+    pub fn remove_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolCompleted { pool_id, amount0, amount1 }
+    }
+
+    pub fn remove_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolFailed { pool_id, amount0, amount1 }
+    }
 }

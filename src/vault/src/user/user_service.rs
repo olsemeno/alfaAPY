@@ -40,17 +40,7 @@ pub async fn accept_deposit(
         context.user.unwrap(),
         ledger,
         amount.clone()
-    ).await
-        .map_err(|error| {
-            error.wrap(
-                "user_service::accept_deposit".to_string(),
-                format!("Error calling 'Utils::icrc2_transfer_from_user'"),
-                Some(HashMap::from([
-                    ("ledger".to_string(), ledger.to_string()),
-                    ("amount".to_string(), amount.to_string()),
-                ])),
-            )
-        })?;
+    ).await?;
 
     let deposit = UserDeposit {
         amount,

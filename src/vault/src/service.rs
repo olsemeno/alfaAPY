@@ -22,47 +22,25 @@ use crate::types::types::*;
 /// # Errors
 ///
 /// Returns a `InternalError` if the strategy is not found or if the deposit operation fails.
+
+
+
+
 pub async fn deposit(context: Context, args: StrategyDepositArgs) -> Result<StrategyDepositResponse, InternalError> {
     let mut strategy = get_strategy_by_id(args.strategy_id.clone())
         .ok_or_else(|| {
             InternalError::not_found(
                 "vault::deposit".to_string(),
                 "Strategy not found".to_string(),
-                None,
                 Some(HashMap::from([
                     ("strategy_id".to_string(), args.strategy_id.to_string())
                 ]))
             )
         })?;
 
-    user_service::accept_deposit(context.clone(), args.amount.clone(), args.ledger, args.strategy_id).await
-        .map_err(|error| {
-            error.wrap(
-                "vault::deposit".to_string(),
-                "Error calling 'user_service::accept_deposit'".to_string(),
-                Some(HashMap::from([
-                    ("strategy_id".to_string(), args.strategy_id.to_string()),
-                    ("ledger".to_string(), args.ledger.to_string()),
-                    ("amount".to_string(), args.amount.to_string()),
-                    ("user".to_string(), context.user.unwrap().to_string()),
-                ]))
-            )
-        })?;
-
+    user_service::accept_deposit(context.clone(), args.amount.clone(), args.ledger, args.strategy_id).await?;
 
     strategy.deposit(context.clone(), context.user.unwrap(), args.amount.clone()).await
-        .map_err(|error| {
-            error.wrap(
-                "vault::deposit".to_string(),
-                "Error calling 'strategy::deposit'".to_string(),
-                Some(HashMap::from([
-                    ("strategy_id".to_string(), args.strategy_id.to_string()),
-                    ("ledger".to_string(), args.ledger.to_string()),
-                    ("amount".to_string(), args.amount.to_string()),
-                    ("user".to_string(), context.user.unwrap().to_string()),
-                ]))
-            )
-        })
 }
 
 /// Withdraws an amount from a specified strategy.
@@ -85,7 +63,6 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
             InternalError::not_found(
                 "vault::withdraw".to_string(),
                 "Strategy not found".to_string(),
-                None,
                 Some(HashMap::from([
                     ("strategy_id".to_string(), args.strategy_id.to_string()),
                 ]))
@@ -93,17 +70,6 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
         })?;
 
     strategy.withdraw(context.clone(), args.amount.clone()).await
-        .map_err(|error| {
-            error.wrap(
-                "vault::withdraw".to_string(),
-                "Error calling 'strategy::withdraw'".to_string(),
-                Some(HashMap::from([
-                    ("strategy_id".to_string(), args.strategy_id.to_string()),
-                    ("amount".to_string(), args.amount.to_string()),
-                    ("user".to_string(), context.user.unwrap().to_string()),
-                ]))
-            )
-        })
 }
 
 /// Retrieves a strategy by its ID.

@@ -38,11 +38,11 @@ impl StrategyDepositStartedParamsBuilder {
     pub fn pool_id(mut self, id: Option<String>) -> Self { self.pool_id = id; self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyDepositStarted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            amount0: self.amount0,
-        }
+        EventLogParams::strategy_deposit_started(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.amount0,
+        )
     }
 }
 
@@ -59,11 +59,11 @@ impl StrategyDepositCompletedParamsBuilder {
     pub fn pool_id(mut self, id: Option<String>) -> Self { self.pool_id = id; self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyDepositCompleted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            amount0: self.amount0,
-        }
+        EventLogParams::strategy_deposit_completed(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.amount0,
+        )
     }
 }
 
@@ -80,11 +80,11 @@ impl StrategyDepositFailedParamsBuilder {
     pub fn pool_id(mut self, id: Option<String>) -> Self { self.pool_id = id; self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyDepositFailed {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            amount0: self.amount0,
-        }
+        EventLogParams::strategy_deposit_failed(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.amount0,
+        )
     }
 }
 
@@ -101,11 +101,11 @@ impl StrategyWithdrawStartedParamsBuilder {
     pub fn pool_id(mut self, id: Option<String>) -> Self { self.pool_id = id; self }
     pub fn shares(mut self, shares: Nat) -> Self { self.shares = Some(shares); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyWithdrawStarted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            shares: self.shares,
-        }
+        EventLogParams::strategy_withdraw_started(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.shares,
+        )
     }
 }
 
@@ -124,12 +124,12 @@ impl StrategyWithdrawCompletedParamsBuilder {
     pub fn shares(mut self, shares: Nat) -> Self { self.shares = Some(shares); self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyWithdrawCompleted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            shares: self.shares,
-            amount0: self.amount0,
-        }
+        EventLogParams::strategy_withdraw_completed(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.shares,
+            self.amount0,
+        )
     }
 }
 
@@ -146,11 +146,11 @@ impl StrategyWithdrawFailedParamsBuilder {
     pub fn pool_id(mut self, id: Option<String>) -> Self { self.pool_id = id; self }
     pub fn shares(mut self, shares: Nat) -> Self { self.shares = Some(shares); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyWithdrawFailed {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            pool_id: self.pool_id,
-            shares: self.shares,
-        }
+        EventLogParams::strategy_withdraw_failed(
+            self.strategy_id.expect("strategy_id required"),
+            self.pool_id,
+            self.shares,
+        )
     }
 }
 
@@ -165,10 +165,10 @@ impl StrategyRebalanceStartedParamsBuilder {
     pub fn strategy_id(mut self, id: impl Into<String>) -> Self { self.strategy_id = Some(id.into()); self }
     pub fn previous_pool_id(mut self, id: Option<String>) -> Self { self.previous_pool_id = id; self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyRebalanceStarted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            previous_pool_id: self.previous_pool_id,
-        }
+        EventLogParams::strategy_rebalance_started(
+            self.strategy_id.expect("strategy_id required"),
+            self.previous_pool_id,
+        )
     }
 }
 
@@ -185,11 +185,11 @@ impl StrategyRebalanceCompletedParamsBuilder {
     pub fn previous_pool_id(mut self, id: Option<String>) -> Self { self.previous_pool_id = id; self }
     pub fn new_pool_id(mut self, id: Option<String>) -> Self { self.new_pool_id = id; self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyRebalanceCompleted {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            previous_pool_id: self.previous_pool_id,
-            new_pool_id: self.new_pool_id,
-        }
+        EventLogParams::strategy_rebalance_completed(
+            self.strategy_id.expect("strategy_id required"),
+            self.previous_pool_id,
+            self.new_pool_id,
+        )
     }
 }
 
@@ -206,11 +206,11 @@ impl StrategyRebalanceFailedParamsBuilder {
     pub fn previous_pool_id(mut self, id: Option<String>) -> Self { self.previous_pool_id = id; self }
     pub fn new_pool_id(mut self, id: Option<String>) -> Self { self.new_pool_id = id; self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::StrategyRebalanceFailed {
-            strategy_id: self.strategy_id.expect("strategy_id required"),
-            previous_pool_id: self.previous_pool_id,
-            new_pool_id: self.new_pool_id,
-        }
+        EventLogParams::strategy_rebalance_failed(
+            self.strategy_id.expect("strategy_id required"),
+            self.previous_pool_id,
+            self.new_pool_id,
+        )
     }
 }
 
@@ -227,11 +227,11 @@ impl AddLiquidityToPoolStartedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolStarted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_started(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -248,11 +248,11 @@ impl AddLiquidityToPoolCompletedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolCompleted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_completed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -269,11 +269,11 @@ impl AddLiquidityToPoolFailedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolFailed {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_failed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -290,11 +290,11 @@ impl RemoveLiquidityFromPoolStartedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolStarted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_started(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -311,11 +311,11 @@ impl RemoveLiquidityFromPoolCompletedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolCompleted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_completed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -332,11 +332,11 @@ impl RemoveLiquidityFromPoolFailedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolFailed {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_failed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -355,12 +355,12 @@ impl SwapTokenStartedParamsBuilder {
     pub fn token_out(mut self, token: CanisterId) -> Self { self.token_out = Some(token); self }
     pub fn amount_in(mut self, amount: Nat) -> Self { self.amount_in = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::SwapTokenStarted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            token_in: self.token_in.expect("token_in required"),
-            token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in,
-        }
+        EventLogParams::swap_token_started(
+            self.pool_id.expect("pool_id required"),
+            self.token_in.expect("token_in required"),
+            self.token_out.expect("token_out required"),
+            self.amount_in,
+        )
     }
 }
 
@@ -379,12 +379,12 @@ impl SwapTokenCompletedParamsBuilder {
     pub fn amount_in(mut self, amount: Nat) -> Self { self.amount_in = Some(amount); self }
     pub fn amount_out(mut self, amount: Nat) -> Self { self.amount_out = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::SwapTokenCompleted {
-            token_in: self.token_in.expect("token_in required"),
-            token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in,
-            amount_out: self.amount_out,
-        }
+        EventLogParams::swap_token_completed(
+            self.token_in.expect("token_in required"),
+            self.token_out.expect("token_out required"),
+            self.amount_in,
+            self.amount_out,
+        )
     }
 }
 
@@ -403,11 +403,11 @@ impl SwapTokenFailedParamsBuilder {
     pub fn token_out(mut self, token: CanisterId) -> Self { self.token_out = Some(token); self }
     pub fn amount_in(mut self, amount: Nat) -> Self { self.amount_in = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::SwapTokenFailed {
-            pool_id: self.pool_id.expect("pool_id required"),
-            token_in: self.token_in.expect("token_in required"),
-            token_out: self.token_out.expect("token_out required"),
-            amount_in: self.amount_in,
-        }
+        EventLogParams::swap_token_failed(
+            self.pool_id.expect("pool_id required"),
+            self.token_in.expect("token_in required"),
+            self.token_out.expect("token_out required"),
+            self.amount_in,
+        )
     }
 }

@@ -108,7 +108,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     "BasicStrategy::deposit".to_string(),
                     "No pool found to deposit".to_string(),
                     None,
-                    None,
                 );
 
                 event_log_service::create_event_log(
@@ -132,18 +131,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 context.clone(),
                 amount.clone(),
                 current_pool.clone()
-            ).await
-            .map_err(|error| {
-                // TODO: Add event log
-                error.wrap(
-                    "BasicStrategy::deposit".to_string(),
-                    "Error calling 'liquidity_service::add_liquidity_to_pool'".to_string(),
-                    Some(HashMap::from([
-                        ("pool_id".to_string(), current_pool.get_id()),
-                        ("amount".to_string(), amount.to_string()),
-                    ])),
-                )
-            })?;
+            ).await?;
 
             // Calculate new shares for investor's deposit
             let new_shares = LiquidityCalculator::calculate_shares_for_deposit(
@@ -206,7 +194,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 "BasicStrategy::deposit".to_string(),
                 "No current pool found to deposit".to_string(),
                 None,
-                None,
             );
 
             event_log_service::create_event_log(
@@ -263,7 +250,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let internal_error = InternalError::business_logic(
                 "BasicStrategy::withdraw".to_string(),
                 "No shares found for user".to_string(),
-                None,
                 Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
                     ("user_shares".to_string(), user_shares.to_string()),
@@ -294,7 +280,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let internal_error = InternalError::business_logic(
                 "BasicStrategy::withdraw".to_string(),
                 "Not sufficient shares for user".to_string(),
-                None,
                 Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
                     ("user_shares".to_string(), user_shares.to_string()),
@@ -323,17 +308,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 self.get_total_shares(),
                 shares.clone(),
                 current_pool.clone(),
-            ).await
-                .map_err(|error| {
-                    error.wrap(
-                        "BasicStrategy::withdraw".to_string(),
-                        "Error calling 'liquidity_service::withdraw_liquidity_from_pool'".to_string(),
-                        Some(HashMap::from([
-                            ("pool_id".to_string(), current_pool_id.to_string()),
-                            ("shares".to_string(), shares.to_string()),
-                        ])),
-                    )
-                })?;
+            ).await?;
 
             // Swap withdrawn token_1 to token_0 (base token)
             let swap_response = swap_service::swap_icrc2_optimal(
@@ -352,16 +327,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 amount_0_to_withdraw.clone(),
             ).await
                 .map_err(|error| {
-                    let internal_error = error.wrap(
-                        "BasicStrategy::withdraw".to_string(),
-                        "Error calling 'icrc1_transfer'".to_string(),
-                        Some(HashMap::from([
-                            ("user".to_string(), investor.to_string()),
-                            ("canister_id".to_string(), token0.to_string()),
-                            ("amount".to_string(), amount_0_to_withdraw.to_string()),
-                        ])),
-                    );
-
                     // ========== Event log begin ==========
                     let event_log_params = EventLogParamsBuilder::strategy_withdraw_failed()
                         .strategy_id(self.get_id().to_string())
@@ -373,11 +338,11 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                         event_log_params,
                         context.correlation_id.clone(),
                         Some(investor),
-                        Some(internal_error.clone()),
+                        Some(error.clone()),
                     );
                     // ========== Event log end ==========
 
-                    internal_error
+                    error
                 })?;
 
             // Update total shares
@@ -437,7 +402,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let internal_error = InternalError::not_found(
                 "BasicStrategy::withdraw".to_string(),
                 "No current pool found in strategy".to_string(),
-                None,
                 None,
             );
 
@@ -523,17 +487,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),
-            ).await
-                .map_err(|error| {
-                    error.wrap(
-                        "BasicStrategy::rebalance".to_string(),
-                        "Error calling 'liquidity_service::withdraw_liquidity_from_pool'".to_string(),
-                        Some(HashMap::from([
-                            ("pool_id".to_string(), current_pool.get_id()),
-                            ("shares".to_string(), self.get_total_shares().to_string()),
-                        ])),
-                    )
-                })?;
+            ).await?;
 
             let token_0_withdrawn_amount = withdraw_response.token_0_amount;
             let token_1_withdrawn_amount = withdraw_response.token_1_amount;
@@ -543,18 +497,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 token1.clone(),
                 token0.clone(),
                 token_1_withdrawn_amount.clone(),
-            ).await
-                .map_err(|error| {
-                    error.wrap(
-                        "BasicStrategy::rebalance".to_string(),
-                        "Error calling 'swap_service::swap_icrc2_optimal'".to_string(),
-                        Some(HashMap::from([
-                            ("token0".to_string(), token0.to_string()),
-                            ("token1".to_string(), token1.to_string()),
-                            ("amount".to_string(), token_1_withdrawn_amount.to_string()),
-                        ])),
-                    )
-                })?;
+            ).await?;
 
             // Calculate total token_0 to send in new pool after swap
             let token_0_to_pool_amount = token_0_withdrawn_amount + swap_response.amount_out;
@@ -564,17 +507,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 context.clone(),
                 token_0_to_pool_amount.clone(),
                 max_apy_pool.clone(),
-            ).await
-                .map_err(|error| {
-                    error.wrap(
-                        "BasicStrategy::rebalance".to_string(),
-                        "Error calling 'liquidity_service::add_liquidity_to_pool'".to_string(),
-                        Some(HashMap::from([
-                            ("pool_id".to_string(), max_apy_pool.get_id()),
-                            ("token_0_to_pool_amount".to_string(), token_0_to_pool_amount.to_string()),
-                        ])),
-                    )
-                })?;
+            ).await?;
 
             // ========== Event log begin ==========
             let event_log_params = EventLogParamsBuilder::strategy_rebalance_completed()
@@ -610,7 +543,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             let internal_error = InternalError::not_found(
                 "BasicStrategy::rebalance".to_string(),
                 "No current pool found in strategy".to_string(),
-                None,
                 None,
             );
 

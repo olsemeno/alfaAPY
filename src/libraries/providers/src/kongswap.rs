@@ -30,7 +30,6 @@ pub async fn pools() -> Result<PoolsReply, InternalError> {
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::pools".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::pools': {error:?}"),
-                None,
                 None
             )
         })?
@@ -38,7 +37,6 @@ pub async fn pools() -> Result<PoolsReply, InternalError> {
             InternalError::business_logic(
                 "KongSwapProvider::pools".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::pools': {error_message:?}"),
-                None,
                 None
             )
         })
@@ -62,7 +60,6 @@ pub async fn swap_amounts(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::swap_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::swap_amounts': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("token_in".to_string(), token_in.clone()),
                     ("token_out".to_string(), token_out.clone()),
@@ -75,7 +72,6 @@ pub async fn swap_amounts(
         InternalError::business_logic(
             "KongSwapProvider::swap_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::swap_amounts': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("token_in".to_string(), token_in),
                 ("token_out".to_string(), token_out),
@@ -107,7 +103,6 @@ pub async fn swap(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::swap".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("pay_amount".to_string(), args.pay_amount.to_string()),
                     ("pay_token".to_string(), args.pay_token.to_string()),
@@ -120,7 +115,6 @@ pub async fn swap(
             InternalError::business_logic(
                 "KongSwapProvider::swap".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("pay_amount".to_string(), args.pay_amount.to_string()),
                     ("pay_token".to_string(), args.pay_token.to_string()),
@@ -147,7 +141,6 @@ pub async fn add_liquidity_amounts(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::add_liquidity_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("token0".to_string(), token_0.clone()),
                     ("amount".to_string(), amount.to_string()),
@@ -160,7 +153,6 @@ pub async fn add_liquidity_amounts(
         InternalError::business_logic(
             "KongSwapProvider::add_liquidity_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("token0".to_string(), token_0),
                 ("amount".to_string(), amount.to_string()),
@@ -178,31 +170,8 @@ pub async fn add_liquidity(
     ledger0: Principal,
     ledger1: Principal
 ) -> Result<AddLiquidityReply, InternalError> {
-    icrc2_approve(ledger0, amount_0.clone()).await
-        .map_err(|error| {
-            error.wrap(
-                "KongSwapProvider::add_liquidity".to_string(),
-                "Error calling 'kongswap_canister_c2c_client::add_liquidity'".to_string(),
-                Some(HashMap::from([
-                    ("token0".to_string(), token_0.clone()),
-                    ("amount0".to_string(), amount_0.to_string()),
-                    ("ledger0".to_string(), ledger0.to_string()),
-                ]))
-            )
-        })?;
-
-    icrc2_approve(ledger1, amount_1.clone()).await
-        .map_err(|error| {
-            error.wrap(
-                "KongSwapProvider::add_liquidity".to_string(),
-                "Error calling 'kongswap_canister_c2c_client::add_liquidity'".to_string(),
-                Some(HashMap::from([
-                    ("token1".to_string(), token_1.clone()),
-                    ("amount1".to_string(), amount_1.to_string()),
-                    ("ledger1".to_string(), ledger1.to_string()),
-                ]))
-            )
-        })?;
+    icrc2_approve(ledger0, amount_0.clone()).await?;
+    icrc2_approve(ledger1, amount_1.clone()).await?;
 
     let args = AddLiquidityArgs {
         token_0: token_0.clone(),
@@ -222,7 +191,6 @@ pub async fn add_liquidity(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::add_liquidity".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("token_0".to_string(), token_0.clone()),
                     ("amount_0".to_string(), amount_0.to_string()),
@@ -238,7 +206,6 @@ pub async fn add_liquidity(
         InternalError::business_logic(
             "KongSwapProvider::add_liquidity".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::add_liquidity': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("token_0".to_string(), token_0),
                 ("amount_0".to_string(), amount_0.to_string()),
@@ -261,7 +228,6 @@ pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::user_balances".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::user_balances': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("principal_id".to_string(), principal_id.clone()),
                 ]))
@@ -272,7 +238,6 @@ pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply
         InternalError::business_logic(
             "KongSwapProvider::user_balances".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::user_balances': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("principal_id".to_string(), principal_id),
             ]))
@@ -300,7 +265,6 @@ pub async fn remove_liquidity_amounts(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::remove_liquidity_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("token_0".to_string(), token_0.clone()),
                     ("token_1".to_string(), token_1.clone()),
@@ -313,7 +277,6 @@ pub async fn remove_liquidity_amounts(
         InternalError::business_logic(
             "KongSwapProvider::remove_liquidity_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("token_0".to_string(), token_0),
                 ("token_1".to_string(), token_1),
@@ -343,7 +306,6 @@ pub async fn remove_liquidity(
                 "kongswap_canister_c2c_client".to_string(),
                 "KongSwapProvider::remove_liquidity".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("token_0".to_string(), token_0.clone()),
                     ("token_1".to_string(), token_1.clone()),
@@ -356,7 +318,6 @@ pub async fn remove_liquidity(
         InternalError::business_logic(
             "KongSwapProvider::remove_liquidity".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity': {error_message:?}"),
-            None,
             Some(HashMap::from([
                 ("token_0".to_string(), token_0),
                 ("token_1".to_string(), token_1),
@@ -387,7 +348,6 @@ async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalEr
                 "icrc_ledger_canister_c2c_client".to_string(),
                 "KongSwapProvider::icrc2_approve".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("ledger".to_string(), ledger.to_string()),
                     ("amount".to_string(), amount.to_string()),
@@ -399,7 +359,6 @@ async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalEr
         InternalError::business_logic(
             "KongSwapProvider::icrc2_approve".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            None,
             Some(HashMap::from([
                 ("ledger".to_string(), ledger.to_string()),
                 ("amount".to_string(), amount.to_string()),

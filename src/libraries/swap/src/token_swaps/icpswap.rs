@@ -39,17 +39,7 @@ impl ICPSwapSwapClient {
     }
 
     pub async fn with_pool(mut self) -> Result<Self, InternalError> {
-        let pool = Self::get_pool(self.token0.clone(), self.token1.clone()).await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::with_pool".to_string(),
-                    "Error calling 'ICPSwapSwapClient::get_pool'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                    ])),
-                )
-            })?;
+        let pool = Self::get_pool(self.token0.clone(), self.token1.clone()).await?;
 
         self.pool = Some(pool.clone());
         self.canister_id = Some(pool.canisterId);
@@ -69,7 +59,6 @@ impl ICPSwapSwapClient {
             (t0, t1) => Err(InternalError::business_logic(
                 "ICPSwapSwapClient::is_zero_for_one_swap_direction".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
-                None,
                 Some(HashMap::from([
                     ("token0".to_string(), self.token0.to_text()),
                     ("token1".to_string(), self.token1.to_text()),
@@ -98,7 +87,6 @@ impl ICPSwapSwapClient {
             (t0, t1) => Err(InternalError::business_logic(
                 "ICPSwapSwapClient::get_tokens_fee".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
-                None,
                 Some(HashMap::from([
                     ("token0".to_string(), self.token0.to_text()),
                     ("token1".to_string(), self.token1.to_text()),
@@ -110,34 +98,13 @@ impl ICPSwapSwapClient {
     }
 
     async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
-        icpswap_provider::get_pool(token0.clone(), token1.clone())
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::get_pool".to_string(),
-                    "Error calling 'icpswap_provider::get_pool'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), token0.to_text()),
-                        ("token1".to_string(), token1.to_text()),
-                    ])),
-                )
-            })
+        icpswap_provider::get_pool(token0.clone(), token1.clone()).await
     }
 
     async fn get_token_meta(&self) -> Result<TokenMeta, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        icpswap_provider::get_token_meta(canister_id.clone())
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::get_token_meta".to_string(),
-                    "Error calling 'icpswap_provider::get_token_meta'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                    ])),
-                )
-            })
+        icpswap_provider::get_token_meta(canister_id.clone()).await
     }
     
     async fn deposit_from(&self, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
@@ -148,20 +115,7 @@ impl ICPSwapSwapClient {
             self.token0.clone(),
             amount.clone(),
             token_fee.clone()
-        )
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::deposit_from".to_string(),
-                    "Error calling 'icpswap_provider::deposit_from'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                        ("token_fee".to_string(), token_fee.to_string()),
-                    ])),
-                )
-            })
+        ).await
     }
 
     async fn withdraw(&self, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
@@ -172,20 +126,7 @@ impl ICPSwapSwapClient {
             self.token1.clone(),
             amount.clone(),
             token_fee.clone()
-        )
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::withdraw".to_string(),
-                    "Error calling 'icpswap_provider::withdraw'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                        ("token_fee".to_string(), token_fee.to_string()),
-                    ])),
-                )
-            })
+        ).await
     }
 
     async fn quote(&self, amount: Nat) -> Result<Nat, InternalError> {
@@ -197,18 +138,7 @@ impl ICPSwapSwapClient {
             amount.clone(),
             is_zero_for_one_swap_direction,
             amount.clone()
-        )
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::quote".to_string(),
-                    "Error calling 'icpswap_provider::quote'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                    ])),
-                )
-            })
+        ).await
     }
 
     async fn swap(&self, amount_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, InternalError> {
@@ -219,20 +149,7 @@ impl ICPSwapSwapClient {
             amount_in.clone(),
             zero_for_one,
             amount_out_minimum.clone()
-        )
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::swap".to_string(),
-                    "Error calling 'icpswap_provider::swap'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("amount_in".to_string(), amount_in.to_string()),
-                        ("zero_for_one".to_string(), zero_for_one.to_string()),
-                        ("amount_out_minimum".to_string(), amount_out_minimum.to_string()),
-                    ])),
-                )
-            })
+        ).await
     }
 }
 
@@ -243,7 +160,6 @@ impl SwapClient for ICPSwapSwapClient {
     }
 
     async fn swap(&self, amount: Nat) -> Result<SwapSuccess, InternalError> {
-        let canister_id = self.canister_id.as_ref().unwrap();
         // Flow:
         // 1. Deposit from token0 to ICPSwap
         // 2. Swap
@@ -267,33 +183,10 @@ impl SwapClient for ICPSwapSwapClient {
         let deposited_amount = self.deposit_from(
             amount.clone(),
             token0_fee.clone()
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::swap".to_string(),
-                    "Error calling 'ICPSwapSwapClient::deposit_from'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                        ("token0_fee".to_string(), token0_fee.to_string()),
-                    ])),
-                )
-            })?;
+        ).await?;
 
         // 2. Quote
-        let expected_out = self.quote(deposited_amount.clone())
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::swap".to_string(),
-                    "Error calling 'ICPSwapSwapClient::quote'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("deposited_amount".to_string(), deposited_amount.to_string()),
-                    ])),
-                )
-            })?;
+        let expected_out = self.quote(deposited_amount.clone()).await?;
 
         // 3. Swap
         let expected_out_u128 = nat_to_u128(&expected_out);
@@ -304,33 +197,10 @@ impl SwapClient for ICPSwapSwapClient {
             deposited_amount.clone(),
             self.is_zero_for_one_swap_direction()?,
             amount_out_minimum.clone(),
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::swap".to_string(),
-                    "Error calling 'ICPSwapSwapClient::swap'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("deposited_amount".to_string(), deposited_amount.to_string()),
-                        ("amount_out_minimum".to_string(), amount_out_minimum.to_string()),
-                    ])),
-                )
-            })?;
+        ).await?;
 
         // 4. Withdraw
-        let withdrawn_amount = self.withdraw(amount_out, token1_fee.clone())
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::swap".to_string(),
-                    "Error calling 'ICPSwapSwapClient::withdraw'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("token1_fee".to_string(), token1_fee.to_string()),
-                    ])),
-                )
-            })?;
+        let withdrawn_amount = self.withdraw(amount_out, token1_fee.clone()).await?;
 
         Ok(SwapSuccess {
             amount_out: nat_to_u128(&withdrawn_amount),
@@ -339,20 +209,7 @@ impl SwapClient for ICPSwapSwapClient {
     }
 
     async fn quote(&self, amount: Nat) -> Result<QuoteSuccess, InternalError> {
-        let canister_id = self.canister_id.as_ref().unwrap();
-
-        let quote_amount = self.quote(amount.clone())
-            .await
-            .map_err(|error| {
-                error.wrap(
-                    "ICPSwapSwapClient::quote".to_string(),
-                    "Error calling 'ICPSwapSwapClient::quote'".to_string(),
-                    Some(HashMap::from([
-                        ("canister_id".to_string(), canister_id.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                    ])),
-                )
-            })?;
+        let quote_amount = self.quote(amount.clone()).await?;
 
         Ok(QuoteSuccess {
             amount_out: nat_to_u128(&quote_amount),

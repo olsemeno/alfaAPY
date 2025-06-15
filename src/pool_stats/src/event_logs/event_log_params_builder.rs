@@ -25,11 +25,11 @@ impl AddLiquidityToPoolStartedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolStarted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_started(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -46,11 +46,11 @@ impl AddLiquidityToPoolCompletedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolCompleted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_completed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -67,11 +67,11 @@ impl AddLiquidityToPoolFailedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::AddLiquidityToPoolFailed {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::add_liquidity_to_pool_failed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -88,11 +88,11 @@ impl RemoveLiquidityFromPoolStartedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolStarted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_started(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -109,11 +109,11 @@ impl RemoveLiquidityFromPoolCompletedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolCompleted {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_completed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }
 
@@ -130,10 +130,10 @@ impl RemoveLiquidityFromPoolFailedParamsBuilder {
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::RemoveLiquidityFromPoolFailed {
-            pool_id: self.pool_id.expect("pool_id required"),
-            amount0: self.amount0,
-            amount1: self.amount1,
-        }
+        EventLogParams::remove_liquidity_from_pool_failed(
+            self.pool_id.expect("pool_id required"),
+            self.amount0,
+            self.amount1,
+        )
     }
 }

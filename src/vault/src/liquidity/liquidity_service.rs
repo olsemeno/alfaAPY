@@ -39,19 +39,7 @@ pub async fn add_liquidity_to_pool(
         pool.provider
     ).await;
 
-    liquidity_client
-        .add_liquidity_to_pool(amount.clone())
-        .await
-        .map_err(|error| {
-            error.wrap(
-                "liquidity_service::add_liquidity_to_pool".to_string(),
-                "Error calling 'liquidity_client::add_liquidity_to_pool'".to_string(),
-                Some(HashMap::from([
-                    ("pool_id".to_string(), pool.id),
-                    ("amount".to_string(), amount.to_string()),
-                ])),
-            )
-        })
+    liquidity_client.add_liquidity_to_pool(amount.clone()).await
 }
 
 pub async fn withdraw_liquidity_from_pool(
@@ -66,18 +54,5 @@ pub async fn withdraw_liquidity_from_pool(
         pool.provider
     ).await;
 
-    liquidity_client
-        .withdraw_liquidity_from_pool(total_shares.clone(), shares.clone())
-        .await
-        .map_err(|error| {
-            error.wrap(
-                "liquidity_service::withdraw_liquidity_from_pool".to_string(),
-                "Error calling 'liquidity_client::withdraw_liquidity_from_pool'".to_string(),
-                Some(HashMap::from([
-                    ("pool_id".to_string(), pool.id),
-                    ("total_shares".to_string(), total_shares.to_string()),
-                    ("shares".to_string(), shares.to_string()),
-                ])),
-            )
-        })
+    liquidity_client.withdraw_liquidity_from_pool(total_shares.clone(), shares.clone()).await
 }

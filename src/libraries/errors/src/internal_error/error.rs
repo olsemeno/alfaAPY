@@ -15,13 +15,17 @@ pub enum InternalErrorKind {
     Unknown,
 }
 
+pub struct InternalErrors {
+    pub errors: Vec<InternalError>,
+}
+
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug, Display)]
 #[display("{:?}: {} ({})", kind, message, context)]
 pub struct InternalError {
+    // pub code: String,
     pub kind: InternalErrorKind,
     pub context: String,
     pub message: String,
-    pub source: Option<Box<Self>>,
     pub extra: Option<HashMap<String, String>>,
 }
 
@@ -30,10 +34,9 @@ impl InternalError {
         kind: InternalErrorKind,
         context: String,
         message: String,
-        source: Option<Box<Self>>,
         extra: Option<HashMap<String, String>>,
     ) -> Self {
-        Self { kind, context, message, source, extra }
+        Self { kind, context, message, extra }
     }
 
     pub fn wrap(
@@ -46,7 +49,6 @@ impl InternalError {
             self.kind.clone(),
             context,
             message,
-            Some(Box::new(self.clone())),
             extra
         )
     }
@@ -54,14 +56,12 @@ impl InternalError {
     pub fn business_logic(
         context: String,
         message: String,
-        source: Option<Self>,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
             InternalErrorKind::BusinessLogic,
             context,
             message,
-            source.map(|s| Box::new(s)),
             extra
         )
     }
@@ -70,14 +70,12 @@ impl InternalError {
         service: String,
         context: String,
         message: String,
-        source: Option<Self>,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
             InternalErrorKind::ExternalService { service },
             context,
             message,
-            source.map(|s| Box::new(s)),
             extra
         )
     }
@@ -85,14 +83,12 @@ impl InternalError {
     pub fn not_found(
         context: String,
         message: String,
-        source: Option<Self>,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
             InternalErrorKind::NotFound,
             context,
             message,
-            source.map(|s| Box::new(s)),
             extra
         )
     }

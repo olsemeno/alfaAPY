@@ -194,4 +194,88 @@ impl EventLogParams {
             EventLogParams::ExternalCallFailed { .. } => EventLogType::ExternalCallFailed,
         }
     }
+
+    pub fn strategy_deposit_started(strategy_id: String, pool_id: Option<String>, amount0: Option<Nat>) -> Self {
+        EventLogParams::StrategyDepositStarted { strategy_id, pool_id, amount0 }
+    }
+
+    pub fn strategy_deposit_completed(strategy_id: String, pool_id: Option<String>, amount0: Option<Nat>) -> Self {
+        EventLogParams::StrategyDepositCompleted { strategy_id, pool_id, amount0 }
+    }
+
+    pub fn strategy_deposit_failed(strategy_id: String, pool_id: Option<String>, amount0: Option<Nat>) -> Self {
+        EventLogParams::StrategyDepositFailed { strategy_id, pool_id, amount0 }
+    }
+    
+    pub fn strategy_withdraw_started(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>) -> Self {
+        EventLogParams::StrategyWithdrawStarted { strategy_id, pool_id, shares }
+    }
+
+    pub fn strategy_withdraw_completed(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>, amount0: Option<Nat>) -> Self {
+        EventLogParams::StrategyWithdrawCompleted { strategy_id, pool_id, shares, amount0 }
+    }
+
+    pub fn strategy_withdraw_failed(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>) -> Self {
+        EventLogParams::StrategyWithdrawFailed { strategy_id, pool_id, shares }
+    }
+    
+    pub fn strategy_rebalance_started(strategy_id: String, previous_pool_id: Option<String>) -> Self {
+        EventLogParams::StrategyRebalanceStarted { strategy_id, previous_pool_id }
+    }
+
+    pub fn strategy_rebalance_completed(strategy_id: String, previous_pool_id: Option<String>, new_pool_id: Option<String>) -> Self {
+        EventLogParams::StrategyRebalanceCompleted { strategy_id, previous_pool_id, new_pool_id }
+    }
+
+    pub fn strategy_rebalance_failed(strategy_id: String, previous_pool_id: Option<String>, new_pool_id: Option<String>) -> Self {
+        EventLogParams::StrategyRebalanceFailed { strategy_id, previous_pool_id, new_pool_id }
+    }
+    
+    pub fn add_liquidity_to_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolStarted { pool_id, amount0, amount1 }
+    }
+
+    pub fn add_liquidity_to_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolCompleted { pool_id, amount0, amount1 }
+    }
+
+    pub fn add_liquidity_to_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::AddLiquidityToPoolFailed { pool_id, amount0, amount1 }
+    }
+    
+    pub fn remove_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolStarted { pool_id, amount0, amount1 }
+    }
+
+    pub fn remove_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolCompleted { pool_id, amount0, amount1 }
+    }
+    
+    pub fn remove_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::RemoveLiquidityFromPoolFailed { pool_id, amount0, amount1 }
+    }
+
+    pub fn swap_token_started(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>) -> Self {
+        EventLogParams::SwapTokenStarted { pool_id, token_in, token_out, amount_in }
+    }
+
+    pub fn swap_token_completed(token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>, amount_out: Option<Nat>) -> Self {
+        EventLogParams::SwapTokenCompleted { token_in, token_out, amount_in, amount_out }
+    }
+
+    pub fn swap_token_failed(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>) -> Self {
+        EventLogParams::SwapTokenFailed { pool_id, token_in, token_out, amount_in }
+    }
+
+    pub fn external_call_started(service: String, method: String, params: HashMap<String, String>) -> Self {
+        EventLogParams::ExternalCallStarted { service, method, params }
+    }
+
+    pub fn external_call_completed(service: String, method: String, params: HashMap<String, String>, result: HashMap<String, String>) -> Self {
+        EventLogParams::ExternalCallCompleted { service, method, params, result }
+    }
+
+    pub fn external_call_failed(service: String, method: String, params: HashMap<String, String>, error: String) -> Self {
+        EventLogParams::ExternalCallFailed { service, method, params, error }
+    }
 }

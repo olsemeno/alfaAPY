@@ -34,7 +34,6 @@ pub async fn icrc2_transfer_from_user(
                 "icrc_ledger_canister_c2c_client".to_string(),
                 "Utils::icrc2_transfer_from_user".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("user".to_string(), user.to_string()),
                     ("canister_id".to_string(), canister_id.to_string()),
@@ -46,7 +45,6 @@ pub async fn icrc2_transfer_from_user(
             InternalError::business_logic(
                 "Utils::icrc2_transfer_from_user".to_string(),
                 format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {err:?}"),
-                None,
                 Some(HashMap::from([
                     ("user".to_string(), user.to_string()),
                     ("canister_id".to_string(), canister_id.to_string()),
@@ -83,7 +81,6 @@ pub async fn icrc1_transfer_to_user(
                 "canister_client".to_string(),
                 "Utils::icrc1_transfer_to_user".to_string(),
                 format!("IC error calling 'canister_client::make_c2c_call': {error:?}"),
-                None,
                 Some(HashMap::from([
                     ("user".to_string(), user.to_string()),
                     ("canister_id".to_string(), canister_id.to_string()),
@@ -95,7 +92,6 @@ pub async fn icrc1_transfer_to_user(
             InternalError::business_logic(
                 "Utils::icrc1_transfer_to_user".to_string(),
                 format!("Error calling 'canister_client::make_c2c_call': {err:?}"),
-                None,
                 Some(HashMap::from([
                     ("user".to_string(), user.to_string()),
                     ("canister_id".to_string(), canister_id.to_string()),

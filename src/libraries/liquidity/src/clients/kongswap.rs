@@ -49,18 +49,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             self.token_kongswap_format(self.token0.clone()),
             amount.clone(),
             self.token_kongswap_format(self.token1.clone()),
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::add_liquidity_to_pool".to_string(),
-                    "Error calling 'kongswap_provider::add_liquidity_amounts'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         let amount_0_for_pool = add_liq_amounts_reply.amount_0;
         let amount_1_for_pool = add_liq_amounts_reply.amount_1;
@@ -108,21 +97,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             Nat::from(token_1_for_pool_amount as u128),
             self.token0,
             self.token1,
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::add_liquidity_to_pool".to_string(),
-                    "Error calling 'kongswap_provider::add_liquidity'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                        ("token_0_for_swap_amount".to_string(), token_0_for_swap_amount.to_string()),
-                        ("token_0_for_pool_amount".to_string(), token_0_for_pool_amount.to_string()),
-                        ("token_1_for_pool_amount".to_string(), token_1_for_pool_amount.to_string()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         Ok(AddLiquidityResponse {
             token_0_amount: Nat::from(token_0_for_pool_amount as u128),
@@ -137,17 +112,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         // Fetch LP positions in pool
         let user_balances_response = kongswap_provider::user_balances(
             canister_id.to_string()
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::withdraw_liquidity_from_pool".to_string(),
-                    "Error calling 'kongswap_provider::user_balances'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         // Get user balance in pool
         let balance = user_balances_response
@@ -165,7 +130,6 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 InternalError::business_logic(
                     "KongSwapLiquidityClient::withdraw_liquidity_from_pool".to_string(),
                     "No user LP balance".to_string(),
-                    None,
                     Some(HashMap::from([
                         ("token0".to_string(), self.token0.to_text()),
                         ("token1".to_string(), self.token1.to_text()),
@@ -183,21 +147,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             self.token_kongswap_format(self.token0.clone()),
             self.token_kongswap_format(self.token1.clone()),
             Nat::from(lp_tokens_to_withdraw.round() as u128),
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::withdraw_liquidity_from_pool".to_string(),
-                    "Error calling 'kongswap_provider::remove_liquidity'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("balance".to_string(), balance.to_string()),
-                        ("lp_tokens_to_withdraw".to_string(), lp_tokens_to_withdraw.to_string()),
-                        ("total_shares".to_string(), total_shares.to_string()),
-                        ("shares".to_string(), shares.to_string()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         Ok(WithdrawFromPoolResponse {
             token_0_amount: remove_liquidity_response.amount_0,
@@ -209,18 +159,9 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let canister_id = ic_cdk::id();
 
         // Fetch user positions in pool
-        let user_balances_response = kongswap_provider::user_balances(canister_id.to_string()).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::get_position_by_id".to_string(),
-                    "Error calling 'kongswap_provider::user_balances'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("position_id".to_string(), position_id.to_string()),
-                    ]))
-                )
-            })?;
+        let user_balances_response = kongswap_provider::user_balances(
+            canister_id.to_string()
+        ).await?;
 
         let user_balance = user_balances_response
             .into_iter()
@@ -238,7 +179,6 @@ impl LiquidityClient for KongSwapLiquidityClient {
             .ok_or_else(|| InternalError::business_logic(
                 "KongSwapLiquidityClient::get_position_by_id".to_string(),
                 "No user LP balance".to_string(),
-                None,
                 Some(HashMap::from([
                     ("token0".to_string(), self.token0.to_text()),
                     ("token1".to_string(), self.token1.to_text()),
@@ -256,17 +196,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
     }
 
     async fn get_pool_data(&self) -> Result<GetPoolData, InternalError> {
-        let pools_response = kongswap_provider::pools().await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::get_pool_data".to_string(),
-                    "Error calling 'kongswap_provider::pools'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                    ]))
-                )
-            })?;
+        let pools_response = kongswap_provider::pools().await?;
 
         let pool_data = pools_response.pools
             .iter()
@@ -277,7 +207,6 @@ impl LiquidityClient for KongSwapLiquidityClient {
             .ok_or_else(|| InternalError::business_logic(
                 "KongSwapLiquidityClient::get_pool_data".to_string(),
                 "No pool data".to_string(),
-                None,
                 Some(HashMap::from([
                     ("token0".to_string(), self.token0.to_text()),
                     ("token1".to_string(), self.token1.to_text()),
@@ -292,38 +221,14 @@ impl LiquidityClient for KongSwapLiquidityClient {
             self.token0.clone(),
             balance0.clone(),
             Principal::from_text(CKUSDT_CANISTER_ID).unwrap()
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::get_pool_data".to_string(),
-                    "Error calling 'kongswap_provider::swap_amounts'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("balance0".to_string(), balance0.to_string()),
-                        ("balance1".to_string(), balance1.to_string()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         // Get quote for token1 swap
         let swap_amount1_reply = kongswap_provider::swap_amounts(
             self.token1,
             balance1.clone(),
             Principal::from_text(CKUSDT_CANISTER_ID).unwrap()
-        ).await
-            .map_err(|error| {
-                error.wrap(
-                    "KongSwapLiquidityClient::get_pool_data".to_string(),
-                    "Error calling 'kongswap_provider::swap_amounts'".to_string(),
-                    Some(HashMap::from([
-                        ("token0".to_string(), self.token0.to_text()),
-                        ("token1".to_string(), self.token1.to_text()),
-                        ("balance0".to_string(), balance0.to_string()),
-                        ("balance1".to_string(), balance1.to_string()),
-                    ]))
-                )
-            })?;
+        ).await?;
 
         // TVL is the sum of the amounts of token0 and token1 in the pool in USD
         let tvl = swap_amount0_reply.receive_amount + swap_amount1_reply.receive_amount;

@@ -18,62 +18,46 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
     if let Some(pool) = pool {
         let liquidity_client = liquidity_client(pool.clone()).await;
 
-        match liquidity_client.add_liquidity_to_pool(amount.clone()).await {
-            Ok(response) => {
-                pool_snapshot_service::create_pool_snapshot(context, &pool).await;
-                Ok(response)
-            }
-            Err(error) => {
-                // ========== Event log begin ==========
-                let event_log_params = EventLogParamsBuilder::add_liquidity_to_pool_failed()
-                    .pool_id(pool_id.clone())
-                    .amount0(amount.clone())
-                    .build();
-
-                let internal_error = error.wrap(
-                    "liquidity_service::add_liquidity_to_pool".to_string(),
-                    "Error calling 'liquidity_client::add_liquidity_to_pool'".to_string(),
-                    Some(HashMap::from([
-                        ("pool_id".to_string(), pool_id),
-                        ("amount".to_string(), amount.to_string()),
-                    ])),
-                );
-
+        let response = liquidity_client.add_liquidity_to_pool(
+            amount.clone()
+        ).await
+            .map_err(|error| {
                 event_log_service::create_event_log(
-                    event_log_params,
-                    context.correlation_id,
-                    context.user,
-                    Some(internal_error.clone()),
+                    EventLogParamsBuilder::add_liquidity_to_pool_failed()
+                        .pool_id(pool_id.clone())
+                        .amount0(amount.clone())
+                        .build(),
+                    context.correlation_id.clone(),
+                    context.user.clone(),
+                    Some(error.clone()),
                 );
-                // ========== Event log end ==========
-                Err(internal_error)
-            }
-        }
-    } else {
-        // ========== Event log begin ==========
-        let event_log_params = EventLogParamsBuilder::add_liquidity_to_pool_failed()
-            .pool_id(pool_id.clone())
-            .amount0(amount)
-            .build();
 
-        let internal_error = InternalError::not_found(
+                error
+            })?;
+
+        pool_snapshot_service::create_pool_snapshot(context, &pool).await;
+
+        Ok(response)
+    } else {
+        let error = InternalError::not_found(
             "liquidity_service::add_liquidity_to_pool".to_string(),
             "Pool not found".to_string(),
-            None,
             Some(HashMap::from([
-                ("pool_id".to_string(), pool_id),
+                ("pool_id".to_string(), pool_id.clone()),
             ])),
         );
 
         event_log_service::create_event_log(
-            event_log_params,
+            EventLogParamsBuilder::add_liquidity_to_pool_failed()
+                .pool_id(pool_id.clone())
+                .amount0(amount)
+                .build(),
             context.correlation_id,
             context.user,
-            Some(internal_error.clone()),
+            Some(error.clone()),
         );
-        // ========== Event log end ==========
 
-        Err(internal_error)
+        Err(error)
     }
 }
 
@@ -86,57 +70,43 @@ pub async fn remove_liquidity_from_pool(context: Context, pool_id: String) -> Re
         let total_shares = Nat::from(1 as u8);
         let shares = Nat::from(1 as u8);
 
-        match liquidity_client.withdraw_liquidity_from_pool(total_shares, shares).await {
-            Ok(response) => Ok(response),
-            Err(error) => {
-                // ========== Event log begin ==========
-                let event_log_params = EventLogParamsBuilder::remove_liquidity_from_pool_failed()
-                    .pool_id(pool_id.clone())
-                    .build();
-
-                let internal_error = error.wrap(
-                    "liquidity_service::remove_liquidity_from_pool".to_string(),
-                    "Error calling 'liquidity_client::withdraw_liquidity_from_pool'".to_string(),
-                    Some(HashMap::from([
-                        ("pool_id".to_string(), pool_id),
-                    ])),
-                );
-
+        let response = liquidity_client.withdraw_liquidity_from_pool(
+            total_shares, 
+            shares
+        ).await
+            .map_err(|error| {
                 event_log_service::create_event_log(
-                    event_log_params,
+                    EventLogParamsBuilder::remove_liquidity_from_pool_failed()
+                        .pool_id(pool_id)
+                        .build(),
                     context.correlation_id,
                     context.user,
-                    Some(internal_error.clone()),
+                    Some(error.clone()),
                 );
-                // ========== Event log end ==========
 
-                Err(internal_error)
-            }
-        }
+                error
+            })?;
+
+        Ok(response)
     } else {
-        // ========== Event log begin ==========
-        let event_log_params = EventLogParamsBuilder::remove_liquidity_from_pool_failed()
-            .pool_id(pool_id.clone())
-            .build();
-
-        let internal_error = InternalError::not_found(
+        let error = InternalError::not_found(
             "liquidity_service::remove_liquidity_from_pool".to_string(),
             "Pool not found".to_string(),
-            None,
             Some(HashMap::from([
-                ("pool_id".to_string(), pool_id),
+                ("pool_id".to_string(), pool_id.clone()),
             ])),
         );
 
         event_log_service::create_event_log(
-            event_log_params,
+            EventLogParamsBuilder::remove_liquidity_from_pool_failed()
+                .pool_id(pool_id)
+                .build(),
             context.correlation_id,
             context.user,
-            Some(internal_error.clone()),
+            Some(error.clone()),
         );
-        // ========== Event log end ==========
 
-        Err(internal_error)
+        Err(error)
     }
 }
 

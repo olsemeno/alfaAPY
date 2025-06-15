@@ -51,19 +51,7 @@ impl SwapClient for KongSwapSwapClient {
             amount.clone(),
             self.token_out.clone(),
             Some(SLIPPAGE_PERCENTAGE),
-        ).await
-        .map_err(|error| {
-            error.wrap(
-                "KongSwapSwapClient::swap".to_string(),
-                "Error calling 'kongswap_provider::swap'".to_string(),
-                Some(HashMap::from([
-                    ("token_in".to_string(), self.token_in.to_text()),
-                    ("token_out".to_string(), self.token_out.to_text()),
-                    ("amount".to_string(), amount.to_string()),
-                    ("max_slippage".to_string(), SLIPPAGE_PERCENTAGE.to_string()),
-                ])),
-            )
-        })?;
+        ).await?;
 
         Ok(SwapSuccess {
             amount_out: nat_to_u128(&result.receive_amount),
@@ -76,18 +64,7 @@ impl SwapClient for KongSwapSwapClient {
             self.token_in.clone(),
             amount.clone(),
             self.token_out.clone(),
-        ).await
-        .map_err(|error| {
-            error.wrap(
-                "KongSwapSwapClient::quote".to_string(),
-                "Error calling 'kongswap_provider::swap_amounts'".to_string(),
-                Some(HashMap::from([
-                    ("token_in".to_string(), self.token_in.to_text()),
-                    ("token_out".to_string(), self.token_out.to_text()),
-                    ("amount".to_string(), amount.to_string()),
-                ])),
-            )
-        })?;
+        ).await?;
 
         Ok(QuoteSuccess {
             amount_out: nat_to_u128(&result.receive_amount),
