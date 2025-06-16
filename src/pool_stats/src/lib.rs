@@ -12,16 +12,13 @@ use types::context::Context;
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
-use utils::token_transfer::icrc2_transfer_from_user;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
 use crate::pools::pool::Pool;
 use crate::pool_metrics::pool_metrics::PoolMetrics;
-use crate::pool_metrics::pool_metrics_service;
 use crate::repository::pools_repo;
 use crate::repository::stable_state;
-use crate::liquidity::liquidity_service;
 use crate::pools::pool_service;
 
 pub mod pools;
@@ -30,6 +27,7 @@ pub mod repository;
 pub mod pool_snapshots;
 pub mod pool_metrics;
 pub mod event_logs;
+pub mod service;
 
 const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
@@ -120,55 +118,46 @@ pub async fn create_pool_snapshot(pool_id: String) -> PoolSnapshot {
 
 // ========================== End of test method ==========================
 
+
+
 // ========================== Pools management ==========================
 
 #[update]
-pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> String {
-    let pool = Pool::build(token0, token1, provider);
-    pool.save();
-    pool.id
+pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Result<String, ResponseError> {
+    service::add_pool(token0, token1, provider)
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
-pub fn delete_pool(id: String) -> bool {
-    pools_repo::get_pool_by_id(id.clone())
-        .map(|pool| {
-            pool.delete();
-            true
-        })
-        .unwrap_or(false)
+pub fn delete_pool(id: String) -> Result<(), ResponseError> {
+    service::delete_pool(id)
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
-pub fn get_pools() -> Vec<Pool> {
-    pools_repo::get_pools()
+pub fn get_pools() -> Result<Vec<Pool>, ResponseError> {
+    service::get_pools()
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
-pub fn get_pool_by_id(id: String) -> Option<Pool> {
-    pools_repo::get_pool_by_id(id)
+pub fn get_pool_by_id(id: String) -> Result<Pool, ResponseError> {
+    service::get_pool_by_id(id)
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 // ========================== Pool metrics ==========================
 
 #[update]
-pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
-    pool_ids.into_iter()
-        .filter_map(|pool_id| {
-            pools_repo::get_pool_by_id(pool_id.clone())
-                .map(|pool| (pool_id, pool_metrics_service::create_pool_metrics(pool)))
-        })
-        .collect()
+pub fn get_pool_metrics(pool_ids: Vec<String>) -> Result<HashMap<String, PoolMetrics>, ResponseError> {
+    service::get_pool_metrics(pool_ids)
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
-pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSnapshot>> {
-    pool_ids.into_iter()
-        .filter_map(|pool_id| {
-            pools_repo::get_pool_by_id(pool_id.clone())
-                .map(|pool| (pool_id, pools_repo::get_pool_snapshots(pool.id).unwrap_or_default()))
-        })
-        .collect()
+pub fn get_pools_snapshots(pool_ids: Vec<String>) -> Result<HashMap<String, Vec<PoolSnapshot>>, ResponseError> {
+    service::get_pools_snapshots(pool_ids)
+        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 // ========================== Liquidity management ==========================
@@ -181,10 +170,7 @@ pub async fn add_liquidity_to_pool(
 ) -> Result<AddLiquidityResponse, ResponseError> {
     let context = generate_context();
 
-    icrc2_transfer_from_user(caller(), ledger, amount.clone()).await
-        .map_err(|error| ResponseError::from_internal_error(error))?;
-
-    liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await
+    service::add_liquidity_to_pool(context, ledger, pool_id, amount).await
         .map_err(|error| ResponseError::from_internal_error(error))
 }
 
@@ -192,7 +178,7 @@ pub async fn add_liquidity_to_pool(
 pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
     let context = generate_context();
 
-    liquidity_service::remove_liquidity_from_pool(context, pool_id).await
+    service::remove_liquidity_from_pool(context, pool_id).await
         .map_err(|error| ResponseError::from_internal_error(error))
 }
 
@@ -241,7 +227,10 @@ async fn get_controllers() -> Vec<Principal> {
     )
         .await;
     res
-        .expect("Get controllers function exited unexpectedly: inter-canister call to management canister for canister_status returned an empty result.")
+        .expect(
+            "Get controllers function exited unexpectedly:\n\
+            inter-canister call to management canister for canister_status returned an empty result."
+        )
         .0.settings.controllers
 }
 

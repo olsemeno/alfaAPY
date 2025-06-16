@@ -51,28 +51,6 @@ impl ResponseError {
     pub fn err_from_internal<T>(internal_error: InternalError) -> Result<T, Self> {
         Err(Self::from_internal_error(internal_error))
     }
-
-    // pub fn internal_error<T>(message: impl Into<String>) -> Result<T, Self> {
-    //     Err(Self::new(
-    //         ResponseErrorCode::InternalError,
-    //         message.into(),
-    //         None,
-    //         None
-    //     ))
-    // }
-
-    // pub fn not_found<T>(message: impl Into<String>, details: Option<HashMap<String, String>>) -> Result<T, Self> {
-    //     Err(Self::new(
-    //         ResponseErrorCode::NotFound,
-    //         message.into(),
-    //         None,
-    //         details
-    //     ))
-    // }
-
-    // pub fn err_not_found<T>(message: impl Into<String>, details: Option<HashMap<String, String>>) -> Result<T, Self> {
-    //     Err(Self::not_found(message, details))
-    // }
 }
 
 impl From<InternalErrorKind> for ResponseErrorCode {

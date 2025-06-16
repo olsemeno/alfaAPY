@@ -1,7 +1,6 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 use candid::Principal;
-use uuid::Uuid;
 
 pub type CorrelationId = String;
 
@@ -18,8 +17,13 @@ impl Context {
 
     pub fn generate(user: Option<Principal>) -> Self {
         Self {
-            correlation_id: Uuid::new_v4().to_string(),
+            correlation_id: Self::generate_correlation_id(),
             user,
         }
+    }
+
+    fn generate_correlation_id() -> String {
+        // TODO: replace with uuid or another library
+        ic_cdk::api::time().to_string()
     }
 }
