@@ -3,15 +3,13 @@
 The project uses a structured error code format:
 
 ```
-MMMMTTNN
+MMMMKKNN
 ```
 
 Where:
 - **MMMM** — Module (see table below)
-- **TT**   — Error Kind (2 digits)
+- **KK**   — Error Kind (2 digits)
 - **NN**   — Error Number (2 digits, unique within module+kind)
-
-All error information is encoded in the code itself; there is no separate kind/type field.
 
 ## Code Blocks
 
@@ -33,7 +31,7 @@ All error information is encoded in the code itself; there is no separate kind/t
 | 4000 | Service (PoolStats)           |
 | 4100 | Liquidity (PoolStats)         |
 
-### Error Kind (TT)
+### Error Kind (KK)
 | Code | Kind            |
 |------|-----------------|
 | 01   | NotFound        |
@@ -45,7 +43,7 @@ All error information is encoded in the code itself; there is no separate kind/t
 | 07   | Timeout         |
 
 ### Error Number (NN)
-- Unique error number within the module+kind (01, 02, ...)
+- Unique error number within the module (01, 02, ...)
 
 ---
 
