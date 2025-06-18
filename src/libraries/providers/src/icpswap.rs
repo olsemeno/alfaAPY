@@ -26,7 +26,7 @@ use icpswap_swap_pool_canister::swap::Args as SwapArgs;
 use icpswap_swap_pool_canister::claim::Args as ClaimArgs;
 use utils::util::principal_to_canister_id;
 use utils::constants::*;
-use errors::internal_error::error::InternalError;
+use errors::internal_error::error::{InternalError, build_error_code};
 
 pub static SWAP_FACTORY_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("4mmnk-kiaaa-aaaag-qbllq-cai"));
 pub static SWAP_CALCULATOR_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("phr2m-oyaaa-aaaag-qjuoq-cai"));
@@ -63,7 +63,7 @@ pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICP
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_factory_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 1), // 1002 03 01
                 "ICPSwapProvider::get_pool".to_string(),
                 format!("IC error calling 'icpswap_swap_factory_canister_c2c_client::getPool': {error:?}"),
                 Some(HashMap::from([
@@ -76,6 +76,7 @@ pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICP
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 2), // 1002 03 02
                 "ICPSwapProvider::get_pool".to_string(),
                 format!("Error calling 'icpswap_swap_factory_canister_c2c_client::getPool': {error:?}"),
                 Some(HashMap::from([
@@ -106,7 +107,7 @@ pub async fn quote(
     icpswap_swap_pool_canister_c2c_client::quote(canister_id, quote_args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 3), // 1002 04 03
                 "ICPSwapProvider::quote".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::quote': {error:?}"),
                 Some(HashMap::from([
@@ -119,6 +120,7 @@ pub async fn quote(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 4), // 1002 03 04
                 "ICPSwapProvider::quote".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::quote': {error:?}"),
                 Some(HashMap::from([
@@ -147,7 +149,7 @@ pub async fn swap(
     icpswap_swap_pool_canister_c2c_client::swap(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 5), // 1002 04 05
                 "ICPSwapProvider::swap".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::swap': {error:?}"),
                 Some(HashMap::from([
@@ -160,6 +162,7 @@ pub async fn swap(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 6), // 1002 03 06
                 "ICPSwapProvider::swap".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::swap': {error:?}"),
                 Some(HashMap::from([
@@ -177,7 +180,7 @@ pub async fn get_token_meta(canister_id: CanisterId) -> Result<TokenMeta, Intern
     icpswap_swap_pool_canister_c2c_client::getTokenMeta(canister_id).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 7), // 1002 04 07
                 "ICPSwapProvider::get_token_meta".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::getTokenMeta': {error:?}"),
                 Some(HashMap::from([
@@ -187,6 +190,7 @@ pub async fn get_token_meta(canister_id: CanisterId) -> Result<TokenMeta, Intern
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 8), // 1002 03 08
                 "ICPSwapProvider::get_token_meta".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::getTokenMeta': {error:?}"),
                 Some(HashMap::from([
@@ -212,7 +216,7 @@ pub async fn deposit_from(
     icpswap_swap_pool_canister_c2c_client::depositFrom(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 9), // 1002 04 09
                 "ICPSwapProvider::deposit_from".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::depositFrom': {error:?}"),
                 Some(HashMap::from([
@@ -225,6 +229,7 @@ pub async fn deposit_from(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 10), // 1002 03 10
                 "ICPSwapProvider::deposit_from".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::depositFrom': {error:?}"),
                 Some(HashMap::from([
@@ -253,7 +258,7 @@ pub async fn withdraw(
     icpswap_swap_pool_canister_c2c_client::withdraw(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 11), // 1002 04 11
                 "ICPSwapProvider::withdraw".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::withdraw': {error:?}"),
                 Some(HashMap::from([
@@ -266,6 +271,7 @@ pub async fn withdraw(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 12), // 1002 03 12
                 "ICPSwapProvider::withdraw".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::withdraw': {error:?}"),
                 Some(HashMap::from([
@@ -283,7 +289,7 @@ pub async fn metadata(canister_id: CanisterId) -> Result<Metadata, InternalError
     icpswap_swap_pool_canister_c2c_client::metadata(canister_id).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 13), // 1002 04 13
                 "ICPSwapProvider::metadata".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::metadata': {error:?}"),
                 Some(HashMap::from([
@@ -293,6 +299,7 @@ pub async fn metadata(canister_id: CanisterId) -> Result<Metadata, InternalError
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 14), // 1002 03 14
                 "ICPSwapProvider::metadata".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::metadata': {error:?}"),
                 Some(HashMap::from([
@@ -326,7 +333,7 @@ pub async fn mint(
     icpswap_swap_pool_canister_c2c_client::mint(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 15), // 10020 4 15
                 "ICPSwapProvider::mint".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::mint': {error:?}"),
                 Some(HashMap::from([
@@ -343,6 +350,7 @@ pub async fn mint(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 16), // 1002 03 16
                 "ICPSwapProvider::mint".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::mint': {error:?}"),
                 Some(HashMap::from([
@@ -370,7 +378,7 @@ pub async fn get_user_position_ids_by_principal(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 17), // 1002 04 17
                 "ICPSwapProvider::get_user_position_ids_by_principal".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::getUserPositionIdsByPrincipal': {error:?}"),
                 Some(HashMap::from([
@@ -382,6 +390,7 @@ pub async fn get_user_position_ids_by_principal(
 
     result.map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1002, 3, 18), // 1002 03 18
             "ICPSwapProvider::get_user_position_ids_by_principal".to_string(),
             format!("Error calling 'icpswap_swap_pool_canister_c2c_client::getUserPositionIdsByPrincipal': {error:?}"),
             Some(HashMap::from([
@@ -403,7 +412,7 @@ pub async fn get_user_positions_by_principal(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 19), // 1002 04 19
                 "ICPSwapProvider::get_user_positions_by_principal".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::getUserPositionsByPrincipal': {error:?}"),
                 Some(HashMap::from([
@@ -415,6 +424,7 @@ pub async fn get_user_positions_by_principal(
 
     result.map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1002, 3, 20), // 1002 03 20
             "ICPSwapProvider::get_user_positions_by_principal".to_string(),
             format!("Error calling 'icpswap_swap_pool_canister_c2c_client::getUserPositionsByPrincipal': {error:?}"),
             Some(HashMap::from([
@@ -437,7 +447,7 @@ pub async fn get_user_unused_balance(
     icpswap_swap_pool_canister_c2c_client::getUserUnusedBalance(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 21), // 1002 04 21
                 "ICPSwapProvider::get_user_unused_balance".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::getUserUnusedBalance': {error:?}"),
                 Some(HashMap::from([
@@ -448,6 +458,7 @@ pub async fn get_user_unused_balance(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 22), // 1002 03 22
                 "ICPSwapProvider::get_user_unused_balance".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::getUserUnusedBalance': {error:?}"),
                 Some(HashMap::from([
@@ -474,7 +485,7 @@ pub async fn increase_liquidity(
     icpswap_swap_pool_canister_c2c_client::increaseLiquidity(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 23), // 1002 04 23
                 "ICPSwapProvider::increase_liquidity".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::increaseLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -487,6 +498,7 @@ pub async fn increase_liquidity(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 24), // 1002 03 24
                 "ICPSwapProvider::increase_liquidity".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::increaseLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -513,7 +525,7 @@ pub async fn decrease_liquidity(
     icpswap_swap_pool_canister_c2c_client::decreaseLiquidity(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 25), // 1002 04 25
                 "ICPSwapProvider::decrease_liquidity".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::decreaseLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -525,6 +537,7 @@ pub async fn decrease_liquidity(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 26), // 1002 03 26
                 "ICPSwapProvider::decrease_liquidity".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::decreaseLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -545,7 +558,7 @@ pub async fn get_user_position(canister_id: CanisterId, position_id: Nat) -> Res
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 27), // 1002 04 27
                 "ICPSwapProvider::get_user_position".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::getUserPosition': {error:?}"),
                 Some(HashMap::from([
@@ -557,6 +570,7 @@ pub async fn get_user_position(canister_id: CanisterId, position_id: Nat) -> Res
 
     result.map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1002, 3, 28), // 1002 03 28
             "ICPSwapProvider::get_user_position".to_string(),
             format!("Error calling 'icpswap_swap_pool_canister_c2c_client::getUserPosition': {error:?}"),
             Some(HashMap::from([
@@ -579,7 +593,7 @@ pub async fn claim(
     icpswap_swap_pool_canister_c2c_client::claim(canister_id, &args).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_pool_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 29), // 1002 04 29
                 "ICPSwapProvider::claim".to_string(),
                 format!("IC error calling 'icpswap_swap_pool_canister_c2c_client::claim': {error:?}"),
                 Some(HashMap::from([
@@ -590,6 +604,7 @@ pub async fn claim(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 30), // 1002 03 30
                 "ICPSwapProvider::claim".to_string(),
                 format!("Error calling 'icpswap_swap_pool_canister_c2c_client::claim': {error:?}"),
                 Some(HashMap::from([
@@ -614,7 +629,7 @@ pub async fn get_price(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_calculator_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 31), // 100204  31
                 "ICPSwapProvider::get_price".to_string(),
                 format!("IC error calling 'icpswap_swap_calculator_canister_c2c_client::getPrice': {error:?}"),
                 Some(HashMap::from([
@@ -627,6 +642,7 @@ pub async fn get_price(
         })
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 32), // 1002 03 32
                 "ICPSwapProvider::get_price".to_string(),
                 format!("Error calling 'icpswap_swap_calculator_canister_c2c_client::getPrice': {error:?}"),
                 Some(HashMap::from([
@@ -653,7 +669,7 @@ pub async fn get_token_amount_by_liquidity(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_swap_calculator_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 33), // 1002 04 33
                 "ICPSwapProvider::get_token_amount_by_liquidity".to_string(),
                 format!("IC error calling 'icpswap_swap_calculator_canister_c2c_client::getTokenAmountByLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -667,6 +683,7 @@ pub async fn get_token_amount_by_liquidity(
         })
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 34), // 1002 03 34
                 "ICPSwapProvider::get_token_amount_by_liquidity".to_string(),
                 format!("Error calling 'icpswap_swap_calculator_canister_c2c_client::getTokenAmountByLiquidity': {error:?}"),
                 Some(HashMap::from([
@@ -690,7 +707,7 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_node_index_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 35), // 1002 04 35
                 "ICPSwapProvider::get_all_tokens".to_string(),
                 format!("IC error calling 'icpswap_node_index_canister_c2c_client::getAllTokens': {error:?}"),
                 Some(HashMap::from([
@@ -700,6 +717,7 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
         })
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 36), // 1002 03 36
                 "ICPSwapProvider::get_all_tokens".to_string(),
                 format!("Error calling 'icpswap_node_index_canister_c2c_client::getAllTokens': {error:?}"),
                 Some(HashMap::from([
@@ -717,7 +735,7 @@ pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_node_index_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 37), // 1002 04 37
                 "ICPSwap provider::get_tvl_storage_canister".to_string(),
                 format!("IC error calling 'icpswap_node_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
@@ -727,6 +745,7 @@ pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
         })
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 38), // 1002 03 38
                 "ICPSwapProvider::get_tvl_storage_canister".to_string(),
                 format!("Error calling 'icpswap_node_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
@@ -752,7 +771,7 @@ pub async fn get_pool_chart_tvl(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icpswap_tvl_storage_canister_c2c_client".to_string(),
+                build_error_code(1002, 4, 39), // 1002 04 39
                 "ICPSwapProvider::get_pool_chart_tvl".to_string(),
                 format!("IC error calling 'icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl': {error:?}"),
                 Some(HashMap::from([
@@ -765,6 +784,7 @@ pub async fn get_pool_chart_tvl(
         })
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1002, 3, 40), // 1002 03 40
                 "ICPSwapProvider::get_pool_chart_tvl".to_string(),
                 format!("Error calling 'icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl': {error:?}"),
                 Some(HashMap::from([

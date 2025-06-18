@@ -7,18 +7,21 @@ use crate::internal_error::error::{InternalError, InternalErrorKind};
 
 #[derive(CandidType, Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash, Display)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum ResponseErrorCode {
-    NotFound,        // NOT_FOUND
-    Validation,      // VALIDATION 
-    AccessDenied,    // ACCESS_DENIED
-    Timeout,         // TIMEOUT
-    InternalError,   // INTERNAL_ERROR
+pub enum ResponseErrorKind {
+    NotFound,
+    Validation,
+    BusinessLogic,
+    ExternalService,
+    AccessDenied,
+    Timeout,
+    Unknown,
 }
 
 #[derive(CandidType, Deserialize, Serialize, Debug, Clone, Display)]
-#[display("{:?}: {} ({:?})", code, message, details)]
+#[display("{:?}: {} ({:?})", kind, message, details)]
 pub struct ResponseError {
-    pub code: ResponseErrorCode,
+    pub code: u32,
+    pub kind: ResponseErrorKind,
     pub message: String,
     pub source: Option<Box<InternalError>>,
     pub details: Option<HashMap<String, String>>,
@@ -26,13 +29,15 @@ pub struct ResponseError {
 
 impl ResponseError {
     pub fn new(
-        code: ResponseErrorCode,
+        code: u32,
+        kind: ResponseErrorKind,
         message: impl Into<String>,
         source: Option<Box<InternalError>>,
         details: Option<HashMap<String, String>>
     ) -> Self {
         Self {
             code,
+            kind,
             message: message.into(),
             source,
             details,
@@ -41,6 +46,7 @@ impl ResponseError {
 
     pub fn from_internal_error(internal_error: InternalError) -> Self {
         Self::new(
+            internal_error.code,
             internal_error.kind.clone().into(),
             internal_error.message.clone(),
             Some(Box::new(internal_error.clone())),
@@ -53,17 +59,16 @@ impl ResponseError {
     }
 }
 
-impl From<InternalErrorKind> for ResponseErrorCode {
+impl From<InternalErrorKind> for ResponseErrorKind {
     fn from(kind: InternalErrorKind) -> Self {
         match kind {
-            InternalErrorKind::NotFound => ResponseErrorCode::NotFound,
-            InternalErrorKind::Validation => ResponseErrorCode::Validation,
-            InternalErrorKind::AccessDenied => ResponseErrorCode::AccessDenied,
-            InternalErrorKind::Timeout => ResponseErrorCode::Timeout,
-            InternalErrorKind::BusinessLogic
-            | InternalErrorKind::ExternalService { service: _ }
-            | InternalErrorKind::Infrastructure
-            | InternalErrorKind::Unknown => ResponseErrorCode::InternalError,
+            InternalErrorKind::NotFound => ResponseErrorKind::NotFound,
+            InternalErrorKind::Validation => ResponseErrorKind::Validation,
+            InternalErrorKind::AccessDenied => ResponseErrorKind::AccessDenied,
+            InternalErrorKind::Timeout => ResponseErrorKind::Timeout,
+            InternalErrorKind::BusinessLogic => ResponseErrorKind::BusinessLogic,
+            InternalErrorKind::ExternalService => ResponseErrorKind::ExternalService,
+            InternalErrorKind::Unknown => ResponseErrorKind::Unknown,
         }
     }
 }

@@ -12,10 +12,11 @@ use crate::repository::pools_repo;
 use crate::pool_snapshots::pool_snapshot_service;
 use crate::pools::pool::Pool;
 use crate::event_logs::event_log_service;
+use errors::internal_error::error::build_error_code;
 
 pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
-    if let Some(pool) = pool {
+    if let Some(mut pool) = pool {
         let liquidity_client = liquidity_client(pool.clone()).await;
 
         let response = liquidity_client.add_liquidity_to_pool(
@@ -35,11 +36,15 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
                 error
             })?;
 
+        // Update pool with position id
+        pool.position_id = Some(Nat::from(response.request_id));
+        // Create snapshot initial snapshot
         pool_snapshot_service::create_pool_snapshot(context, &pool).await;
 
         Ok(response)
     } else {
         let error = InternalError::not_found(
+            build_error_code(4100, 1, 1), // 4100 01 01
             "liquidity_service::add_liquidity_to_pool".to_string(),
             "Pool not found".to_string(),
             Some(HashMap::from([
@@ -90,6 +95,7 @@ pub async fn remove_liquidity_from_pool(context: Context, pool_id: String) -> Re
         Ok(response)
     } else {
         let error = InternalError::not_found(
+            build_error_code(4100, 1, 2), // 4100 01 02
             "liquidity_service::remove_liquidity_from_pool".to_string(),
             "Pool not found".to_string(),
             Some(HashMap::from([

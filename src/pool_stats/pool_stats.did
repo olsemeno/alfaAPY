@@ -13,6 +13,7 @@ type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
 type InternalError = record {
   context : text;
+  code : nat32;
   kind : InternalErrorKind;
   extra : opt vec record { text; text };
   message : text;
@@ -25,7 +26,7 @@ type InternalErrorKind = variant {
   Timeout;
   Unknown;
   BusinessLogic;
-  ExternalService : record { service : text };
+  ExternalService;
   Validation;
 };
 
@@ -77,17 +78,10 @@ type PositionData = record {
 
 type ResponseError = record {
   source : opt InternalError;
-  code : ResponseErrorCode;
+  code : nat32;
+  kind : InternalErrorKind;
   message : text;
   details : opt vec record { text; text };
-};
-
-type ResponseErrorCode = variant {
-  AccessDenied;
-  NotFound;
-  Timeout;
-  Validation;
-  InternalError;
 };
 
 type Result = variant { Ok : AddLiquidityResponse; Err : ResponseError };
@@ -98,19 +92,9 @@ type Result_2 = variant { Ok; Err : ResponseError };
 
 type Result_3 = variant { Ok : Pool; Err : ResponseError };
 
-type Result_4 = variant {
-  Ok : vec record { text; PoolMetrics };
-  Err : ResponseError;
-};
+type Result_4 = variant { Ok : vec Pool; Err : ResponseError };
 
-type Result_5 = variant { Ok : vec Pool; Err : ResponseError };
-
-type Result_6 = variant {
-  Ok : vec record { text; vec PoolSnapshot };
-  Err : ResponseError;
-};
-
-type Result_7 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
+type Result_5 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
 
 type WithdrawFromPoolResponse = record {
   token_0_amount : nat;
@@ -127,10 +111,10 @@ service : () -> {
   delete_pool_snapshot : (text, text) -> ();
   delete_pool_snapshots : (text) -> ();
   get_pool_by_id : (text) -> (Result_3);
-  get_pool_metrics : (vec text) -> (Result_4);
-  get_pools : () -> (Result_5);
-  get_pools_snapshots : (vec text) -> (Result_6);
-  remove_liquidity_from_pool : (text) -> (Result_7);
+  get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
+  get_pools : () -> (Result_4);
+  get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
+  remove_liquidity_from_pool : (text) -> (Result_5);
   set_operator : (principal) -> ();
   update_pool_ids : () -> (bool);
 }

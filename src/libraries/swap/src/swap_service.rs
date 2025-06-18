@@ -11,6 +11,7 @@ use crate::token_swaps::kongswap::KongSwapSwapClient;
 use crate::token_swaps::icpswap::ICPSwapSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 pub async fn swap_icrc2_optimal(
     input_token: CanisterId,
@@ -36,6 +37,7 @@ pub async fn swap_icrc2(
         ExchangeId::KongSwap => swap_icrc2_kongswap(input_token, output_token, amount).await,
         ExchangeId::ICPSwap => swap_icrc2_icpswap(input_token, output_token, amount).await,
         _ => Err(InternalError::business_logic(
+            build_error_code(2000, 3, 1), // 2000 03 01
             "swap_service::swap_icrc2".to_string(),
             "Invalid provider".to_string(),
             Some(HashMap::from([
@@ -100,7 +102,7 @@ pub async fn swap_icrc2_icpswap(
     .await
     .map_err(|error| {
         InternalError::external_service(
-            "icrc_ledger_canister_c2c_client".to_string(),
+            build_error_code(1100, 4, 5), // 1100 04 05
             "swap_service::swap_icrc2_icpswap".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
             Some(HashMap::from([
@@ -112,6 +114,7 @@ pub async fn swap_icrc2_icpswap(
     })?
     .map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1100, 3, 6), // 1100 03 06
             "swap_service::swap_icrc2_icpswap".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
             Some(HashMap::from([
@@ -160,7 +163,7 @@ pub async fn swap_icrc2_kongswap(
     .await
     .map_err(|error| {
         InternalError::external_service(
-            "icrc_ledger_canister_c2c_client".to_string(),
+            build_error_code(1100, 4, 7), // 1100 04 07
             "swap_service::swap_icrc2_kongswap".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
             Some(HashMap::from([
@@ -171,6 +174,7 @@ pub async fn swap_icrc2_kongswap(
     })?
     .map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1100, 3, 8), // 1100 03 08
             "swap_service::swap_icrc2_kongswap".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
             Some(HashMap::from([

@@ -15,6 +15,5 @@ pub async fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetr
         (pool_ids,)
     ).await.expect("Pool stats canister call failed");
 
-
     pool_metrics
 }

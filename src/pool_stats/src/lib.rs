@@ -149,15 +149,13 @@ pub fn get_pool_by_id(id: String) -> Result<Pool, ResponseError> {
 // ========================== Pool metrics ==========================
 
 #[update]
-pub fn get_pool_metrics(pool_ids: Vec<String>) -> Result<HashMap<String, PoolMetrics>, ResponseError> {
+pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
     service::get_pool_metrics(pool_ids)
-        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 #[update]
-pub fn get_pools_snapshots(pool_ids: Vec<String>) -> Result<HashMap<String, Vec<PoolSnapshot>>, ResponseError> {
+pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSnapshot>> {
     service::get_pools_snapshots(pool_ids)
-        .map_err(|error| ResponseError::from_internal_error(error))
 }
 
 // ========================== Liquidity management ==========================

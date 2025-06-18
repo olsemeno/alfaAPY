@@ -11,6 +11,7 @@ use types::liquidity::TokensFee;
 use utils::util::nat_to_u128;
 use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 use crate::token_swaps::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 
@@ -57,6 +58,7 @@ impl ICPSwapSwapClient {
             (t0, t1) if t0 == token0_str && t1 == token1_str => Ok(true),
             (t0, t1) if t0 == token1_str && t1 == token0_str => Ok(false),
             (t0, t1) => Err(InternalError::business_logic(
+                build_error_code(2002, 3, 1), // 2002 03 01
                 "ICPSwapSwapClient::is_zero_for_one_swap_direction".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
                 Some(HashMap::from([
@@ -85,6 +87,7 @@ impl ICPSwapSwapClient {
                 token1_fee: token_meta.token0Fee.clone(),
             }),
             (t0, t1) => Err(InternalError::business_logic(
+                build_error_code(2002, 3, 2), // 2002 03 02
                 "ICPSwapSwapClient::get_tokens_fee".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
                 Some(HashMap::from([

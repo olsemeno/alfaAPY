@@ -22,6 +22,7 @@ use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
 use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 use types::liquidity::{
     AddLiquidityResponse,
     WithdrawFromPoolResponse,
@@ -93,6 +94,7 @@ impl ICPSwapLiquidityClient {
                 token1_fee: token_meta.token0Fee.clone(),
             }),
             (t0, t1) => Err(InternalError::business_logic(
+                build_error_code(2102, 3, 1), // 2102 03 01
                 "ICPSwapLiquidityClient::get_tokens_fee".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
                 Some(HashMap::from([
@@ -115,6 +117,7 @@ impl ICPSwapLiquidityClient {
             (t0, t1) if t0 == token_in_str && t1 == token_out_str => Ok(true),
             (t0, t1) if t0 == token_out_str && t1 == token_in_str => Ok(false),
             (t0, t1) => Err(InternalError::business_logic(
+                build_error_code(2102, 3, 2), // 2102 03 02
                 "ICPSwapLiquidityClient::is_zero_for_one_swap_direction".to_string(),
                 "Invalid token configuration for ICPSwap pool".to_string(),
                 Some(HashMap::from([
@@ -139,13 +142,15 @@ impl ICPSwapLiquidityClient {
                 created_at_time: None,
         };
 
+
+        // TODO: create service for approve
         let result = icrc_ledger_canister_c2c_client::icrc2_approve(
             token.clone(),
             &args,
         ).await
             .map_err(|error| {
                 InternalError::external_service(
-                    "icrc_ledger_canister_c2c_client".to_string(),
+                    build_error_code(2102, 4, 1), // 2102 04 01
                     "ICPSwapLiquidityClient::icrc2_approve".to_string(),
                     format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
                     Some(HashMap::from([
@@ -156,6 +161,7 @@ impl ICPSwapLiquidityClient {
             })?
             .map_err(|error| {
                 InternalError::business_logic(
+                    build_error_code(2102, 3, 2), // 2102 03 02
                     "ICPSwapLiquidityClient::icrc2_approve".to_string(),
                     format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
                     Some(HashMap::from([
@@ -517,6 +523,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             (_, _, true, true) => (amount1_swapped_for_pool.to_string(), amount0_for_pool.to_string()),
             _ => {
                 return Err(InternalError::business_logic(
+                    build_error_code(2102, 3, 3), // 2102 03 03
                     error_context.clone(),
                     "Token order does not match pool metadata".to_string(),
                     Some(HashMap::from([
@@ -583,6 +590,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         if user_position_ids.is_empty() {
             return Err(InternalError::business_logic(
+                build_error_code(2102, 3, 4), // 2102 03 04
                 error_context.clone(),
                 "No position ids found for user".to_string(),
                 None,
@@ -642,6 +650,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             ),
             _ => {
                 return Err(InternalError::business_logic(
+                    build_error_code(2102, 3, 5), // 2102 03 05
                     error_context.clone(),
                     "Token order does not match pool metadata".to_string(),
                     Some(HashMap::from([

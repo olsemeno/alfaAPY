@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use ::types::context::Context;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 use crate::repository::strategies_repo;
 use crate::user::user_service;
@@ -30,6 +31,7 @@ pub async fn deposit(context: Context, args: StrategyDepositArgs) -> Result<Stra
     let mut strategy = get_strategy_by_id(args.strategy_id.clone())
         .ok_or_else(|| {
             InternalError::not_found(
+                build_error_code(3000, 1, 1), // 3000 01 01
                 "vault::deposit".to_string(),
                 "Strategy not found".to_string(),
                 Some(HashMap::from([
@@ -61,6 +63,7 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
     let mut strategy = get_strategy_by_id(args.strategy_id.clone())
         .ok_or_else(|| {
             InternalError::not_found(
+                build_error_code(3100, 1, 2), // 3100 01 02
                 "vault::withdraw".to_string(),
                 "Strategy not found".to_string(),
                 Some(HashMap::from([

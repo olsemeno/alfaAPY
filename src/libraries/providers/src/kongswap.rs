@@ -15,6 +15,7 @@ use kongswap_canister::swap::SwapReply;
 use kongswap_canister::swap::Args as SwapArgs;
 use utils::util::principal_to_canister_id;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 // TODO: move to constants
 pub static KONGSWAP_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("2ipq2-uqaaa-aaaar-qailq-cai"));
@@ -27,7 +28,7 @@ pub async fn pools() -> Result<PoolsReply, InternalError> {
     kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 1), // 1001 04 01
                 "KongSwapProvider::pools".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::pools': {error:?}"),
                 None
@@ -35,6 +36,7 @@ pub async fn pools() -> Result<PoolsReply, InternalError> {
         })?
         .map_err(|error_message| {
             InternalError::business_logic(
+                build_error_code(1001, 3, 2), // 1001 03 02
                 "KongSwapProvider::pools".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::pools': {error_message:?}"),
                 None
@@ -57,7 +59,7 @@ pub async fn swap_amounts(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 3), // 1001 04 03
                 "KongSwapProvider::swap_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::swap_amounts': {error:?}"),
                 Some(HashMap::from([
@@ -70,6 +72,7 @@ pub async fn swap_amounts(
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 4), // 1001 03 04
             "KongSwapProvider::swap_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::swap_amounts': {error_message:?}"),
             Some(HashMap::from([
@@ -100,7 +103,7 @@ pub async fn swap(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 5), // 1001 04 05
                 "KongSwapProvider::swap".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
                 Some(HashMap::from([
@@ -113,6 +116,7 @@ pub async fn swap(
         })?
         .map_err(|error| {
             InternalError::business_logic(
+                build_error_code(1001, 3, 6), // 1001 03 06
                 "KongSwapProvider::swap".to_string(),
                 format!("Error calling 'kongswap_canister_c2c_client::swap': {error:?}"),
                 Some(HashMap::from([
@@ -138,7 +142,7 @@ pub async fn add_liquidity_amounts(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 7), // 1001 04 07
                 "KongSwapProvider::add_liquidity_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error:?}"),
                 Some(HashMap::from([
@@ -151,6 +155,7 @@ pub async fn add_liquidity_amounts(
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 8), // 1001 03 08
             "KongSwapProvider::add_liquidity_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::add_liquidity_amounts': {error_message:?}"),
             Some(HashMap::from([
@@ -188,7 +193,7 @@ pub async fn add_liquidity(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 9), // 1001 04 09
                 "KongSwapProvider::add_liquidity".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::add_liquidity': {error:?}"),
                 Some(HashMap::from([
@@ -204,6 +209,7 @@ pub async fn add_liquidity(
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 10), // 1001 03 10
             "KongSwapProvider::add_liquidity".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::add_liquidity': {error_message:?}"),
             Some(HashMap::from([
@@ -225,7 +231,7 @@ pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 11), // 1001 04 11
                 "KongSwapProvider::user_balances".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::user_balances': {error:?}"),
                 Some(HashMap::from([
@@ -236,6 +242,7 @@ pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 12), // 1001 03 12
             "KongSwapProvider::user_balances".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::user_balances': {error_message:?}"),
             Some(HashMap::from([
@@ -262,7 +269,7 @@ pub async fn remove_liquidity_amounts(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 13), // 1001 04 13
                 "KongSwapProvider::remove_liquidity_amounts".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error:?}"),
                 Some(HashMap::from([
@@ -275,6 +282,7 @@ pub async fn remove_liquidity_amounts(
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 14), // 1001 03 14
             "KongSwapProvider::remove_liquidity_amounts".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity_amounts': {error_message:?}"),
             Some(HashMap::from([
@@ -303,7 +311,7 @@ pub async fn remove_liquidity(
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "kongswap_canister_c2c_client".to_string(),
+                build_error_code(1001, 4, 15), // 1001 04 15
                 "KongSwapProvider::remove_liquidity".to_string(),
                 format!("IC error calling 'kongswap_canister_c2c_client::remove_liquidity': {error:?}"),
                 Some(HashMap::from([
@@ -316,6 +324,7 @@ pub async fn remove_liquidity(
 
     result.map_err(|error_message| {
         InternalError::business_logic(
+            build_error_code(1001, 3, 16), // 1001 03 16
             "KongSwapProvider::remove_liquidity".to_string(),
             format!("Error calling 'kongswap_canister_c2c_client::remove_liquidity': {error_message:?}"),
             Some(HashMap::from([
@@ -345,7 +354,7 @@ async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalEr
     ).await
         .map_err(|error| {
             InternalError::external_service(
-                "icrc_ledger_canister_c2c_client".to_string(),
+                build_error_code(1100, 4, 1), // 1100 04 01
                 "KongSwapProvider::icrc2_approve".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
                 Some(HashMap::from([
@@ -357,6 +366,7 @@ async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalEr
 
     result.map_err(|error| {
         InternalError::business_logic(
+            build_error_code(1100, 3, 2), // 1100 03 02
             "KongSwapProvider::icrc2_approve".to_string(),
             format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
             Some(HashMap::from([

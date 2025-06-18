@@ -10,6 +10,7 @@ use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128};
 use swap::swap_service;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolData};
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
@@ -128,6 +129,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             .map(|balance_reply| balance_reply.balance)
             .ok_or_else(|| {
                 InternalError::business_logic(
+                    build_error_code(2101, 3, 1), // 2101 03 01
                     "KongSwapLiquidityClient::withdraw_liquidity_from_pool".to_string(),
                     "No user LP balance".to_string(),
                     Some(HashMap::from([
@@ -177,6 +179,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 )
             )
             .ok_or_else(|| InternalError::business_logic(
+                build_error_code(2101, 3, 2), // 2101 03 02
                 "KongSwapLiquidityClient::get_position_by_id".to_string(),
                 "No user LP balance".to_string(),
                 Some(HashMap::from([
@@ -205,6 +208,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 (pool.address_0 == self.token1.to_text() && pool.address_1 == self.token0.to_text())
             )
             .ok_or_else(|| InternalError::business_logic(
+                build_error_code(2101, 3, 3), // 2101 03 03
                 "KongSwapLiquidityClient::get_pool_data".to_string(),
                 "No pool data".to_string(),
                 Some(HashMap::from([

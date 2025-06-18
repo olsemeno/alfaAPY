@@ -10,6 +10,7 @@ use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
 use errors::internal_error::error::InternalError;
 use utils::token_transfer::icrc1_transfer_to_user;
+use errors::internal_error::error::build_error_code;
 
 use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
 use crate::event_logs::event_log_service;
@@ -98,6 +99,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 self.set_current_pool(Some(pool));
             } else {
                 let error = InternalError::not_found(
+                    build_error_code(3100, 1, 1), // 3100 01 01
                     "BasicStrategy::deposit".to_string(),
                     "No pool found to deposit".to_string(),
                     None,
@@ -176,6 +178,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             })
         } else {
             let error = InternalError::not_found(
+                build_error_code(3100, 1, 2), // 3100 01 02
                 "BasicStrategy::deposit".to_string(),
                 "No current pool found to deposit".to_string(),
                 None,
@@ -229,6 +232,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
         if user_shares == Nat::from(0u8) {
             let error = InternalError::business_logic(
+                build_error_code(3100, 3, 3), // 3100 03 03
                 "BasicStrategy::withdraw".to_string(),
                 "No shares found for user".to_string(),
                 Some(HashMap::from([
@@ -255,6 +259,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         // Check if user has enough shares
         if shares > user_shares {
             let error = InternalError::business_logic(
+                build_error_code(3100, 3, 4), // 3100 03 04
                 "BasicStrategy::withdraw".to_string(),
                 "Not sufficient shares for user".to_string(),
                 Some(HashMap::from([
@@ -372,6 +377,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             })
         } else {
             let error = InternalError::not_found(
+                build_error_code(3100, 1, 5), // 3100 01 05
                 "BasicStrategy::withdraw".to_string(),
                 "No current pool found in strategy".to_string(),
                 None,
@@ -498,6 +504,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             })
         } else {
             let error = InternalError::not_found(
+                build_error_code(3100, 1, 6), // 3100 01 06
                 "BasicStrategy::rebalance".to_string(),
                 "No current pool found in strategy".to_string(),
                 None,

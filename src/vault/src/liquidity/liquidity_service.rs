@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use candid::Nat;
 
 use types::context::Context;

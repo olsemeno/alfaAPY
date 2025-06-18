@@ -67,7 +67,7 @@ describe("Pool Stats Test DEV", () => {
             const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
             const approveAmount = BigInt(10000000000);
             // const depositAmount = BigInt(100_000_000);
-            const depositAmount = BigInt(0);
+            const depositAmount = BigInt(100_000_000);
         
             await checkAndApproveTokens(approveAmount, canisterId, memberIdentity, ledgerActor);
 
@@ -92,6 +92,30 @@ describe("Pool Stats Test DEV", () => {
                 }
             } catch (e) {
                 throw new Error("Add liquidity failed with error: " + e);
+            }
+        });
+    });
+
+    describe(".remove_liquidity_from_pool", () => {
+        it("Remove liquidity from pool", async () => {
+            console.log("== START \"Remove liquidity from pool\" TEST ==");
+
+            const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+
+            try {
+                console.log("Remove liquidity from pool starting...");
+
+                const result = await actorPoolStats.remove_liquidity_from_pool(poolId);
+
+                if ('Ok' in result) {
+                    const removeLiquidityResp = result.Ok;
+                    console.log("Remove liquidity from pool:", removeLiquidityResp.token_0_amount, removeLiquidityResp.token_1_amount);
+                } else {
+                    console.error("Remove liquidity from pool failed:", result.Err);
+                    throw new Error(`Remove liquidity from pool failed: ${JSON.stringify(result.Err)}`);
+                }
+            } catch (e) {
+                throw new Error("Remove liquidity from pool failed with error: " + e);
             }
         });
     });

@@ -9,6 +9,7 @@ use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::internal_error::error::InternalError;
 use utils::token_transfer::icrc2_transfer_from_user;
+use errors::internal_error::error::build_error_code;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pools::pool::Pool;
@@ -33,6 +34,7 @@ pub fn delete_pool(id: String) -> Result<(), InternalError> {
             Ok(())
         })
         .unwrap_or(Err(InternalError::not_found(
+            build_error_code(4000, 1, 1), // 4000 01 01
             "pool_stats::delete_pool".to_string(),
             "Pool not found".to_string(),
             Some(HashMap::from([
@@ -48,6 +50,7 @@ pub fn get_pools() -> Result<Vec<Pool>, InternalError> {
 pub fn get_pool_by_id(id: String) -> Result<Pool, InternalError> {
     pools_repo::get_pool_by_id(id.clone())
         .ok_or_else(|| InternalError::not_found(
+            build_error_code(4000, 1, 2), // 4000 01 02
             "pool_stats::get_pool_by_id".to_string(),
             "Pool not found".to_string(),
             Some(HashMap::from([
@@ -58,26 +61,22 @@ pub fn get_pool_by_id(id: String) -> Result<Pool, InternalError> {
 
 // ========================== Pool metrics ==========================
 
-pub fn get_pool_metrics(pool_ids: Vec<String>) -> Result<HashMap<String, PoolMetrics>, InternalError> {
-    let pool_metrics = pool_ids.into_iter()
+pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
+    pool_ids.into_iter()
         .filter_map(|pool_id| {
             pools_repo::get_pool_by_id(pool_id.clone())
                 .map(|pool| (pool_id, pool_metrics_service::create_pool_metrics(pool)))
         })
-        .collect();
-
-    Ok(pool_metrics)
+        .collect()
 }
 
-pub fn get_pools_snapshots(pool_ids: Vec<String>) -> Result<HashMap<String, Vec<PoolSnapshot>>, InternalError> {
-    let pool_snapshots = pool_ids.into_iter()
+pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSnapshot>> {
+    pool_ids.into_iter()
         .filter_map(|pool_id| {
             pools_repo::get_pool_by_id(pool_id.clone())
                 .map(|pool| (pool_id, pools_repo::get_pool_snapshots(pool.id).unwrap_or_default()))
         })
-        .collect();
-
-    Ok(pool_snapshots)
+        .collect()
 }
 
 // ========================== Liquidity management ==========================

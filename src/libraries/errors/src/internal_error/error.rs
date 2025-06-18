@@ -3,14 +3,15 @@ use serde::Serialize;
 use std::collections::HashMap;
 use derive_more::Display;
 
+use crate::response_error::error::{ResponseError, ResponseErrorKind};
+
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub enum InternalErrorKind {
     NotFound,
     Validation,
     BusinessLogic,
-    ExternalService { service: String },
+    ExternalService,
     AccessDenied,
-    Infrastructure,
     Timeout,
     Unknown,
 }
@@ -22,7 +23,7 @@ pub struct InternalErrors {
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug, Display)]
 #[display("{:?}: {} ({})", kind, message, context)]
 pub struct InternalError {
-    // pub code: String,
+    pub code: u32,
     pub kind: InternalErrorKind,
     pub context: String,
     pub message: String,
@@ -31,34 +32,33 @@ pub struct InternalError {
 
 impl InternalError {
     pub fn new(
+        code: u32,
         kind: InternalErrorKind,
         context: String,
         message: String,
         extra: Option<HashMap<String, String>>,
     ) -> Self {
-        Self { kind, context, message, extra }
+        Self { code, kind, context, message, extra }
     }
 
-    pub fn wrap(
-        &self,
-        context: String,
-        message: String,
-        extra: Option<HashMap<String, String>>
-    ) -> Self {
+    pub fn from_response_error(response_error: ResponseError, context: String) -> Self {
         Self::new(
-            self.kind.clone(),
+            response_error.code,
+            response_error.kind.into(),
             context,
-            message,
-            extra
+            response_error.message,
+            response_error.details,
         )
     }
 
     pub fn business_logic(
+        code: u32,
         context: String,
         message: String,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
+            code,
             InternalErrorKind::BusinessLogic,
             context,
             message,
@@ -67,13 +67,14 @@ impl InternalError {
     }
 
     pub fn external_service(
-        service: String,
+        code: u32,
         context: String,
         message: String,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
-            InternalErrorKind::ExternalService { service },
+            code,
+            InternalErrorKind::ExternalService,
             context,
             message,
             extra
@@ -81,15 +82,42 @@ impl InternalError {
     }
 
     pub fn not_found(
+        code: u32,
         context: String,
         message: String,
         extra: Option<HashMap<String, String>>
     ) -> Self {
         Self::new(
+            code,
             InternalErrorKind::NotFound,
             context,
             message,
             extra
         )
+    }
+}
+
+
+pub fn build_error_code(module: u16, kind: u8, number: u8) -> u32 {
+    // Format: MMMM KKK NNN
+    // MMMM: Module (4 digits)
+    // KKK: Kind (2 digits)
+    // NNN: Number (2 digits)
+    // Example: module=1001, kind=4, number=1 -> 10010401
+    (module as u32) * 10_000 + (kind as u32) * 100 + (number as u32)
+}
+
+
+impl From<ResponseErrorKind> for InternalErrorKind {
+    fn from(kind: ResponseErrorKind) -> Self {
+        match kind {
+            ResponseErrorKind::NotFound => InternalErrorKind::NotFound,
+            ResponseErrorKind::Validation => InternalErrorKind::Validation,
+            ResponseErrorKind::BusinessLogic => InternalErrorKind::BusinessLogic,
+            ResponseErrorKind::ExternalService => InternalErrorKind::ExternalService,
+            ResponseErrorKind::AccessDenied => InternalErrorKind::AccessDenied,
+            ResponseErrorKind::Timeout => InternalErrorKind::Timeout,
+            ResponseErrorKind::Unknown => InternalErrorKind::Unknown,
+        }
     }
 }
