@@ -646,8 +646,6 @@ impl LiquidityClient for ICPSwapLiquidityClient {
     }
 
     async fn get_position_by_id(&self, position_id: u64) -> Result<GetPositionByIdResponse, InternalError> {
-        let error_context = "ICPSwapLiquidityClient::get_position_by_id".to_string();
-
         // 1. Get metadata
         let metadata = self.metadata().await?;
 

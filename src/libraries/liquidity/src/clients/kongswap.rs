@@ -191,12 +191,30 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 ]))
             ))?;
 
+        let token0_decimals = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
+        let token1_decimals = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
+        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+
+        let token0_position_balance = Nat::from(
+            (user_balance.amount_0 * 10f64.powi(token0_decimals as i32)).round() as u128
+        );
+        let token1_position_balance = Nat::from(
+            (user_balance.amount_1 * 10f64.powi(token1_decimals as i32)).round() as u128
+        );
+
+        let token0_usd_amount = Nat::from(
+            (user_balance.usd_amount_0 * 10f64.powi(usdt_decimals as i32)).round() as u128
+        );
+        let token1_usd_amount = Nat::from(
+            (user_balance.usd_amount_1 * 10f64.powi(usdt_decimals as i32)).round() as u128
+        );
+
         Ok(GetPositionByIdResponse {
             position_id: position_id,
-            token_0_amount: Nat::from(user_balance.amount_0 as u128),
-            token_1_amount: Nat::from(user_balance.amount_1 as u128),
-            usd_amount_0: Nat::from(user_balance.usd_amount_0 as u128),
-            usd_amount_1: Nat::from(user_balance.usd_amount_1 as u128),
+            token_0_amount: token0_position_balance,
+            token_1_amount: token1_position_balance,
+            usd_amount_0: token0_usd_amount,
+            usd_amount_1: token1_usd_amount,
         })
     }
 
