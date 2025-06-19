@@ -32,7 +32,7 @@ pub async fn deposit(context: Context, args: StrategyDepositArgs) -> Result<Stra
         .ok_or_else(|| {
             InternalError::not_found(
                 build_error_code(3000, 1, 1), // 3000 01 01
-                "vault::deposit".to_string(),
+                "service::deposit".to_string(),
                 "Strategy not found".to_string(),
                 Some(HashMap::from([
                     ("strategy_id".to_string(), args.strategy_id.to_string())
@@ -64,7 +64,7 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
         .ok_or_else(|| {
             InternalError::not_found(
                 build_error_code(3100, 1, 2), // 3100 01 02
-                "vault::withdraw".to_string(),
+                "service::withdraw".to_string(),
                 "Strategy not found".to_string(),
                 Some(HashMap::from([
                     ("strategy_id".to_string(), args.strategy_id.to_string()),

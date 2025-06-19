@@ -27,9 +27,7 @@ Where:
 | 2102 | Liquidity (ICPSwap)           |
 | 3000 | Service (Vault)               |
 | 3100 | Strategies (Vault)            |
-| 3200 | PoolStats (Vault)             |
 | 4000 | Service (PoolStats)           |
-| 4100 | Liquidity (PoolStats)         |
 
 ### Error Kind (KK)
 | Code | Kind            |
@@ -224,9 +222,9 @@ Where:
 
 ## 3000 - Service (Vault)
 
-**3000 01 01** - Strategy not found in vault::deposit (NotFound) 
+**3000 01 01** - Strategy not found in service::deposit (NotFound) 
 
-**3000 01 02** - Strategy not found in vault::withdraw (NotFound)  
+**3000 01 02** - Strategy not found in service::withdraw (NotFound)  
 
 
 ## 3100 - Strategies (Vault)
@@ -243,11 +241,12 @@ Where:
 
 ## 4000 - Service (PoolStats)
 
-**4000 01 01** - Pool not found in pool_stats::delete_pool (NotFound)  
-**4000 01 02** - Pool not found in pool_stats::get_pool_by_id (NotFound)  
+**4000 01 01** - Pool not found in service::delete_pool (NotFound)  
 
+**4000 01 02** - Pool not found in service::get_pool_by_id (NotFound)  
 
-## 4100 - Liquidity (PoolStats)
+**4000 01 03** - Pool not found in service::add_liquidity_to_pool (NotFound) 
+**4000 01 04** - Pool already has liquidity in service::add_liquidity_to_pool (BusinessLogic) 
 
-**4100 01 01** - Pool not found in liquidity_service::add_liquidity_to_pool (NotFound)  
-**4100 01 02** - Pool not found in liquidity_service::remove_liquidity_from_pool (NotFound)  
+**4000 01 05** - Pool not found in service::remove_liquidity_from_pool (NotFound)  
+**4000 01 06** - Pool has no liquidity in service::remove_liquidity_from_pool (BusinessLogic) 
