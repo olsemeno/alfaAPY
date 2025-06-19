@@ -31,6 +31,7 @@ use errors::internal_error::error::{InternalError, build_error_code};
 pub static SWAP_FACTORY_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("4mmnk-kiaaa-aaaag-qbllq-cai"));
 pub static SWAP_CALCULATOR_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("phr2m-oyaaa-aaaag-qjuoq-cai"));
 pub static NODE_INDEX_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("ggzvv-5qaaa-aaaag-qck7a-cai"));
+pub static GLOBAL_INDEX_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("gp26j-lyaaa-aaaag-qck6q-cai"));
 
 pub const SWAP_FEE: u128 = 3000;
 pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
@@ -730,16 +731,16 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
 }
 
 pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
-    let response = icpswap_node_index_canister_c2c_client::tvlStorageCanister(
-        *NODE_INDEX_CANISTER
+    let response = icpswap_global_index_canister_c2c_client::tvlStorageCanister(
+        *GLOBAL_INDEX_CANISTER
     ).await
         .map_err(|error| {
             InternalError::external_service(
                 build_error_code(1002, 4, 37), // 1002 04 37
                 "ICPSwap provider::get_tvl_storage_canister".to_string(),
-                format!("IC error calling 'icpswap_node_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
+                format!("IC error calling 'icpswap_global_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
-                    ("node_index_canister".to_string(), NODE_INDEX_CANISTER.to_text()),
+                    ("global_index_canister".to_string(), GLOBAL_INDEX_CANISTER.to_text()),
                 ]))
             )
         })
@@ -747,9 +748,9 @@ pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
             InternalError::business_logic(
                 build_error_code(1002, 3, 38), // 1002 03 38
                 "ICPSwapProvider::get_tvl_storage_canister".to_string(),
-                format!("Error calling 'icpswap_node_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
+                format!("Error calling 'icpswap_global_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
-                    ("node_index_canister".to_string(), NODE_INDEX_CANISTER.to_text()),
+                    ("global_index_canister".to_string(), GLOBAL_INDEX_CANISTER.to_text()),
                 ]))
             )
         })?;

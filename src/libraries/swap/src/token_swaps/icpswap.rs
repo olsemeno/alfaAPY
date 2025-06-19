@@ -179,8 +179,8 @@ impl SwapClient for ICPSwapSwapClient {
         // let token1_fee = tokens_fee.token1_fee.unwrap_or(Nat::from(0u8));
 
         //TODO: Remove hardcoded fees
-        let token0_fee = get_token_fee(self.token0.clone()).await;
-        let token1_fee = get_token_fee(self.token1.clone()).await;
+        let token0_fee = get_token_fee(self.token0.clone());
+        let token1_fee = get_token_fee(self.token1.clone());
 
         // 1. Deposit
         let deposited_amount = self.deposit_from(

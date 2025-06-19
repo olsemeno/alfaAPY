@@ -3,8 +3,9 @@ use candid::{Nat, Int, Principal};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 use std::collections::HashMap;
+use once_cell::sync::Lazy;
 
-use utils::util::{nat_to_u64};
+use utils::util::{nat_to_u64, int_to_nat, principal_to_canister_id};
 use types::CanisterId;
 use providers::{icpswap as icpswap_provider};
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
@@ -22,6 +23,7 @@ use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
 use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
+use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 use icrc_ledger_client;
 use types::liquidity::{
     AddLiquidityResponse,
@@ -32,6 +34,8 @@ use types::liquidity::{
 };
 
 use crate::liquidity_client::LiquidityClient;
+
+const CKUSDT_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id(CKUSDT_TOKEN_CANISTER_ID));
 
 // Use full range of prices for liquidity in the pool
 const TICK_LOWER: i32 = -887220;
@@ -426,7 +430,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // let token0_fee = Nat::from(10_000u128); // For ICP
         // let token1_fee = Nat::from(10u8); // For ckBTC
 
-        let token0_fee = get_token_fee(self.token0.clone()).await;
+        let token0_fee = get_token_fee(self.token0.clone());
 
         let metadata = self.metadata().await?;
         
@@ -535,13 +539,10 @@ impl LiquidityClient for ICPSwapLiquidityClient {
     ) -> Result<WithdrawFromPoolResponse, InternalError> {
         // Flow:
         // 1. Get user position ids
-        // 2. Get token meta
-        // 3. Get user position
-        // 4. Calculate how much liquidity to withdraw
-        // 5. Decrease liquidity
-        // 6. Determine which token is token0 and which is token1
-        // 7. Withdraw token0
-        // 8. Withdraw token1
+        // 2. Get user position
+        // 3. Calculate how much liquidity to withdraw
+        // 4. Decrease liquidity
+        // 5. Determine which token is token0 and which is token1 in the pool
 
         let error_context = "ICPSwapLiquidityClient::withdraw_liquidity_from_pool".to_string();
 
@@ -561,39 +562,24 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         let metadata = self.metadata().await?;
 
-        // 2. Get token meta
-        // TODO: Fix token meta fetching
-        // let token_meta = match self.get_token_meta().await {
-        //     Ok(token_meta) => token_meta,
-        //     Err(e) => trap(format!("Failed to get token meta (ICPSWAP): {}", e).as_str()),
-        // };
-
-        // let tokens_fee = self.get_tokens_fee(&token_meta);
-        // let token_in_fee = tokens_fee.token_in_fee.unwrap_or(Nat::from(0u8));
-        // let token_out_fee = tokens_fee.token_out_fee.unwrap_or(Nat::from(0u8));
-
-        //TODO: Remove hardcoded fees
-        let token0_fee = get_token_fee(self.token0.clone()).await;
-        let token1_fee = get_token_fee(self.token1.clone()).await;
-
-        // 3. Get user position
+        // 2. Get user position
         let user_position = self.get_user_position(position_id.clone()).await?;
 
         let liquidity = user_position.liquidity;
 
-        // 4. Calculate how much liquidity to withdraw
+        // 3. Calculate how much liquidity to withdraw
         let liquidity_to_withdraw = liquidity
             .clone()
             .mul(shares.clone())
             .div(total_shares.clone());
 
-        // 5. Decrease liquidity
+        // 4. Decrease liquidity
         let decrease_liquidity_response = self.decrease_liquidity(
             position_id.clone(),
             liquidity_to_withdraw.to_string()
         ).await?;
 
-        // Determine which token is token0 and which is token1
+        // 5. Determine which token is token0 and which is token1 in the pool
         let (amount0_to_withdraw, amount1_to_withdraw) = match (
             self.token0.to_text() == metadata.token0.address,
             self.token1.to_text() == metadata.token1.address,
@@ -623,25 +609,9 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             }
         };
 
-        // 6. Withdraw token0
-        let token_0_amount_out = self.withdraw(
-            self.token0.clone(),
-            amount0_to_withdraw.clone(),
-            token0_fee.clone()
-        ).await?;
-
-        // 7. Withdraw token1
-        let token_1_amount_out = self.withdraw(
-            self.token1.clone(),
-            amount1_to_withdraw.clone(),
-            token1_fee.clone()
-        ).await?;
-
-        // TODO: move withdrawn tokens to user
-
         Ok(WithdrawFromPoolResponse {
-            token_0_amount: token_0_amount_out,
-            token_1_amount: token_1_amount_out,
+            token_0_amount: amount0_to_withdraw,
+            token_1_amount: amount1_to_withdraw,
         })
     }
 
@@ -668,29 +638,52 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             liquidity.clone()
         ).await?;
 
-        let token0_amount = token_amounts.amount0 + token0_owed;
-        let token1_amount = token_amounts.amount1 + token1_owed;
+        let token0_amount = int_to_nat(token_amounts.amount0).unwrap() + token0_owed;
+        let token1_amount = int_to_nat(token_amounts.amount1).unwrap() + token1_owed;
 
         // 4. Get all tokens
         let all_tokens = self.get_all_tokens().await?;
 
-        let mut token0_price = 0.0;
-        let mut token1_price = 0.0;
+        let pool_tokens = all_tokens
+            .iter()
+            .filter(|token_data| {
+                token_data.address == self.token0.to_text() || token_data.address == self.token1.to_text()
+            }).collect::<Vec<_>>();
+
+        let mut token0_price_usd = 0.0;
+        let mut token1_price_usd = 0.0;
 
         // Select token0 and token1 prices from all tokens
-        for token in &all_tokens {
-            match token.address.as_str() {
-                addr if addr == self.token0.to_text() => token0_price = token.priceUSD,
-                addr if addr == self.token1.to_text() => token1_price = token.priceUSD,
+        for token_data in &pool_tokens {
+            match token_data.address.as_str() {
+                addr if addr == self.token0.to_text() => { token0_price_usd = token_data.priceUSD },
+                addr if addr == self.token1.to_text() => { token1_price_usd = token_data.priceUSD },
                 _ => {}
             }
-            if token0_price != 0.0 && token1_price != 0.0 {
+            if token0_price_usd != 0.0 && token1_price_usd != 0.0 {
                 break;
             }
         }
 
-        let token0_usd_amount = token0_amount.clone().mul(Nat::from(token0_price as u128));
-        let token1_usd_amount = token1_amount.clone().mul(Nat::from(token1_price as u128));
+        let token0_decimals = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
+        let token1_decimals = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
+        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+
+        let token0_usd_amount = Nat::from(
+            (nat_to_u64(&token0_amount) as f64
+                * token0_price_usd
+                * 10f64.powi(usdt_decimals as i32)
+                / 10f64.powi(token0_decimals as i32)
+            ) as u128
+        );
+
+        let token1_usd_amount = Nat::from(
+            (nat_to_u64(&token1_amount) as f64
+                * token1_price_usd
+                * 10f64.powi(usdt_decimals as i32)
+                / 10f64.powi(token1_decimals as i32)
+            ) as u128
+        );
 
         Ok(GetPositionByIdResponse {
             position_id: position_id,

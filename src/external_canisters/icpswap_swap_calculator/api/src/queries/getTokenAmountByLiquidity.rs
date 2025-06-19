@@ -6,6 +6,6 @@ pub type Response = (GetTokenAmountByLiquidityResponse,);
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct GetTokenAmountByLiquidityResponse {
-    pub amount0: Nat,
-    pub amount1: Nat,
+    pub amount0: Int,
+    pub amount1: Int,
 }

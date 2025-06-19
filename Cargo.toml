@@ -12,6 +12,8 @@ members = [
     "src/external_canisters/icpswap_swap_calculator/c2c_client",
     "src/external_canisters/icpswap_node_index/api",
     "src/external_canisters/icpswap_node_index/c2c_client",
+    "src/external_canisters/icpswap_global_index/api",
+    "src/external_canisters/icpswap_global_index/c2c_client",
     "src/external_canisters/kongswap/api",
     "src/external_canisters/kongswap/c2c_client",
     "src/external_canisters/icpswap_tvl_storage/api",

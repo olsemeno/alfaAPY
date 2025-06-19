@@ -24,6 +24,8 @@ icpswap_node_index_canister = { path = "../../external_canisters/icpswap_node_in
 icpswap_node_index_canister_c2c_client = { path = "../../external_canisters/icpswap_node_index/c2c_client" }
 icpswap_tvl_storage_canister = { path = "../../external_canisters/icpswap_tvl_storage/api" }
 icpswap_tvl_storage_canister_c2c_client = { path = "../../external_canisters/icpswap_tvl_storage/c2c_client" }
+icpswap_global_index_canister = { path = "../../external_canisters/icpswap_global_index/api" }
+icpswap_global_index_canister_c2c_client = { path = "../../external_canisters/icpswap_global_index/c2c_client" }
 utils = { path = "../utils" }
 errors = { path = "../errors" }
 icrc_ledger_client = { path = "../icrc_ledger_client" }

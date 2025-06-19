@@ -15,6 +15,8 @@ use crate::event_logs::event_log_service;
 use errors::internal_error::error::build_error_code;
 
 pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
+    // TODO: forbid to add liquidity if pool already has liquidity (position_id is not None)
+
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
     if let Some(mut pool) = pool {
         let liquidity_client = liquidity_client(pool.clone()).await;

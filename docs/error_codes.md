@@ -166,8 +166,8 @@ Where:
 **1002 04 35** - IC error calling icpswap_node_index_canister_c2c_client::getAllTokens from ICPSwapProvider::get_all_tokens (External Service)  
 **1002 03 36** - Error calling icpswap_node_index_canister_c2c_client::getAllTokens from ICPSwapProvider::get_all_tokens (Business Logic)  
 
-**1002 04 37** - IC error calling icpswap_node_index_canister_c2c_client::tvlStorageCanister from ICPSwapProvider::get_tvl_storage_canister (External Service)  
-**1002 03 38** - Error calling icpswap_node_index_canister_c2c_client::tvlStorageCanister from ICPSwapProvider::get_tvl_storage_canister (Business Logic)  
+**1002 04 37** - IC error calling icpswap_global_index_canister_c2c_client::tvlStorageCanister from ICPSwapProvider::get_tvl_storage_canister (External Service)
+**1002 03 38** - Error calling icpswap_global_index_canister_c2c_client::tvlStorageCanister from ICPSwapProvider::get_tvl_storage_canister (Business Logic)
 
 **1002 04 39** - IC error calling icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl from ICPSwapProvider::get_pool_chart_tvl (External Service)  
 **1002 03 40** - Error calling icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl from ICPSwapProvider::get_pool_chart_tvl (Business Logic)  
