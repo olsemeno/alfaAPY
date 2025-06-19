@@ -7,7 +7,7 @@ use ic_cdk::{caller, id, trap};
 use types::CanisterId;
 use types::context::Context;
 use errors::internal_error::error::InternalError;
-use ::utils::token_transfer::icrc2_transfer_from_user;
+use icrc_ledger_client;
 use ::utils::util::nat_to_u64;
 
 use crate::types::types::StrategyId;
@@ -36,7 +36,7 @@ pub async fn accept_deposit(
     ledger: Principal,
     strategy_id: StrategyId
 ) -> Result<(), InternalError> {
-    let block_index = icrc2_transfer_from_user(
+    let block_index = icrc_ledger_client::icrc2_transfer_from(
         context.user.unwrap(),
         ledger,
         amount.clone()

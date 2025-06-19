@@ -41,3 +41,4 @@ types = { path = "../libraries/types" }
 utils = { path = "../libraries/utils" }
 errors = { path = "../libraries/errors" }
 event_logs = { path = "../libraries/event_logs" }
+icrc_ledger_client = { path = "../libraries/icrc_ledger_client" }

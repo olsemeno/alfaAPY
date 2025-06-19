@@ -1,0 +1,17 @@
+[package]
+name = "icrc_ledger_client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+candid = { workspace = true }
+icrc-ledger-types = { workspace = true }
+icrc_ledger_canister_c2c_client = { path = "../../external_canisters/icrc_ledger/c2c_client" }
+icrc_ledger_canister = { path = "../../external_canisters/icrc_ledger/api" }
+ic-cdk = { workspace = true }
+serde = { workspace = true }
+tracing = "0.1.41"
+types = { path = "../types" }
+errors = { path = "../errors" }

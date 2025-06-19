@@ -8,7 +8,7 @@ use types::context::Context;
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::internal_error::error::InternalError;
-use utils::token_transfer::icrc2_transfer_from_user;
+use icrc_ledger_client;
 use errors::internal_error::error::build_error_code;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
@@ -87,7 +87,7 @@ pub async fn add_liquidity_to_pool(
     pool_id: String,
     amount: Nat
 ) -> Result<AddLiquidityResponse, InternalError> {
-    icrc2_transfer_from_user(caller(), ledger, amount.clone()).await?;
+    icrc_ledger_client::icrc2_transfer_from(caller(), ledger, amount.clone()).await?;
     liquidity_service::add_liquidity_to_pool(context, pool_id, amount).await
 }
 

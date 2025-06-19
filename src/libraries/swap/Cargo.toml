@@ -21,3 +21,4 @@ kongswap_canister_c2c_client = { path = "../../external_canisters/kongswap/c2c_c
 providers = { path = "../providers" }
 utils = { path = "../utils" }
 errors = { path = "../errors" }
+icrc_ledger_client = { path = "../icrc_ledger_client" }

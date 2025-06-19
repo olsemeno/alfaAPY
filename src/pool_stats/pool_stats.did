@@ -21,7 +21,6 @@ type InternalError = record {
 
 type InternalErrorKind = variant {
   AccessDenied;
-  Infrastructure;
   NotFound;
   Timeout;
   Unknown;
@@ -35,7 +34,7 @@ type Pool = record {
   provider : ExchangeId;
   token0 : principal;
   token1 : principal;
-  position_id : opt nat;
+  position_id : opt nat64;
 };
 
 type PoolApy = record {
@@ -69,7 +68,7 @@ type PoolSnapshotArgs = record {
 };
 
 type PositionData = record {
-  id : nat;
+  id : nat64;
   usd_amount0 : nat;
   usd_amount1 : nat;
   amount0 : nat;
@@ -88,13 +87,15 @@ type Result = variant { Ok : AddLiquidityResponse; Err : ResponseError };
 
 type Result_1 = variant { Ok : text; Err : ResponseError };
 
-type Result_2 = variant { Ok; Err : ResponseError };
+type Result_2 = variant { Ok : PoolSnapshot; Err : ResponseError };
 
-type Result_3 = variant { Ok : Pool; Err : ResponseError };
+type Result_3 = variant { Ok; Err : ResponseError };
 
-type Result_4 = variant { Ok : vec Pool; Err : ResponseError };
+type Result_4 = variant { Ok : Pool; Err : ResponseError };
 
-type Result_5 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
+type Result_5 = variant { Ok : vec Pool; Err : ResponseError };
+
+type Result_6 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
 
 type WithdrawFromPoolResponse = record {
   token_0_amount : nat;
@@ -105,16 +106,16 @@ service : () -> {
   add_liquidity_to_pool : (principal, text, nat) -> (Result);
   add_pool : (principal, principal, ExchangeId) -> (Result_1);
   add_pool_snapshot : (PoolSnapshotArgs) -> ();
-  create_pool_snapshot : (text) -> (PoolSnapshot);
+  create_pool_snapshot : (text) -> (Result_2);
   delete_all_pools_and_snapshots : () -> (bool);
-  delete_pool : (text) -> (Result_2);
+  delete_pool : (text) -> (Result_3);
   delete_pool_snapshot : (text, text) -> ();
   delete_pool_snapshots : (text) -> ();
-  get_pool_by_id : (text) -> (Result_3);
+  get_pool_by_id : (text) -> (Result_4);
   get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
-  get_pools : () -> (Result_4);
+  get_pools : () -> (Result_5);
   get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
-  remove_liquidity_from_pool : (text) -> (Result_5);
+  remove_liquidity_from_pool : (text) -> (Result_6);
   set_operator : (principal) -> ();
   update_pool_ids : () -> (bool);
 }

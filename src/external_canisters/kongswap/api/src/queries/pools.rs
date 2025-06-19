@@ -1,3 +1,3 @@
-pub use crate::PoolsReply;
+pub use crate::PoolReply;
 
-pub type Response = Result<PoolsReply, String>;
+pub type Response = Result<Vec<PoolReply>, String>;

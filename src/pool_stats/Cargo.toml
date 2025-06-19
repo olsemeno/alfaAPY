@@ -40,3 +40,4 @@ liquidity = { path = "../libraries/liquidity" }
 errors = { path = "../libraries/errors" }
 event_logs = { path = "../libraries/event_logs" }
 types = { path = "../libraries/types" }
+icrc_ledger_client = { path = "../libraries/icrc_ledger_client" }

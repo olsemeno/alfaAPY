@@ -56,7 +56,7 @@ impl PoolSnapshot {
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PositionData {
-    pub id: Nat,
+    pub id: u64,
     pub amount0: Nat,
     pub amount1: Nat,
     pub usd_amount0: Nat,

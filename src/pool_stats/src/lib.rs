@@ -12,6 +12,8 @@ use types::context::Context;
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
+use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
@@ -109,11 +111,23 @@ pub fn delete_all_pools_and_snapshots() -> bool {
 
 // TODO: test method, remove after testing
 #[update]
-pub async fn create_pool_snapshot(pool_id: String) -> PoolSnapshot {
+pub async fn create_pool_snapshot(pool_id: String) -> Result<PoolSnapshot, ResponseError> {
     let context = Context::generate(None);
 
-    let pool = pools_repo::get_pool_by_id(pool_id.clone()).unwrap();
-    pool_snapshot_service::create_pool_snapshot(context, &pool).await
+    let pool = pools_repo::get_pool_by_id(pool_id.clone());
+
+    if let Some(pool) = pool {
+        pool_snapshot_service::create_pool_snapshot(context, &pool).await
+            .map_err(|error| ResponseError::from_internal_error(error))
+    } else {
+        let error = InternalError::not_found(
+            build_error_code(0000, 0, 0), // 0000 00 00
+            "pool_stats::create_pool_snapshot".to_string(),
+            format!("Pool not found: {pool_id}"),
+            None
+        );
+        ResponseError::err_from_internal(error)
+    }
 }
 
 // ========================== End of test method ==========================

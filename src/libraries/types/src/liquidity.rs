@@ -22,7 +22,7 @@ pub struct TokensFee {
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct GetPositionByIdResponse {
-    pub position_id: Nat,
+    pub position_id: u64,
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
     pub usd_amount_0: Nat,
@@ -30,6 +30,6 @@ pub struct GetPositionByIdResponse {
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
-pub struct GetPoolData {
+pub struct GetPoolDataResponse {
     pub tvl: Nat,
 }

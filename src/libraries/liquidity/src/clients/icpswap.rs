@@ -17,18 +17,18 @@ use icpswap_swap_pool_canister::getUserPositionsByPrincipal::UserPositionWithId;
 use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountByLiquidityResponse;
 use icpswap_node_index_canister::getAllTokens::TokenData;
-use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
 use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
+use icrc_ledger_client;
 use types::liquidity::{
     AddLiquidityResponse,
     WithdrawFromPoolResponse,
     TokensFee,
     GetPositionByIdResponse,
-    GetPoolData,
+    GetPoolDataResponse,
 };
 
 use crate::liquidity_client::LiquidityClient;
@@ -128,50 +128,6 @@ impl ICPSwapLiquidityClient {
                 ])),
             )),
         }
-    }
-
-    async fn icrc2_approve(&self, token: CanisterId, amount: Nat) -> Result<Nat, InternalError> {
-        let args = ApproveArgs {
-            from_subaccount: None,
-                spender: self.canister_id().into(),
-                amount: Nat::from(99999999999999 as u128), //TODO: amount + fee
-                expected_allowance: None,
-                expires_at: None,
-                fee: None,
-                memo: None,
-                created_at_time: None,
-        };
-
-
-        // TODO: create service for approve
-        let result = icrc_ledger_canister_c2c_client::icrc2_approve(
-            token.clone(),
-            &args,
-        ).await
-            .map_err(|error| {
-                InternalError::external_service(
-                    build_error_code(2102, 4, 1), // 2102 04 01
-                    "ICPSwapLiquidityClient::icrc2_approve".to_string(),
-                    format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-                    Some(HashMap::from([
-                        ("token".to_string(), token.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                    ]))
-                )
-            })?
-            .map_err(|error| {
-                InternalError::business_logic(
-                    build_error_code(2102, 3, 2), // 2102 03 02
-                    "ICPSwapLiquidityClient::icrc2_approve".to_string(),
-                    format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-                    Some(HashMap::from([
-                        ("token".to_string(), token.to_text()),
-                        ("amount".to_string(), amount.to_string()),
-                    ]))
-                )
-            })?;
-
-        Ok(result)
     }
 
     async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
@@ -475,7 +431,11 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let metadata = self.metadata().await?;
         
         // 4. Approve before deposit
-        self.icrc2_approve(self.token0.clone(), amount.clone()).await?;
+        icrc_ledger_client::icrc2_approve(
+            self.canister_id(),
+            self.token0.clone(),
+            amount.clone()
+        ).await?;
 
         // 5. Deposit
         let amount0_deposited = self.deposit_from(
@@ -685,7 +645,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, InternalError> {
+    async fn get_position_by_id(&self, position_id: u64) -> Result<GetPositionByIdResponse, InternalError> {
         let error_context = "ICPSwapLiquidityClient::get_position_by_id".to_string();
 
         // 1. Get metadata
@@ -694,7 +654,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         let sqrt_price_x96 = metadata.sqrtPriceX96;
 
         // 2. Get user position
-        let user_position = self.get_user_position(position_id.clone()).await?;
+        let user_position = self.get_user_position(Nat::from(position_id)).await?;
 
         let token0_owed = user_position.tokensOwed0; // Amount of token0 from fees
         let token1_owed = user_position.tokensOwed1; // Amount of token1 from fees
@@ -743,7 +703,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         })
     }
 
-    async fn get_pool_data(&self) -> Result<GetPoolData, InternalError> {
+    async fn get_pool_data(&self) -> Result<GetPoolDataResponse, InternalError> {
         let tvl_storage_canister_id = self.get_tvl_storage_canister().await?;
 
         let pool_chart_tvl_response = self.get_pool_chart_tvl(
@@ -752,6 +712,6 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         let tvl = Nat::from(pool_chart_tvl_response.last().unwrap().tvlUSD as u128);
 
-        Ok(GetPoolData { tvl })
+        Ok(GetPoolDataResponse { tvl })
     }
 }

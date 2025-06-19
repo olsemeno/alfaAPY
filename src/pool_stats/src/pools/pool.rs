@@ -13,7 +13,7 @@ pub struct Pool {
     pub token0: CanisterId,
     pub token1: CanisterId,
     pub provider: ExchangeId,
-    pub position_id: Option<Nat>,
+    pub position_id: Option<u64>,
 }
 
 impl PoolTrait for Pool {

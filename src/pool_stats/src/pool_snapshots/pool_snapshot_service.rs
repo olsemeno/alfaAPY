@@ -5,6 +5,7 @@ use ic_cdk_timers::TimerId;
 use liquidity::liquidity_router;
 use liquidity::liquidity_client::LiquidityClient;
 use types::context::Context;
+use errors::internal_error::error::InternalError;
 
 use crate::pools::pool::Pool;
 use crate::pool_snapshots::pool_snapshot::{PoolSnapshot, PositionData, PoolData};
@@ -47,56 +48,49 @@ pub async fn create_all_pool_snapshots() {
     let pools = pools_repo::get_pools();
     // Iterate over pools with liquidity position
     for pool in pools.into_iter().filter(|p| p.position_id.is_some()) {
-        create_pool_snapshot(context.clone(), &pool).await;
+        create_pool_snapshot(context.clone(), &pool).await
+        .map_err(|error| {
+            // TODO: add event logging
+        });
     }
 }
 
-pub async fn create_pool_snapshot(context: Context, pool: &Pool) -> PoolSnapshot {
-    let pool_data = get_pool_data(context.clone(), pool).await;
-    let position_data = get_position_data(context, pool).await;
+pub async fn create_pool_snapshot(context: Context, pool: &Pool) -> Result<PoolSnapshot, InternalError> {
+    let pool_data = get_pool_data(context.clone(), pool).await?;
+    let position_data = get_position_data(context, pool).await?;
 
-    PoolSnapshot::create(pool.id.clone(), position_data, pool_data)
+    Ok(PoolSnapshot::create(pool.id.clone(), position_data, pool_data))
 }
 
-async fn get_position_data(context: Context, pool: &Pool) -> Option<PositionData> {
+async fn get_position_data(context: Context, pool: &Pool) -> Result<Option<PositionData>, InternalError> {
     let liquidity_client = get_liquidity_client(pool).await;
 
     if let Some(position_id) = pool.position_id.as_ref().cloned() {
-        match liquidity_client.get_position_by_id(position_id).await {
-            Ok(position) => {
-                let current_position = PositionData {
-                    id: position.position_id,
-                    amount0: position.token_0_amount,
-                    amount1: position.token_1_amount,
-                    usd_amount0: position.usd_amount_0,
-                    usd_amount1: position.usd_amount_1,
-                };
-                Some(current_position)
-            }
-            Err(_error) => {
-                None
-            }
-        }
+        let position_response = liquidity_client.get_position_by_id(position_id).await?;
+
+        let current_position = PositionData {
+            id: position_response.position_id,
+            amount0: position_response.token_0_amount,
+            amount1: position_response.token_1_amount,
+            usd_amount0: position_response.usd_amount_0,
+            usd_amount1: position_response.usd_amount_1,
+        };
+
+        Ok(Some(current_position))
     } else {
-        None
+        Ok(None)
     }
 }
 
-async fn get_pool_data(context: Context, pool: &Pool) -> Option<PoolData> {
+async fn get_pool_data(context: Context, pool: &Pool) -> Result<Option<PoolData>, InternalError> {
     let liquidity_client = get_liquidity_client(pool).await;
+    let pool_data_response = liquidity_client.get_pool_data().await?;
 
-    match liquidity_client.get_pool_data().await {
-        Ok(pool_data) => {
-            let pool_data = PoolData {
-                tvl: pool_data.tvl,
-            };
+    let pool_data = PoolData {
+        tvl: pool_data_response.tvl,
+    };
 
-            Some(pool_data)
-        }
-        Err(_error) => {
-            None
-        }
-    }
+    Ok(Some(pool_data))
 }
 
 async fn get_liquidity_client(pool: &Pool) -> Box<dyn LiquidityClient> {

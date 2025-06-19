@@ -1,21 +1,24 @@
 use async_trait::async_trait;
 use candid::{Nat, Principal};
+use once_cell::sync::Lazy;
 use std::ops::{Div, Mul};   
 use std::collections::HashMap;
 
 use types::CanisterId;
 use providers::kongswap as kongswap_provider;
 use kongswap_canister::user_balances::UserBalancesReply;
-use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128};
+use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128, principal_to_canister_id};
 use swap::swap_service;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolData};
+use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolDataResponse};
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
+use icrc_ledger_client;
+use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
 
-const CKUSDT_CANISTER_ID: &str = "cngnf-vqaaa-aaaar-qag4q-cai";
+const CKUSDT_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id(CKUSDT_TOKEN_CANISTER_ID));
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
@@ -100,6 +103,8 @@ impl LiquidityClient for KongSwapLiquidityClient {
             self.token1,
         ).await?;
 
+        // panic!("response: {:?}", response);
+
         Ok(AddLiquidityResponse {
             token_0_amount: Nat::from(token_0_for_pool_amount as u128),
             token_1_amount: Nat::from(token_1_for_pool_amount as u128),
@@ -157,7 +162,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         })
     }
 
-    async fn get_position_by_id(&self, position_id: Nat) -> Result<GetPositionByIdResponse, InternalError> {
+    async fn get_position_by_id(&self, position_id: u64) -> Result<GetPositionByIdResponse, InternalError> {
         let canister_id = ic_cdk::id();
 
         // Fetch user positions in pool
@@ -172,11 +177,8 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 _ => None,
             })
             .find(|balance|
-                balance.lp_token_id == nat_to_u64(&position_id) &&
-                (
-                    (balance.address_0 == self.token0.to_text() && balance.address_1 == self.token1.to_text()) ||
-                    (balance.address_0 == self.token1.to_text() && balance.address_1 == self.token0.to_text())
-                )
+                (balance.address_0 == self.token0.to_text() && balance.address_1 == self.token1.to_text()) ||
+                (balance.address_0 == self.token1.to_text() && balance.address_1 == self.token0.to_text())
             )
             .ok_or_else(|| InternalError::business_logic(
                 build_error_code(2101, 3, 2), // 2101 03 02
@@ -198,10 +200,10 @@ impl LiquidityClient for KongSwapLiquidityClient {
         })
     }
 
-    async fn get_pool_data(&self) -> Result<GetPoolData, InternalError> {
-        let pools_response = kongswap_provider::pools().await?;
+    async fn get_pool_data(&self) -> Result<GetPoolDataResponse, InternalError> {
+        let pools = kongswap_provider::pools().await?;
 
-        let pool_data = pools_response.pools
+        let pool_data = pools
             .iter()
             .find(|pool|
                 (pool.address_0 == self.token0.to_text() && pool.address_1 == self.token1.to_text()) ||
@@ -217,27 +219,52 @@ impl LiquidityClient for KongSwapLiquidityClient {
                 ]))
             ))?;
 
-        let balance0 = pool_data.balance_0.clone() + pool_data.lp_fee_0.clone();
-        let balance1 = pool_data.balance_1.clone() + pool_data.lp_fee_1.clone();
+        let token0_balance = pool_data.balance_0.clone() + pool_data.lp_fee_0.clone();
+        let token1_balance = pool_data.balance_1.clone() + pool_data.lp_fee_1.clone();
 
-        // Get quote for token0 swap
+        let decimals_token0 = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
+        let decimals_token1 = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
+        let decimals_usdt = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+
+        let token0_base_unit = Nat::from(10u32.pow(decimals_token0 as u32)); // 10^decimals_token0
+        let token1_base_unit = Nat::from(10u32.pow(decimals_token1 as u32)); // 10^decimals_token1
+        let usdt_base_unit = Nat::from(10u32.pow(decimals_usdt as u32)); // 10^decimals_usdt
+
+        // Multiply by multiplier to get more accurate result in TVL calculation
+        let multiplier = Nat::from(1000u128);
+        let token0_base_unit_multiplied = token0_base_unit.clone().mul(multiplier.clone());
+        let token1_base_unit_multiplied = token1_base_unit.clone().mul(multiplier.clone());
+
+        // Get quote for token0 swap to USDT
         let swap_amount0_reply = kongswap_provider::swap_amounts(
             self.token0.clone(),
-            balance0.clone(),
-            Principal::from_text(CKUSDT_CANISTER_ID).unwrap()
+            token0_base_unit_multiplied.clone(),
+            *CKUSDT_CANISTER
         ).await?;
 
-        // Get quote for token1 swap
+        // Get quote for token1 swap to USDT
         let swap_amount1_reply = kongswap_provider::swap_amounts(
             self.token1,
-            balance1.clone(),
-            Principal::from_text(CKUSDT_CANISTER_ID).unwrap()
+            token1_base_unit_multiplied.clone(),
+            *CKUSDT_CANISTER
         ).await?;
 
-        // TVL is the sum of the amounts of token0 and token1 in the pool in USD
-        let tvl = swap_amount0_reply.receive_amount + swap_amount1_reply.receive_amount;
+        let token0_usdt_price = swap_amount0_reply.receive_amount.div(multiplier.clone());
+        let token1_usdt_price = swap_amount1_reply.receive_amount.div(multiplier);
 
-        Ok(GetPoolData {
+        let token0_usdt_balance = token0_balance
+            .mul(token0_usdt_price.clone())
+            .div(token0_base_unit)
+            .div(usdt_base_unit.clone());
+
+        let token1_usdt_balance = token1_balance
+            .mul(token1_usdt_price.clone())
+            .div(token1_base_unit)
+            .div(usdt_base_unit);
+
+        let tvl = token0_usdt_balance.clone() + token1_usdt_balance.clone();
+
+        Ok(GetPoolDataResponse {
             tvl: tvl,
         })
     }

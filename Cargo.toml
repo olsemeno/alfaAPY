@@ -28,6 +28,7 @@ members = [
     "src/libraries/swap",
     "src/libraries/errors",
     "src/libraries/event_logs",
+    "src/libraries/icrc_ledger_client",
 ]
 
 

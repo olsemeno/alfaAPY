@@ -36,10 +36,14 @@ pub async fn add_liquidity_to_pool(context: Context, pool_id: String, amount: Na
                 error
             })?;
 
-        // Update pool with position id
-        pool.position_id = Some(Nat::from(response.request_id));
-        // Create snapshot initial snapshot
-        pool_snapshot_service::create_pool_snapshot(context, &pool).await;
+        // TODO: move to service
+
+        // Update pool with liquidity position id
+        pool.position_id = Some(response.request_id);
+        pools_repo::update_pool(pool_id.clone(), pool.clone());
+
+        // Create initial snapshot for pool
+        pool_snapshot_service::create_pool_snapshot(context, &pool).await?;
 
         Ok(response)
     } else {

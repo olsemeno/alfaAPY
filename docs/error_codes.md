@@ -172,19 +172,16 @@ Where:
 **1002 04 39** - IC error calling icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl from ICPSwapProvider::get_pool_chart_tvl (External Service)  
 **1002 03 40** - Error calling icpswap_tvl_storage_canister_c2c_client::getPoolChartTvl from ICPSwapProvider::get_pool_chart_tvl (Business Logic)  
 
+
 ## 1100 - External Service (ICRC Ledger)
 
-**1100 04 01** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve from KongSwapProvider::icrc2_approve (External Service)  
-**1100 03 02** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve from KongSwapProvider::icrc2_approve (Business Logic)  
+**1100 04 01** - IC error calling icrc_ledger_canister_c2c_client::icrc1_decimals (External Service)
 
-**1100 04 03** - IC error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from from Utils::icrc2_transfer_from_user (External Service)  
-**1100 03 04** - Error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from from Utils::icrc2_transfer_from_user (Business Logic)  
+**1100 04 02** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve (External Service)
+**1100 03 03** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve (Business Logic)
 
-**1100 04 05** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve from swap_service::swap_icrc2_icpswap (External Service)  
-**1100 03 06** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve from swap_service::swap_icrc2_icpswap (Business Logic)  
-
-**1100 04 07** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve from swap_service::swap_icrc2_kongswap (External Service)  
-**1100 03 08** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve from swap_service::swap_icrc2_kongswap (Business Logic)  
+**1100 04 04** - IC error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from (External Service)
+**1100 03 05** - Error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from (Business Logic)
 
 
 ## 1200 - External Service (Canister)

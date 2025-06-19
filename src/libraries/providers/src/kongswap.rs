@@ -7,12 +7,13 @@ use icrc_ledger_types::icrc2::approve::ApproveArgs;
 use kongswap_canister::add_liquidity::{Args as AddLiquidityArgs, AddLiquidityReply};
 use kongswap_canister::remove_liquidity::{Args as RemoveLiquidityArgs, RemoveLiquidityReply};
 use kongswap_canister::remove_liquidity_amounts::{Args as RemoveLiquidityAmountsArgs, RemoveLiquidityAmountsReply};
-use kongswap_canister::pools::PoolsReply;
+use kongswap_canister::queries::pools::PoolReply;
 use kongswap_canister::queries::add_liquidity_amounts::AddLiquidityAmountsReply;
 use kongswap_canister::swap_amounts::SwapAmountsReply;
 use kongswap_canister::user_balances::UserBalancesReply;
 use kongswap_canister::swap::SwapReply;
 use kongswap_canister::swap::Args as SwapArgs;
+use icrc_ledger_client;
 use utils::util::principal_to_canister_id;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
@@ -24,7 +25,7 @@ fn token_kongswap_format(token: CanisterId) -> String {
     format!("IC.{}", token.to_text())
 }
 
-pub async fn pools() -> Result<PoolsReply, InternalError> {
+pub async fn pools() -> Result<Vec<PoolReply>, InternalError> {
     kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER).await
         .map_err(|error| {
             InternalError::external_service(
@@ -175,8 +176,17 @@ pub async fn add_liquidity(
     ledger0: Principal,
     ledger1: Principal
 ) -> Result<AddLiquidityReply, InternalError> {
-    icrc2_approve(ledger0, amount_0.clone()).await?;
-    icrc2_approve(ledger1, amount_1.clone()).await?;
+    icrc_ledger_client::icrc2_approve(
+        KONGSWAP_CANISTER.clone().into(),
+        ledger0,
+        amount_0.clone()
+    ).await?;
+
+    icrc_ledger_client::icrc2_approve(
+        KONGSWAP_CANISTER.clone().into(),
+        ledger1,
+        amount_1.clone()
+    ).await?;
 
     let args = AddLiquidityArgs {
         token_0: token_0.clone(),
@@ -331,47 +341,6 @@ pub async fn remove_liquidity(
                 ("token_0".to_string(), token_0),
                 ("token_1".to_string(), token_1),
                 ("remove_lp_token_amount".to_string(), remove_lp_token_amount.to_string()),
-            ]))
-        )
-    })
-}
-
-async fn icrc2_approve(ledger: Principal, amount: Nat) -> Result<Nat, InternalError> {
-    let args = ApproveArgs {
-        from_subaccount: None,
-        spender: KONGSWAP_CANISTER.clone().into(),
-        amount: Nat::from(99999999999999 as u128), // TODO: amount + fee
-        expected_allowance: None,
-        expires_at: None,
-        fee: None,
-        memo: None,
-        created_at_time: None,
-    };
-
-    let result = icrc_ledger_canister_c2c_client::icrc2_approve(
-        ledger,
-        &args
-    ).await
-        .map_err(|error| {
-            InternalError::external_service(
-                build_error_code(1100, 4, 1), // 1100 04 01
-                "KongSwapProvider::icrc2_approve".to_string(),
-                format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-                Some(HashMap::from([
-                    ("ledger".to_string(), ledger.to_string()),
-                    ("amount".to_string(), amount.to_string()),
-                ]))
-            )
-        })?;
-
-    result.map_err(|error| {
-        InternalError::business_logic(
-            build_error_code(1100, 3, 2), // 1100 03 02
-            "KongSwapProvider::icrc2_approve".to_string(),
-            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            Some(HashMap::from([
-                ("ledger".to_string(), ledger.to_string()),
-                ("amount".to_string(), amount.to_string()),
             ]))
         )
     })

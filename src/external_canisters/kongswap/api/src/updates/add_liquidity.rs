@@ -50,5 +50,3 @@ pub struct TransferIdReply {
 pub enum TransferReply {
     IC(ICTransferReply),
 }
-
-

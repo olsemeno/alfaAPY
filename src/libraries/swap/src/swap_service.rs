@@ -1,17 +1,16 @@
 use candid::Nat;
 use std::collections::HashMap;
-
-use icrc_ledger_canister::icrc2_approve::ApproveArgs;
 use types::swap_tokens::{SuccessResult, QuoteResult};
 use types::exchange_id::ExchangeId;
 use providers::kongswap::KONGSWAP_CANISTER;
 use types::CanisterId;
+use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
+use icrc_ledger_client;
 
 use crate::token_swaps::kongswap::KongSwapSwapClient;
 use crate::token_swaps::icpswap::ICPSwapSwapClient;
 use crate::token_swaps::swap_client::SwapClient;
-use errors::internal_error::error::InternalError;
-use errors::internal_error::error::build_error_code;
 
 pub async fn swap_icrc2_optimal(
     input_token: CanisterId,
@@ -85,45 +84,11 @@ pub async fn swap_icrc2_icpswap(
         ).with_pool().await?
     );
 
-    // ICRC2 APPROVE
-    icrc_ledger_canister_c2c_client::icrc2_approve(
+    icrc_ledger_client::icrc2_approve(
+        swap_client.canister_id().into(),
         input_token.clone(),
-        &ApproveArgs {
-            from_subaccount: None,
-            spender: swap_client.canister_id().into(),
-            amount: Nat::from(99999999999999 as u128), //TODO
-            expected_allowance: None,
-            expires_at: None,
-            fee: None,
-            memo: None,
-            created_at_time: None,
-        },
-    )
-    .await
-    .map_err(|error| {
-        InternalError::external_service(
-            build_error_code(1100, 4, 5), // 1100 04 05
-            "swap_service::swap_icrc2_icpswap".to_string(),
-            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            Some(HashMap::from([
-                ("input_token".to_string(), input_token.to_text()),
-                ("output_token".to_string(), output_token.to_text()),
-                ("amount".to_string(), amount.to_string()),
-            ])),
-        )
-    })?
-    .map_err(|error| {
-        InternalError::business_logic(
-            build_error_code(1100, 3, 6), // 1100 03 06
-            "swap_service::swap_icrc2_icpswap".to_string(),
-            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            Some(HashMap::from([
-                ("input_token".to_string(), input_token.to_text()),
-                ("output_token".to_string(), output_token.to_text()),
-                ("amount".to_string(), amount.to_string()),
-            ])),
-        )
-    })?;
+        amount.clone()
+    ).await?;
 
     let swap_result = swap_client.swap(amount.clone()).await?;
 
@@ -147,42 +112,11 @@ pub async fn swap_icrc2_kongswap(
         )
     );
 
-    icrc_ledger_canister_c2c_client::icrc2_approve(
+    icrc_ledger_client::icrc2_approve(
+        swap_client.canister_id(),
         input_token.clone(),
-        &ApproveArgs {
-            from_subaccount: None,
-            spender: swap_client.canister_id().into(),
-            amount: Nat::from(99999999999999 as u128), //TODO
-            expected_allowance: None,
-            expires_at: None,
-            fee: None,
-            memo: None,
-            created_at_time: None,
-        },
-    )
-    .await
-    .map_err(|error| {
-        InternalError::external_service(
-            build_error_code(1100, 4, 7), // 1100 04 07
-            "swap_service::swap_icrc2_kongswap".to_string(),
-            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            Some(HashMap::from([
-                ("input_token".to_string(), input_token.to_text()),
-                ("amount".to_string(), amount.clone().to_string()),
-            ])),
-        )
-    })?
-    .map_err(|error| {
-        InternalError::business_logic(
-            build_error_code(1100, 3, 8), // 1100 03 08
-            "swap_service::swap_icrc2_kongswap".to_string(),
-            format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
-            Some(HashMap::from([
-                ("input_token".to_string(), input_token.to_text()),
-                ("amount".to_string(), amount.clone().to_string()),
-            ])),
-        )
-    })?;
+        amount.clone()
+    ).await?;
 
     let swap_result = swap_client.swap(amount.clone()).await?;
 
