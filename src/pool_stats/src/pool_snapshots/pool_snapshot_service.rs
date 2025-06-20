@@ -46,7 +46,7 @@ pub async fn create_all_pool_snapshots() {
     let context = Context::generate(None);
 
     let pools = pools_repo::get_pools();
-    // Iterate over pools with liquidity position
+
     for pool in pools.into_iter().filter(|p| p.position_id.is_some()) {
         create_pool_snapshot(context.clone(), &pool).await
         .map_err(|error| {

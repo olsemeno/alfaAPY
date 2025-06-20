@@ -3,9 +3,8 @@ use candid::{Nat, Int, Principal};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 use std::collections::HashMap;
-use once_cell::sync::Lazy;
 
-use utils::util::{nat_to_u64, int_to_nat, principal_to_canister_id};
+use utils::util::{nat_to_u64, int_to_nat};
 use types::CanisterId;
 use providers::{icpswap as icpswap_provider};
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
@@ -20,7 +19,6 @@ use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountB
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
-use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
 use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
@@ -34,8 +32,6 @@ use types::liquidity::{
 };
 
 use crate::liquidity_client::LiquidityClient;
-
-const CKUSDT_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id(CKUSDT_TOKEN_CANISTER_ID));
 
 // Use full range of prices for liquidity in the pool
 const TICK_LOWER: i32 = -887220;
@@ -402,7 +398,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
     async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
         // Flow:
         // 1. Get user position ids
-        // 2. Get token meta
+        // 2. Get token fees
         // 3. Get metadata
         // 4. Approve before deposit
         // 5. Deposit
@@ -415,23 +411,10 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         // 1. Get user position ids
         let user_position_ids = self.get_user_position_ids_by_principal().await?;
 
-        // 2. Get token meta
-        // TODO: Fix token meta fetching
-        // let token_meta = match self.get_token_meta().await {
-        //     Ok(token_meta) => token_meta,
-        //     Err(e) => trap(format!("Failed to get token meta (ICPSWAP): {}", e).as_str()),
-        // };
+        // 2. Get token fees
+        let token0_fee = icrc_ledger_client::icrc1_fee(self.token0.clone()).await?;
 
-        // let tokens_fee = self.get_tokens_fee(&token_meta);
-        // let token_in_fee = tokens_fee.token_in_fee.unwrap_or(Nat::from(0u8));
-        // let token_out_fee = tokens_fee.token_out_fee.unwrap_or(Nat::from(0u8));
-
-        //TODO: Remove hardcoded fees
-        // let token0_fee = Nat::from(10_000u128); // For ICP
-        // let token1_fee = Nat::from(10u8); // For ckBTC
-
-        let token0_fee = get_token_fee(self.token0.clone());
-
+        // 3. Get metadata
         let metadata = self.metadata().await?;
         
         // 4. Approve before deposit
@@ -667,7 +650,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
 
         let token0_decimals = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
         let token1_decimals = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
-        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_TOKEN_CANISTER_ID).await?;
 
         let token0_usd_amount = Nat::from(
             (nat_to_u64(&token0_amount) as f64

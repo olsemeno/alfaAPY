@@ -126,7 +126,7 @@ pub async fn create_pool_snapshot(pool_id: String) -> Result<PoolSnapshot, Respo
             format!("Pool not found: {pool_id}"),
             None
         );
-        ResponseError::err_from_internal(error)
+        Err(ResponseError::from_internal_error(error))
     }
 }
 

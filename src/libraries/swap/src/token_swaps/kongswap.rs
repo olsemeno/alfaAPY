@@ -1,12 +1,11 @@
-use super::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
-use utils::util::nat_to_u128;
 use async_trait::async_trait;
 use types::CanisterId;
-use std::collections::HashMap;
 use candid::Nat;
 
+use super::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 use errors::internal_error::error::InternalError;
 use providers::kongswap as kongswap_provider;
+use utils::util::nat_to_u128;
 
 const SLIPPAGE_PERCENTAGE: f64 = 40.0; // TODO: Fix this
 
@@ -25,19 +24,6 @@ impl KongSwapSwapClient {
         }
     }
 }
-
-// #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
-// pub struct SwapArgs {
-//     pub pay_token: String,
-//     pub pay_amount: Nat,
-//     // pub pay_tx_id: Option<TxId>,
-//     pub receive_token: String,
-//     pub receive_amount: Option<Nat>,
-//     pub receive_address: Option<String>,
-//     pub max_slippage: Option<f64>,
-//     pub referred_by: Option<String>,
-// }
-
 
 #[async_trait]
 impl SwapClient for KongSwapSwapClient {

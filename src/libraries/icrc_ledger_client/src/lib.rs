@@ -10,11 +10,12 @@ use icrc_ledger_canister::updates::icrc2_transfer_from::Args as Icrc2TransferFro
 use icrc_ledger_types::icrc1::account::Account;
 
 pub async fn icrc1_decimals(ledger_canister_id: CanisterId) -> Result<u8, InternalError> {
-    icrc_ledger_canister_c2c_client::icrc1_decimals(ledger_canister_id).await
+    icrc_ledger_canister_c2c_client::icrc1_decimals(ledger_canister_id)
+        .await
         .map_err(|error| {
             InternalError::external_service(
                 build_error_code(1100, 4, 1), // 1100 04 01
-                "icrc_ledger_canister_c2c_client::icrc1_decimals".to_string(),
+                "icrc_ledger_client::icrc1_decimals".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc1_decimals': {error:?}"),
                 Some(HashMap::from([
                     ("ledger_canister_id".to_string(), ledger_canister_id.to_text()), 
@@ -42,7 +43,7 @@ pub async fn icrc2_approve(spender: Principal, ledger_canister_id: CanisterId, a
         .map_err(|error| {
             InternalError::external_service(
                 build_error_code(1100, 4, 2), // 1100 04 02
-                "icrc_ledger_canister_c2c_client::icrc2_approve".to_string(),
+                "icrc_ledger_client::icrc2_approve".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
                 Some(HashMap::from([
                     ("spender".to_string(), spender.to_text()),
@@ -54,7 +55,7 @@ pub async fn icrc2_approve(spender: Principal, ledger_canister_id: CanisterId, a
         .map_err(|error| {
             InternalError::business_logic(
                 build_error_code(1100, 3, 3), // 1100 03 03
-                "icrc_ledger_canister_c2c_client::icrc2_approve".to_string(),
+                "icrc_ledger_client::icrc2_approve".to_string(),
                 format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_approve': {error:?}"),
                 Some(HashMap::from([
                     ("spender".to_string(), spender.to_text()),
@@ -87,7 +88,7 @@ pub async fn icrc2_transfer_from(
         .map_err(|error| {
             InternalError::external_service(
                 build_error_code(1100, 4, 4), // 1100 04 04
-                "icrc_ledger_canister_c2c_client::icrc2_transfer_from".to_string(),
+                "icrc_ledger_client::icrc2_transfer_from".to_string(),
                 format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {error:?}"),
                 Some(HashMap::from([
                     ("from".to_string(), from.to_string()),
@@ -99,7 +100,7 @@ pub async fn icrc2_transfer_from(
         .map_err(|err| {
             InternalError::business_logic(
                 build_error_code(1100, 3, 5), // 1100 03 05
-                "icrc_ledger_canister_c2c_client::icrc2_transfer_from".to_string(),
+                "icrc_ledger_client::icrc2_transfer_from".to_string(),
                 format!("Error calling 'icrc_ledger_canister_c2c_client::icrc2_transfer_from': {err:?}"),
                 Some(HashMap::from([
                     ("from".to_string(), from.to_string()),
@@ -109,4 +110,19 @@ pub async fn icrc2_transfer_from(
             )
         })
         .map(|block_index| block_index.0.try_into().unwrap())
+}
+
+pub async fn icrc1_fee(ledger_canister_id: CanisterId) -> Result<Nat, InternalError> {
+    icrc_ledger_canister_c2c_client::icrc1_fee(ledger_canister_id)
+        .await
+        .map_err(|error| {
+            InternalError::external_service(
+                build_error_code(1100, 4, 6), // 1100 04 06
+                "icrc_ledger_client::icrc1_fee".to_string(),
+                format!("IC error calling 'icrc_ledger_canister_c2c_client::icrc1_fee': {error:?}"),
+                Some(HashMap::from([
+                    ("ledger_canister_id".to_string(), ledger_canister_id.to_text()),
+                ]))
+            )
+        })
 }

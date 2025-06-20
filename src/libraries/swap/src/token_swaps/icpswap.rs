@@ -9,7 +9,6 @@ use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use types::liquidity::TokensFee;
 use utils::util::nat_to_u128;
-use utils::token_fees::get_token_fee;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
 
@@ -164,34 +163,26 @@ impl SwapClient for ICPSwapSwapClient {
 
     async fn swap(&self, amount: Nat) -> Result<SwapSuccess, InternalError> {
         // Flow:
-        // 1. Deposit from token0 to ICPSwap
-        // 2. Swap
-        // 3. Withdraw from ICPSwap to token1
+        // 1. Get token fees
+        // 2. Deposit from token0 to ICPSwap
+        // 3. Quote
+        // 4. Swap
+        // 5. Withdraw from ICPSwap to token1
 
-        // TODO: Fix token meta fetching
-        // let token_meta = match self.get_token_meta().await {
-        //     Ok(token_meta) => token_meta,
-        //     Err(e) => trap(format!("Failed to get token meta (ICPSWAP): {}", e).as_str()),
-        // };
+        // 1. Get token fees
+        let token0_fee = icrc_ledger_client::icrc1_fee(self.token0.clone()).await?;
+        let token1_fee = icrc_ledger_client::icrc1_fee(self.token1.clone()).await?;
 
-        // let tokens_fee = self.get_tokens_fee(&token_meta);
-        // let token0_fee = tokens_fee.token0_fee.unwrap_or(Nat::from(0u8));
-        // let token1_fee = tokens_fee.token1_fee.unwrap_or(Nat::from(0u8));
-
-        //TODO: Remove hardcoded fees
-        let token0_fee = get_token_fee(self.token0.clone());
-        let token1_fee = get_token_fee(self.token1.clone());
-
-        // 1. Deposit
+        // 2. Deposit
         let deposited_amount = self.deposit_from(
             amount.clone(),
             token0_fee.clone()
         ).await?;
 
-        // 2. Quote
+        // 3. Quote
         let expected_out = self.quote(deposited_amount.clone()).await?;
 
-        // 3. Swap
+        // 4. Swap
         let expected_out_u128 = nat_to_u128(&expected_out);
         // Сonsider slippage tolerance
         let amount_out_minimum = Nat::from(expected_out_u128 * (1000 - SLIPPAGE_TOLERANCE) / 1000u128);
@@ -202,7 +193,7 @@ impl SwapClient for ICPSwapSwapClient {
             amount_out_minimum.clone(),
         ).await?;
 
-        // 4. Withdraw
+        // 5. Withdraw
         let withdrawn_amount = self.withdraw(amount_out, token1_fee.clone()).await?;
 
         Ok(SwapSuccess {

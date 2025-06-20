@@ -1,6 +1,5 @@
 use types::CanisterId;
 use candid::{Nat, Principal, Int};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use icpswap_swap_factory_canister::{ICPSwapToken, ICPSwapPool};
@@ -24,14 +23,14 @@ use icpswap_swap_pool_canister::getUserUnusedBalance::Args as GetUserUnusedBalan
 use icpswap_swap_pool_canister::decreaseLiquidity::Args as DecreaseLiquidityArgs;
 use icpswap_swap_pool_canister::swap::Args as SwapArgs;
 use icpswap_swap_pool_canister::claim::Args as ClaimArgs;
-use utils::util::principal_to_canister_id;
-use utils::constants::*;
 use errors::internal_error::error::{InternalError, build_error_code};
-
-pub static SWAP_FACTORY_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("4mmnk-kiaaa-aaaag-qbllq-cai"));
-pub static SWAP_CALCULATOR_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("phr2m-oyaaa-aaaag-qjuoq-cai"));
-pub static NODE_INDEX_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("ggzvv-5qaaa-aaaag-qck7a-cai"));
-pub static GLOBAL_INDEX_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("gp26j-lyaaa-aaaag-qck6q-cai"));
+use utils::constants::{
+    ICP_TOKEN_PRINCIPAL,
+    ICPSWAP_SWAP_FACTORY_CANISTER_ID,
+    ICPSWAP_SWAP_CALCULATOR_CANISTER_ID,
+    ICPSWAP_NODE_INDEX_CANISTER_ID,
+    ICPSWAP_GLOBAL_INDEX_CANISTER_ID,
+};
 
 pub const SWAP_FEE: u128 = 3000;
 pub const ICRC2_TOKEN_STANDARD: &str = "ICRC2";
@@ -39,7 +38,7 @@ pub const ICP_TOKEN_STANDARD: &str = "ICP";
 
 fn token_icpswap_format(token: &CanisterId) -> ICPSwapToken {
     let standard = match token.to_text().as_str() {
-        ICP_TOKEN_CANISTER_ID => ICP_TOKEN_STANDARD.to_string(),
+        ICP_TOKEN_PRINCIPAL => ICP_TOKEN_STANDARD.to_string(),
         _ => ICRC2_TOKEN_STANDARD.to_string(),
     };
 
@@ -59,7 +58,7 @@ pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICP
     };
 
     icpswap_swap_factory_canister_c2c_client::getPool(
-        *SWAP_FACTORY_CANISTER,
+        *ICPSWAP_SWAP_FACTORY_CANISTER_ID,
         &pool_args
     ).await
         .map_err(|error| {
@@ -71,7 +70,7 @@ pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICP
                     ("token_in".to_string(), token_in.to_text()),
                     ("token_out".to_string(), token_out.to_text()),
                     ("fee".to_string(), pool_args.fee.to_string()),
-                    ("swap_factory_canister".to_string(), SWAP_FACTORY_CANISTER.to_text()),
+                    ("swap_factory_canister".to_string(), ICPSWAP_SWAP_FACTORY_CANISTER_ID.to_text()),
                 ]))
             )
         })?
@@ -84,7 +83,7 @@ pub async fn get_pool(token_in: CanisterId, token_out: CanisterId) -> Result<ICP
                     ("token_in".to_string(), token_in.to_text()),
                     ("token_out".to_string(), token_out.to_text()),
                     ("fee".to_string(), pool_args.fee.to_string()),
-                    ("swap_factory_canister".to_string(), SWAP_FACTORY_CANISTER.to_text()),
+                    ("swap_factory_canister".to_string(), ICPSWAP_SWAP_FACTORY_CANISTER_ID.to_text()),
                 ]))
             )
         })
@@ -625,7 +624,7 @@ pub async fn get_price(
     token_1_decimals: Nat
 ) -> Result<f64, InternalError> {
     let (price,) = icpswap_swap_calculator_canister_c2c_client::getPrice(
-        *SWAP_CALCULATOR_CANISTER,
+        *ICPSWAP_SWAP_CALCULATOR_CANISTER_ID,
         (sqrt_price_x96.clone(), token_0_decimals.clone(), token_1_decimals.clone())
     ).await
         .map_err(|error| {
@@ -637,7 +636,7 @@ pub async fn get_price(
                     ("sqrt_price_x96".to_string(), sqrt_price_x96.to_string()),
                     ("token_0_decimals".to_string(), token_0_decimals.to_string()),
                     ("token_1_decimals".to_string(), token_1_decimals.to_string()),
-                    ("swap_calculator_canister".to_string(), SWAP_CALCULATOR_CANISTER.to_text()),
+                    ("swap_calculator_canister".to_string(), ICPSWAP_SWAP_CALCULATOR_CANISTER_ID.to_text()),
                 ]))
             )
         })
@@ -650,7 +649,7 @@ pub async fn get_price(
                     ("sqrt_price_x96".to_string(), sqrt_price_x96.to_string()),
                     ("token_0_decimals".to_string(), token_0_decimals.to_string()),
                     ("token_1_decimals".to_string(), token_1_decimals.to_string()),
-                    ("swap_calculator_canister".to_string(), SWAP_CALCULATOR_CANISTER.to_text()),
+                    ("swap_calculator_canister".to_string(), ICPSWAP_SWAP_CALCULATOR_CANISTER_ID.to_text()),
                 ]))
             )
         })?;
@@ -665,7 +664,7 @@ pub async fn get_token_amount_by_liquidity(
     liquidity: Nat
 ) -> Result<GetTokenAmountByLiquidityResponse, InternalError> {
     let (result,) = icpswap_swap_calculator_canister_c2c_client::getTokenAmountByLiquidity(
-        *SWAP_CALCULATOR_CANISTER,
+        *ICPSWAP_SWAP_CALCULATOR_CANISTER_ID,
         (sqrt_price_x96.clone(), tick_lower.clone(), tick_upper.clone(), liquidity.clone())
     ).await
         .map_err(|error| {
@@ -678,7 +677,7 @@ pub async fn get_token_amount_by_liquidity(
                     ("tick_lower".to_string(), tick_lower.to_string()),
                     ("tick_upper".to_string(), tick_upper.to_string()),
                     ("liquidity".to_string(), liquidity.to_string()),
-                    ("swap_calculator_canister".to_string(), SWAP_CALCULATOR_CANISTER.to_text()),
+                    ("swap_calculator_canister".to_string(), ICPSWAP_SWAP_CALCULATOR_CANISTER_ID.to_text()),
                 ]))
             )
         })
@@ -692,7 +691,7 @@ pub async fn get_token_amount_by_liquidity(
                     ("tick_lower".to_string(), tick_lower.to_string()),
                     ("tick_upper".to_string(), tick_upper.to_string()),
                     ("liquidity".to_string(), liquidity.to_string()),
-                    ("swap_calculator_canister".to_string(), SWAP_CALCULATOR_CANISTER.to_text()),
+                    ("swap_calculator_canister".to_string(), ICPSWAP_SWAP_CALCULATOR_CANISTER_ID.to_text()),
                 ]))
             )
         })?;
@@ -704,7 +703,7 @@ pub async fn get_token_amount_by_liquidity(
 
 pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
     let response = icpswap_node_index_canister_c2c_client::getAllTokens(
-        *NODE_INDEX_CANISTER
+        *ICPSWAP_NODE_INDEX_CANISTER_ID
     ).await
         .map_err(|error| {
             InternalError::external_service(
@@ -712,7 +711,7 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
                 "ICPSwapProvider::get_all_tokens".to_string(),
                 format!("IC error calling 'icpswap_node_index_canister_c2c_client::getAllTokens': {error:?}"),
                 Some(HashMap::from([
-                    ("node_index_canister".to_string(), NODE_INDEX_CANISTER.to_text()),
+                    ("node_index_canister".to_string(), ICPSWAP_NODE_INDEX_CANISTER_ID.to_text()),
                 ]))
             )
         })
@@ -722,7 +721,7 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
                 "ICPSwapProvider::get_all_tokens".to_string(),
                 format!("Error calling 'icpswap_node_index_canister_c2c_client::getAllTokens': {error:?}"),
                 Some(HashMap::from([
-                    ("node_index_canister".to_string(), NODE_INDEX_CANISTER.to_text()),
+                    ("node_index_canister".to_string(), ICPSWAP_NODE_INDEX_CANISTER_ID.to_text()),
                 ]))
             )
         })?;
@@ -732,7 +731,7 @@ pub async fn get_all_tokens() -> Result<Vec<TokenData>, InternalError> {
 
 pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
     let response = icpswap_global_index_canister_c2c_client::tvlStorageCanister(
-        *GLOBAL_INDEX_CANISTER
+        *ICPSWAP_GLOBAL_INDEX_CANISTER_ID
     ).await
         .map_err(|error| {
             InternalError::external_service(
@@ -740,7 +739,7 @@ pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
                 "ICPSwap provider::get_tvl_storage_canister".to_string(),
                 format!("IC error calling 'icpswap_global_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
-                    ("global_index_canister".to_string(), GLOBAL_INDEX_CANISTER.to_text()),
+                    ("global_index_canister".to_string(), ICPSWAP_GLOBAL_INDEX_CANISTER_ID.to_text()),
                 ]))
             )
         })
@@ -750,7 +749,7 @@ pub async fn get_tvl_storage_canister() -> Result<Vec<String>, InternalError> {
                 "ICPSwapProvider::get_tvl_storage_canister".to_string(),
                 format!("Error calling 'icpswap_global_index_canister_c2c_client::tvlStorageCanister': {error:?}"),
                 Some(HashMap::from([
-                    ("global_index_canister".to_string(), GLOBAL_INDEX_CANISTER.to_text()),
+                    ("global_index_canister".to_string(), ICPSWAP_GLOBAL_INDEX_CANISTER_ID.to_text()),
                 ]))
             )
         })?;

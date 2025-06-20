@@ -1,13 +1,12 @@
 use async_trait::async_trait;
-use candid::{Nat, Principal};
-use once_cell::sync::Lazy;
+use candid::Nat;
 use std::ops::{Div, Mul};   
 use std::collections::HashMap;
 
 use types::CanisterId;
 use providers::kongswap as kongswap_provider;
 use kongswap_canister::user_balances::UserBalancesReply;
-use utils::util::{nat_to_f64, nat_to_u64, nat_to_u128, principal_to_canister_id};
+use utils::util::nat_to_f64;
 use swap::swap_service;
 use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolDataResponse};
 use errors::internal_error::error::InternalError;
@@ -18,7 +17,6 @@ use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
 
-const CKUSDT_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id(CKUSDT_TOKEN_CANISTER_ID));
 
 pub struct KongSwapLiquidityClient {
     canister_id: CanisterId,
@@ -193,7 +191,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
 
         let token0_decimals = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
         let token1_decimals = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
-        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+        let usdt_decimals = icrc_ledger_client::icrc1_decimals(*CKUSDT_TOKEN_CANISTER_ID).await?;
 
         let token0_position_balance = Nat::from(
             (user_balance.amount_0 * 10f64.powi(token0_decimals as i32)).round() as u128
@@ -242,7 +240,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
 
         let decimals_token0 = icrc_ledger_client::icrc1_decimals(self.token0.clone()).await?;
         let decimals_token1 = icrc_ledger_client::icrc1_decimals(self.token1.clone()).await?;
-        let decimals_usdt = icrc_ledger_client::icrc1_decimals(*CKUSDT_CANISTER).await?;
+        let decimals_usdt = icrc_ledger_client::icrc1_decimals(*CKUSDT_TOKEN_CANISTER_ID).await?;
 
         let token0_base_unit = Nat::from(10u32.pow(decimals_token0 as u32)); // 10^decimals_token0
         let token1_base_unit = Nat::from(10u32.pow(decimals_token1 as u32)); // 10^decimals_token1
@@ -257,14 +255,14 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let swap_amount0_reply = kongswap_provider::swap_amounts(
             self.token0.clone(),
             token0_base_unit_multiplied.clone(),
-            *CKUSDT_CANISTER
+            *CKUSDT_TOKEN_CANISTER_ID
         ).await?;
 
         // Get quote for token1 swap to USDT
         let swap_amount1_reply = kongswap_provider::swap_amounts(
             self.token1,
             token1_base_unit_multiplied.clone(),
-            *CKUSDT_CANISTER
+            *CKUSDT_TOKEN_CANISTER_ID
         ).await?;
 
         let token0_usdt_price = swap_amount0_reply.receive_amount.div(multiplier.clone());

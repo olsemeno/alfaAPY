@@ -23,7 +23,6 @@ pub struct ResponseError {
     pub code: u32,
     pub kind: ResponseErrorKind,
     pub message: String,
-    pub source: Option<Box<InternalError>>,
     pub details: Option<HashMap<String, String>>,
 }
 
@@ -32,14 +31,12 @@ impl ResponseError {
         code: u32,
         kind: ResponseErrorKind,
         message: impl Into<String>,
-        source: Option<Box<InternalError>>,
         details: Option<HashMap<String, String>>
     ) -> Self {
         Self {
             code,
             kind,
             message: message.into(),
-            source,
             details,
         }
     }
@@ -49,13 +46,8 @@ impl ResponseError {
             internal_error.code,
             internal_error.kind.clone().into(),
             internal_error.message.clone(),
-            Some(Box::new(internal_error.clone())),
             internal_error.extra.clone()
         )
-    }
-
-    pub fn err_from_internal<T>(internal_error: InternalError) -> Result<T, Self> {
-        Err(Self::from_internal_error(internal_error))
     }
 }
 

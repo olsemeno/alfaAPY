@@ -2,7 +2,7 @@ use candid::Nat;
 use std::collections::HashMap;
 use types::swap_tokens::{SuccessResult, QuoteResult};
 use types::exchange_id::ExchangeId;
-use providers::kongswap::KONGSWAP_CANISTER;
+use utils::constants::KONGSWAP_CANISTER_ID;
 use types::CanisterId;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
@@ -106,7 +106,7 @@ pub async fn swap_icrc2_kongswap(
 ) -> Result<SuccessResult, InternalError> {
     let swap_client = Box::new(
         KongSwapSwapClient::new(
-            *KONGSWAP_CANISTER,
+            *KONGSWAP_CANISTER_ID,
             input_token.clone(),
             output_token
         )
@@ -134,7 +134,7 @@ pub async fn quote_swap_kongswap(
 ) -> Result<QuoteResult, InternalError> {
     let swap_client = Box::new(
         KongSwapSwapClient::new(
-            *KONGSWAP_CANISTER,
+            *KONGSWAP_CANISTER_ID,
             input_token.clone(),
             output_token.clone()
         )

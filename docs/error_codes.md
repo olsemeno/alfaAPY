@@ -173,13 +173,15 @@ Where:
 
 ## 1100 - External Service (ICRC Ledger)
 
-**1100 04 01** - IC error calling icrc_ledger_canister_c2c_client::icrc1_decimals (External Service)
+**1100 04 01** - IC error calling icrc_ledger_canister_c2c_client::icrc1_decimals from icrc_ledger_client::icrc1_decimals (External Service)
 
-**1100 04 02** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve (External Service)
-**1100 03 03** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve (Business Logic)
+**1100 04 02** - IC error calling icrc_ledger_canister_c2c_client::icrc2_approve from icrc_ledger_client::icrc2_approve (External Service)
+**1100 03 03** - Error calling icrc_ledger_canister_c2c_client::icrc2_approve from icrc_ledger_client::icrc2_approve (Business Logic)
 
-**1100 04 04** - IC error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from (External Service)
-**1100 03 05** - Error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from (Business Logic)
+**1100 04 04** - IC error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from from icrc_ledger_client::icrc2_transfer_from (External Service)
+**1100 03 05** - Error calling icrc_ledger_canister_c2c_client::icrc2_transfer_from from icrc_ledger_client::icrc2_transfer_from (Business Logic)
+
+**1100 04 06** - IC error calling icrc_ledger_canister_c2c_client::icrc1_fee from icrc_ledger_client::icrc1_fee (External Service)
 
 
 ## 1200 - External Service (Canister)

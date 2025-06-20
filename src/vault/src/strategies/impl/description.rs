@@ -1,11 +1,17 @@
-use crate::pools::pool::Pool;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 use types::exchange_id::ExchangeId;
-use types::CanisterId;
 use types::pool::PoolTrait;
-use utils::constants::*;
+use utils::constants::{
+    ICP_TOKEN_CANISTER_ID,
+    CKUSDT_TOKEN_CANISTER_ID,
+    CKBTC_TOKEN_CANISTER_ID,
+    PANDA_TOKEN_CANISTER_ID,
+    ICS_TOKEN_CANISTER_ID,
+};
+
+use crate::pools::pool::Pool;
 
 #[derive(Debug, Clone)]
 pub struct StrategyInfo {
@@ -23,13 +29,13 @@ lazy_static! {
             description: "A balanced strategy utilizing Kongswap with 50% ICP and 50% stable coin, featuring pool pairs like ckUSDC/ICP and ICP/ckUSDT.".to_string(),
             pools: vec![
                 Pool::build(
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
+                    *ICP_TOKEN_CANISTER_ID,
+                    *CKUSDT_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
                 Pool::build(
-                    CanisterId::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *CKUSDT_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
             ],
@@ -39,13 +45,13 @@ lazy_static! {
             description: "An aggressive strategy leveraging Kongswap with 50% ckBTC and 50% other assets, including pool pairs like ckBTC/ICP and ckBTC/ckUSDT.".to_string(),
             pools: vec![
                 Pool::build(
-                    CanisterId::from_text(CKBTC_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *CKBTC_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
                 Pool::build(
-                    CanisterId::from_text(CKBTC_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(CKUSDT_TOKEN_CANISTER_ID).unwrap(),
+                    *CKBTC_TOKEN_CANISTER_ID,
+                    *CKUSDT_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
             ],
@@ -55,13 +61,13 @@ lazy_static! {
             description: "A dynamic strategy that moves the ICP-ckBTC pool between Kongswap and ICPSwap to optimize returns.".to_string(),
             pools: vec![
                 Pool::build(
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(CKBTC_TOKEN_CANISTER_ID).unwrap(),
+                    *ICP_TOKEN_CANISTER_ID,
+                    *CKBTC_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
                 Pool::build(
-                    CanisterId::from_text(CKBTC_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *CKBTC_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
             ],
@@ -71,13 +77,13 @@ lazy_static! {
             description: "Cheap test strategy".to_string(),
             pools: vec![
                 Pool::build(
-                    CanisterId::from_text(PANDA_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *PANDA_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
                 Pool::build(
-                    CanisterId::from_text(PANDA_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *PANDA_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::ICPSwap,
                 ),
             ],
@@ -87,13 +93,13 @@ lazy_static! {
             description: "Cheap test strategy".to_string(),
             pools: vec![
                 Pool::build(
-                    CanisterId::from_text(ICS_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *ICS_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::KongSwap,
                 ),
                 Pool::build(
-                    CanisterId::from_text(ICS_TOKEN_CANISTER_ID).unwrap(),
-                    CanisterId::from_text(ICP_TOKEN_CANISTER_ID).unwrap(),
+                    *ICS_TOKEN_CANISTER_ID,
+                    *ICP_TOKEN_CANISTER_ID,
                     ExchangeId::ICPSwap,
                 ),
             ],

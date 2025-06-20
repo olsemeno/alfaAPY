@@ -1,9 +1,7 @@
 use candid::{Nat, Principal};
 use types::CanisterId;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-use icrc_ledger_types::icrc2::approve::ApproveArgs;
 use kongswap_canister::add_liquidity::{Args as AddLiquidityArgs, AddLiquidityReply};
 use kongswap_canister::remove_liquidity::{Args as RemoveLiquidityArgs, RemoveLiquidityReply};
 use kongswap_canister::remove_liquidity_amounts::{Args as RemoveLiquidityAmountsArgs, RemoveLiquidityAmountsReply};
@@ -14,19 +12,16 @@ use kongswap_canister::user_balances::UserBalancesReply;
 use kongswap_canister::swap::SwapReply;
 use kongswap_canister::swap::Args as SwapArgs;
 use icrc_ledger_client;
-use utils::util::principal_to_canister_id;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
-
-// TODO: move to constants
-pub static KONGSWAP_CANISTER: Lazy<CanisterId> = Lazy::new(|| principal_to_canister_id("2ipq2-uqaaa-aaaar-qailq-cai"));
+use utils::constants::KONGSWAP_CANISTER_ID;
 
 fn token_kongswap_format(token: CanisterId) -> String {
     format!("IC.{}", token.to_text())
 }
 
 pub async fn pools() -> Result<Vec<PoolReply>, InternalError> {
-    kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER).await
+    kongswap_canister_c2c_client::pools(*KONGSWAP_CANISTER_ID).await
         .map_err(|error| {
             InternalError::external_service(
                 build_error_code(1001, 4, 1), // 1001 04 01
@@ -55,7 +50,7 @@ pub async fn swap_amounts(
     let token_out = token_kongswap_format(token_out.clone());
 
     let (result,) = kongswap_canister_c2c_client::swap_amounts(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         (token_in.clone(), amount.clone(), token_out.clone())
     ).await
         .map_err(|error| {
@@ -99,7 +94,7 @@ pub async fn swap(
     };
 
     let result = kongswap_canister_c2c_client::swap(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         &args
     ).await
         .map_err(|error| {
@@ -138,7 +133,7 @@ pub async fn add_liquidity_amounts(
     token_1: String
 ) -> Result<AddLiquidityAmountsReply, InternalError> {
     let (result,) = kongswap_canister_c2c_client::add_liquidity_amounts(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         (token_0.clone(), amount.clone(), token_1.clone())
     ).await
         .map_err(|error| {
@@ -177,13 +172,13 @@ pub async fn add_liquidity(
     ledger1: Principal
 ) -> Result<AddLiquidityReply, InternalError> {
     icrc_ledger_client::icrc2_approve(
-        KONGSWAP_CANISTER.clone().into(),
+        KONGSWAP_CANISTER_ID.clone().into(),
         ledger0,
         amount_0.clone()
     ).await?;
 
     icrc_ledger_client::icrc2_approve(
-        KONGSWAP_CANISTER.clone().into(),
+        KONGSWAP_CANISTER_ID.clone().into(),
         ledger1,
         amount_1.clone()
     ).await?;
@@ -198,7 +193,7 @@ pub async fn add_liquidity(
     };
 
     let result = kongswap_canister_c2c_client::add_liquidity(
-        *KONGSWAP_CANISTER, 
+        *KONGSWAP_CANISTER_ID,
         &args
     ).await
         .map_err(|error| {
@@ -236,7 +231,7 @@ pub async fn add_liquidity(
 
 pub async fn user_balances(principal_id: String) -> Result<Vec<UserBalancesReply>, InternalError> {
     let (result,) = kongswap_canister_c2c_client::user_balances(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         (principal_id.clone(),)
     ).await
         .map_err(|error| {
@@ -274,7 +269,7 @@ pub async fn remove_liquidity_amounts(
     };
 
     let result = kongswap_canister_c2c_client::remove_liquidity_amounts(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         &args
     ).await
         .map_err(|error| {
@@ -316,7 +311,7 @@ pub async fn remove_liquidity(
     };
 
     let result = kongswap_canister_c2c_client::remove_liquidity(
-        *KONGSWAP_CANISTER,
+        *KONGSWAP_CANISTER_ID,
         &args
     ).await
         .map_err(|error| {
