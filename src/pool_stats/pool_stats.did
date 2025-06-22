@@ -4,10 +4,7 @@ type AddLiquidityResponse = record {
   token_1_amount : nat;
 };
 
-type ApyValue = record {
-  tokens_apy : nat;
-  usd_apy : nat;
-};
+type ApyValue = record { tokens_apy : float64; usd_apy : float64 };
 
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
@@ -37,20 +34,9 @@ type Pool = record {
   position_id : opt nat64;
 };
 
-type PoolApy = record {
-  month : ApyValue;
-  week : ApyValue;
-  year : ApyValue;
-};
+type PoolData = record { tvl : nat };
 
-type PoolData = record {
-  tvl : nat;
-};
-
-type PoolMetrics = record {
-  apy : PoolApy;
-  tvl : nat;
-};
+type PoolMetrics = record { apy : ApyValue; tvl : nat };
 
 type PoolSnapshot = record {
   id : text;
