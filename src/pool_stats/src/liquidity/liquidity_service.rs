@@ -1,7 +1,7 @@
 use candid::Nat;
 
 use liquidity::liquidity_router::get_liquidity_client;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse};
 use errors::internal_error::error::InternalError;
 use liquidity::liquidity_client::LiquidityClient;
 use types::context::Context;
@@ -35,7 +35,7 @@ pub async fn add_liquidity_to_pool(
         })
 }
 
-pub async fn remove_liquidity_from_pool(context: Context, pool: Pool) -> Result<WithdrawFromPoolResponse, InternalError> {
+pub async fn withdraw_liquidity_from_pool(context: Context, pool: Pool) -> Result<WithdrawLiquidityResponse, InternalError> {
     let liquidity_client = liquidity_client(pool.clone()).await;
 
     // Remove 100% liquidity from pool
@@ -48,7 +48,7 @@ pub async fn remove_liquidity_from_pool(context: Context, pool: Pool) -> Result<
     ).await
         .map_err(|error| {
             event_log_service::create_event_log(
-                EventLogParamsBuilder::remove_liquidity_from_pool_failed()
+                EventLogParamsBuilder::withdraw_liquidity_from_pool_failed()
                     .pool_id(pool.id.clone())
                     .build(),
                 context.correlation_id,

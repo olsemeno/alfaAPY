@@ -77,9 +77,9 @@ export type Result_3 = { 'Ok' : Pool } |
   { 'Err' : ResponseError };
 export type Result_4 = { 'Ok' : Array<Pool> } |
   { 'Err' : ResponseError };
-export type Result_5 = { 'Ok' : WithdrawFromPoolResponse } |
+export type Result_5 = { 'Ok' : WithdrawLiquidityResponse } |
   { 'Err' : ResponseError };
-export interface WithdrawFromPoolResponse {
+export interface WithdrawLiquidityResponse {
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
 }

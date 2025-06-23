@@ -2,7 +2,7 @@ use candid::{CandidType, Nat};
 use serde::{Deserialize, Serialize};
 
 #[derive(CandidType, Deserialize, Clone, Debug, Serialize)]
-pub struct WithdrawFromPoolResponse {
+pub struct WithdrawLiquidityResponse {
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
 }

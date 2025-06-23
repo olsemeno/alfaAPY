@@ -250,5 +250,5 @@ Where:
 **4000 01 03** - Pool not found in service::add_liquidity_to_pool (NotFound) 
 **4000 01 04** - Pool already has liquidity in service::add_liquidity_to_pool (BusinessLogic) 
 
-**4000 01 05** - Pool not found in service::remove_liquidity_from_pool (NotFound)  
-**4000 01 06** - Pool has no liquidity in service::remove_liquidity_from_pool (BusinessLogic) 
+**4000 01 05** - Pool not found in service::withdraw_liquidity_from_pool (NotFound)  
+**4000 01 06** - Pool has no liquidity in service::withdraw_liquidity_from_pool (BusinessLogic) 

@@ -6,11 +6,10 @@ use ic_cdk::{call, id, trap, update, caller};
 use ic_cdk::api::call::CallResult;
 use candid::export_service;
 
-use types::exchange_id::ExchangeId;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
-use types::context::Context;
-use types::CanisterId;
-use types::pool::PoolTrait;
+use ::types::exchange_id::ExchangeId;
+use ::types::context::Context;
+use ::types::CanisterId;
+use ::types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
@@ -18,10 +17,19 @@ use errors::internal_error::error::build_error_code;
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
 use crate::pools::pool::Pool;
-use crate::pool_metrics::pool_metrics::PoolMetrics;
 use crate::repository::pools_repo;
 use crate::repository::stable_state;
 use crate::pools::pool_service;
+use crate::types::types::{
+    AddLiquidityResult,
+    WithdrawLiquidityResult,
+    AddPoolResult,
+    DeletePoolResult,
+    GetPoolsResult,
+    GetPoolByIdResult,
+    GetPoolMetricsResult,
+    GetPoolsSnapshotsResult,
+};
 
 pub mod pools;
 pub mod liquidity;
@@ -29,6 +37,7 @@ pub mod repository;
 pub mod pool_snapshots;
 pub mod pool_metrics;
 pub mod event_logs;
+pub mod types;
 pub mod service;
 
 const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
@@ -52,6 +61,8 @@ thread_local! {
     );
 }
 
+
+
 // ========================== Test methods ==========================
 
 // TODO: test method, remove after testing
@@ -67,7 +78,7 @@ pub struct PoolSnapshotArgs {
 
 // TODO: test method, remove after testing
 #[update]
-pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
+pub fn test_add_pool_snapshot(args: PoolSnapshotArgs) {
     let snapshot = PoolSnapshot::new(
         (pools_repo::get_pool_snapshots_count(args.pool_id.clone()) + 1).to_string(),
         args.pool_id,
@@ -80,45 +91,51 @@ pub fn add_pool_snapshot(args: PoolSnapshotArgs) {
 
 // TODO: test method, remove after testing
 #[update]
-pub fn delete_pool_snapshots(pool_id: String) {
+pub fn test_delete_pool_snapshots(pool_id: String) {
     pools_repo::delete_pool_snapshots(pool_id);
 }
 
 // TODO: test method, remove after testing
 #[update]
-pub fn delete_pool_snapshot(pool_id: String, snapshot_id: String) {
+pub fn test_delete_pool_snapshot(pool_id: String, snapshot_id: String) {
     pools_repo::delete_pool_snapshot(pool_id, snapshot_id);
 }
 
 // TODO: test method, remove after testing
 #[update]
-pub fn update_pool_ids() -> bool {
+pub fn test_update_pool_ids() {
     let pools = pools_repo::get_pools();
     for mut pool in pools {
         let new_id = Pool::generate_pool_id(&pool.token0, &pool.token1, &pool.provider);
         pool.id = new_id;
         pools_repo::save_pool(pool);
     }
-    true
 }
 
 // TODO: test method, remove after testing
 #[update]
-pub fn delete_all_pools_and_snapshots() -> bool {
-    pools_repo::delete_all_pools_and_snapshots();
-    true
+pub fn test_delete_all_pools_and_snapshots() {
+    pools_repo::delete_all_pools_and_snapshots()
 }
 
 // TODO: test method, remove after testing
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
+pub struct TestCreatePoolSnapshotResult(pub Result<PoolSnapshot, ResponseError>);
+
 #[update]
-pub async fn create_pool_snapshot(pool_id: String) -> Result<PoolSnapshot, ResponseError> {
+pub async fn test_create_pool_snapshot(pool_id: String) -> TestCreatePoolSnapshotResult {
     let context = Context::generate(None);
 
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
 
     if let Some(pool) = pool {
-        pool_snapshot_service::create_pool_snapshot(context, &pool).await
-            .map_err(|error| ResponseError::from_internal_error(error))
+        let result = pool_snapshot_service::create_pool_snapshot(
+            context,
+            &pool
+        ).await
+            .map_err(|error| ResponseError::from_internal_error(error));
+
+        TestCreatePoolSnapshotResult(result)
     } else {
         let error = InternalError::not_found(
             build_error_code(0000, 0, 0), // 0000 00 00
@@ -126,7 +143,8 @@ pub async fn create_pool_snapshot(pool_id: String) -> Result<PoolSnapshot, Respo
             format!("Pool not found: {pool_id}"),
             None
         );
-        Err(ResponseError::from_internal_error(error))
+
+        TestCreatePoolSnapshotResult(Err(ResponseError::from_internal_error(error)))
     }
 }
 
@@ -134,42 +152,56 @@ pub async fn create_pool_snapshot(pool_id: String) -> Result<PoolSnapshot, Respo
 
 
 
+
+
 // ========================== Pools management ==========================
 
 #[update]
-pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> Result<String, ResponseError> {
-    service::add_pool(token0, token1, provider)
-        .map_err(|error| ResponseError::from_internal_error(error))
+pub fn add_pool(token0: CanisterId, token1: CanisterId, provider: ExchangeId) -> AddPoolResult {
+    let result = service::add_pool(token0, token1, provider)
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    AddPoolResult(result)
 }
 
 #[update]
-pub fn delete_pool(id: String) -> Result<(), ResponseError> {
-    service::delete_pool(id)
-        .map_err(|error| ResponseError::from_internal_error(error))
+pub fn delete_pool(id: String) -> DeletePoolResult {
+    let result = service::delete_pool(id)
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    DeletePoolResult(result)
 }
 
 #[update]
-pub fn get_pools() -> Result<Vec<Pool>, ResponseError> {
-    service::get_pools()
-        .map_err(|error| ResponseError::from_internal_error(error))
+pub fn get_pools() -> GetPoolsResult {
+    let result = service::get_pools()
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    GetPoolsResult(result)
 }
 
 #[update]
-pub fn get_pool_by_id(id: String) -> Result<Pool, ResponseError> {
-    service::get_pool_by_id(id)
-        .map_err(|error| ResponseError::from_internal_error(error))
+pub fn get_pool_by_id(id: String) -> GetPoolByIdResult {
+    let result = service::get_pool_by_id(id)
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    GetPoolByIdResult(result)
 }
 
 // ========================== Pool metrics ==========================
 
 #[update]
-pub fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
-    service::get_pool_metrics(pool_ids)
+pub fn get_pool_metrics(pool_ids: Vec<String>) -> GetPoolMetricsResult {
+    let result = service::get_pool_metrics(pool_ids);
+
+    GetPoolMetricsResult(result)
 }
 
 #[update]
-pub fn get_pools_snapshots(pool_ids: Vec<String>) -> HashMap<String, Vec<PoolSnapshot>> {
-    service::get_pools_snapshots(pool_ids)
+pub fn get_pools_snapshots(pool_ids: Vec<String>) -> GetPoolsSnapshotsResult {
+    let result = service::get_pools_snapshots(pool_ids);
+
+    GetPoolsSnapshotsResult(result)
 }
 
 // ========================== Liquidity management ==========================
@@ -179,19 +211,31 @@ pub async fn add_liquidity_to_pool(
     ledger: CanisterId,
     pool_id: String,
     amount: Nat
-) -> Result<AddLiquidityResponse, ResponseError> {
+) -> AddLiquidityResult {
     let context = generate_context();
 
-    service::add_liquidity_to_pool(context, ledger, pool_id, amount).await
-        .map_err(|error| ResponseError::from_internal_error(error))
+    let result = service::add_liquidity_to_pool(
+        context,
+        ledger,
+        pool_id,
+        amount
+    ).await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    AddLiquidityResult(result)
 }
 
 #[update]
-pub async fn remove_liquidity_from_pool(pool_id: String) -> Result<WithdrawFromPoolResponse, ResponseError> {
+pub async fn withdraw_liquidity_from_pool(pool_id: String) -> WithdrawLiquidityResult {
     let context = generate_context();
 
-    service::remove_liquidity_from_pool(context, pool_id).await
-        .map_err(|error| ResponseError::from_internal_error(error))
+    let result = service::withdraw_liquidity_from_pool(
+        context,
+        pool_id
+    ).await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    WithdrawLiquidityResult(result)
 }
 
 fn generate_context() -> Context {

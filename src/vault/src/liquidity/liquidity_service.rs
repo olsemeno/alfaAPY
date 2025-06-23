@@ -1,7 +1,7 @@
 use candid::Nat;
 
 use types::context::Context;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse};
 use liquidity::liquidity_router::get_liquidity_client;
 use errors::internal_error::error::InternalError;
 
@@ -46,7 +46,7 @@ pub async fn withdraw_liquidity_from_pool(
     total_shares: Nat,
     shares: Nat,
     pool: Pool
-) -> Result<WithdrawFromPoolResponse, InternalError> {
+) -> Result<WithdrawLiquidityResponse, InternalError> {
     let liquidity_client = get_liquidity_client(
         pool.token0,
         pool.token1,

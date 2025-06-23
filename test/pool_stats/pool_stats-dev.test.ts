@@ -97,27 +97,27 @@ describe("Pool Stats Test DEV", () => {
         });
     });
 
-    describe(".remove_liquidity_from_pool", () => {
-        it("Remove liquidity from pool", async () => {
-            console.log("== START \"Remove liquidity from pool\" TEST ==");
+    describe(".withdraw_liquidity_from_pool", () => {
+        it("Withdraw liquidity from pool", async () => {
+            console.log("== START \"Withdraw liquidity from pool\" TEST ==");
 
             // const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
             const poolId = "ICPSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
 
             try {
-                console.log("Remove liquidity from pool starting...");
+                console.log("Withdraw liquidity from pool starting...");
 
-                const result = await actorPoolStats.remove_liquidity_from_pool(poolId);
+                const result = await actorPoolStats.withdraw_liquidity_from_pool(poolId);
 
                 if ('Ok' in result) {
-                    const removeLiquidityResp = result.Ok;
-                    console.log("Remove liquidity from pool:", removeLiquidityResp.token_0_amount, removeLiquidityResp.token_1_amount);
+                    const withdrawLiquidityResp = result.Ok;
+                    console.log("Withdraw liquidity from pool:", withdrawLiquidityResp.token_0_amount, withdrawLiquidityResp.token_1_amount);
                 } else {
-                    console.error("Remove liquidity from pool failed:", result.Err);
-                    throw new Error(`Remove liquidity from pool failed: ${JSON.stringify(result.Err)}`);
+                    console.error("Withdraw liquidity from pool failed:", result.Err);
+                    throw new Error(`Withdraw liquidity from pool failed: ${JSON.stringify(result.Err)}`);
                 }
             } catch (e) {
-                throw new Error("Remove liquidity from pool failed with error: " + e);
+                throw new Error("Withdraw liquidity from pool failed with error: " + e);
             }
         });
     });

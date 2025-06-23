@@ -96,7 +96,7 @@ fn heartbeat() {
 
 // TODO: Test function. Remove after testing.
 #[update]
-async fn icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Nat) -> Nat {
+async fn test_icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("5fq4w-lyaaa-aaaag-qjqta-cai").unwrap();
 
     let icpswap_quote_result = icpswap_provider::withdraw(
@@ -111,7 +111,7 @@ async fn icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Nat) ->
 
 // TODO: Test function. Remove after testing.
 #[update]
-async fn reset_strategy(strategy_id: u16) {
+async fn test_reset_strategy(strategy_id: u16) {
     let mut strategy = strategies_repo::get_strategy_by_id(strategy_id).unwrap();
     strategy.reset_strategy().await;
 }
@@ -127,19 +127,23 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 
 
 #[update]
-async fn deposit(args: StrategyDepositArgs) -> Result<StrategyDepositResponse, ResponseError> {
+async fn deposit(args: StrategyDepositArgs) -> StrategyDepositResult {
     let context = Context::generate(Some(caller()));
 
-    service::deposit(context, args).await
-        .map_err(|error| ResponseError::from_internal_error(error))
+    let result = service::deposit(context, args).await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    StrategyDepositResult(result)
 }
 
 #[update]
-async fn withdraw(args: StrategyWithdrawArgs) -> Result<StrategyWithdrawResponse, ResponseError> {
+async fn withdraw(args: StrategyWithdrawArgs) -> StrategyWithdrawResult {
     let context = Context::generate(Some(caller()));
 
-    service::withdraw(context, args).await
-        .map_err(|error| ResponseError::from_internal_error(error))
+    let result = service::withdraw(context, args).await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    StrategyWithdrawResult(result)
 }
 
 /// Retrieves the strategies for a specific user.
@@ -166,7 +170,7 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
         if let Some(pool) = current_pool {
             // Add only if current pool is set and user has shares
             if user_shares > Nat::from(0u64) {
-                user_strategies.push(UserStrategyResponse {
+                let user_strategy = UserStrategyResponse {
                     strategy_id: strategy.get_id(),
                     strategy_name: strategy.get_name(),
                     strategy_current_pool: pool,
@@ -174,7 +178,9 @@ async fn user_strategies(user: Principal) -> Vec<UserStrategyResponse> {
                     user_shares,
                     initial_deposit,
                     users_count: strategy.get_users_count(),
-                });
+                };
+
+                user_strategies.push(user_strategy);
             }
         }
     }

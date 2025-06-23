@@ -25,7 +25,7 @@ use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 use icrc_ledger_client;
 use types::liquidity::{
     AddLiquidityResponse,
-    WithdrawFromPoolResponse,
+    WithdrawLiquidityResponse,
     TokensFee,
     GetPositionByIdResponse,
     GetPoolDataResponse,
@@ -519,7 +519,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         &self,
         total_shares: Nat,
         shares: Nat
-    ) -> Result<WithdrawFromPoolResponse, InternalError> {
+    ) -> Result<WithdrawLiquidityResponse, InternalError> {
         // Flow:
         // 1. Get user position ids
         // 2. Get user position
@@ -592,7 +592,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
             }
         };
 
-        Ok(WithdrawFromPoolResponse {
+        Ok(WithdrawLiquidityResponse {
             token_0_amount: amount0_to_withdraw,
             token_1_amount: amount1_to_withdraw,
         })

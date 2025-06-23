@@ -8,7 +8,7 @@ use providers::kongswap as kongswap_provider;
 use kongswap_canister::user_balances::UserBalancesReply;
 use utils::util::nat_to_f64;
 use swap::swap_service;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse, GetPositionByIdResponse, GetPoolDataResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse, GetPositionByIdResponse, GetPoolDataResponse};
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
 use icrc_ledger_client;
@@ -110,7 +110,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         })
     }
 
-    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawFromPoolResponse, InternalError> {
+    async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawLiquidityResponse, InternalError> {
         let canister_id = ic_cdk::id();
 
         // Fetch LP positions in pool
@@ -154,7 +154,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
             Nat::from(lp_tokens_to_withdraw.round() as u128),
         ).await?;
 
-        Ok(WithdrawFromPoolResponse {
+        Ok(WithdrawLiquidityResponse {
             token_0_amount: remove_liquidity_response.amount_0,
             token_1_amount: remove_liquidity_response.amount_1,
         })

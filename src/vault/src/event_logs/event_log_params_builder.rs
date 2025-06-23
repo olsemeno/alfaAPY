@@ -17,9 +17,9 @@ impl EventLogParamsBuilder {
     pub fn add_liquidity_to_pool_started() -> AddLiquidityToPoolStartedParamsBuilder { AddLiquidityToPoolStartedParamsBuilder::default() }
     pub fn add_liquidity_to_pool_completed() -> AddLiquidityToPoolCompletedParamsBuilder { AddLiquidityToPoolCompletedParamsBuilder::default() }
     pub fn add_liquidity_to_pool_failed() -> AddLiquidityToPoolFailedParamsBuilder { AddLiquidityToPoolFailedParamsBuilder::default() }
-    pub fn remove_liquidity_from_pool_started() -> RemoveLiquidityFromPoolStartedParamsBuilder { RemoveLiquidityFromPoolStartedParamsBuilder::default() }
-    pub fn remove_liquidity_from_pool_completed() -> RemoveLiquidityFromPoolCompletedParamsBuilder { RemoveLiquidityFromPoolCompletedParamsBuilder::default() }
-    pub fn remove_liquidity_from_pool_failed() -> RemoveLiquidityFromPoolFailedParamsBuilder { RemoveLiquidityFromPoolFailedParamsBuilder::default() }
+    pub fn withdraw_liquidity_from_pool_started() -> WithdrawLiquidityFromPoolStartedParamsBuilder { WithdrawLiquidityFromPoolStartedParamsBuilder::default() }
+    pub fn withdraw_liquidity_from_pool_completed() -> WithdrawLiquidityFromPoolCompletedParamsBuilder { WithdrawLiquidityFromPoolCompletedParamsBuilder::default() }
+    pub fn withdraw_liquidity_from_pool_failed() -> WithdrawLiquidityFromPoolFailedParamsBuilder { WithdrawLiquidityFromPoolFailedParamsBuilder::default() }
     pub fn swap_token_started() -> SwapTokenStartedParamsBuilder { SwapTokenStartedParamsBuilder::default() }
     pub fn swap_token_completed() -> SwapTokenCompletedParamsBuilder { SwapTokenCompletedParamsBuilder::default() }
     pub fn swap_token_failed() -> SwapTokenFailedParamsBuilder { SwapTokenFailedParamsBuilder::default() }
@@ -277,20 +277,20 @@ impl AddLiquidityToPoolFailedParamsBuilder {
     }
 }
 
-// === RemoveLiquidityFromPoolStarted ===
+// === WithdrawLiquidityFromPoolStarted ===
 #[derive(Default, Debug, Clone)]
-pub struct RemoveLiquidityFromPoolStartedParamsBuilder {
+pub struct WithdrawLiquidityFromPoolStartedParamsBuilder {
     pool_id: Option<String>,
     amount0: Option<Nat>,
     amount1: Option<Nat>,
 }
-impl RemoveLiquidityFromPoolStartedParamsBuilder {
+impl WithdrawLiquidityFromPoolStartedParamsBuilder {
     pub fn new() -> Self { Self::default() }
     pub fn pool_id(mut self, id: impl Into<String>) -> Self { self.pool_id = Some(id.into()); self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::remove_liquidity_from_pool_started(
+        EventLogParams::withdraw_liquidity_from_pool_started(
             self.pool_id.expect("pool_id required"),
             self.amount0,
             self.amount1,
@@ -298,20 +298,20 @@ impl RemoveLiquidityFromPoolStartedParamsBuilder {
     }
 }
 
-// === RemoveLiquidityFromPoolCompleted ===
+// === WithdrawLiquidityFromPoolCompleted ===
 #[derive(Default, Debug, Clone)]
-pub struct RemoveLiquidityFromPoolCompletedParamsBuilder {
+pub struct WithdrawLiquidityFromPoolCompletedParamsBuilder {
     pool_id: Option<String>,
     amount0: Option<Nat>,
     amount1: Option<Nat>,
 }
-impl RemoveLiquidityFromPoolCompletedParamsBuilder {
+impl WithdrawLiquidityFromPoolCompletedParamsBuilder {
     pub fn new() -> Self { Self::default() }
     pub fn pool_id(mut self, id: impl Into<String>) -> Self { self.pool_id = Some(id.into()); self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::remove_liquidity_from_pool_completed(
+        EventLogParams::withdraw_liquidity_from_pool_completed(
             self.pool_id.expect("pool_id required"),
             self.amount0,
             self.amount1,
@@ -319,20 +319,20 @@ impl RemoveLiquidityFromPoolCompletedParamsBuilder {
     }
 }
 
-// === RemoveLiquidityFromPoolFailed ===
+// === WithdrawLiquidityFromPoolFailed ===
 #[derive(Default, Debug, Clone)]
-pub struct RemoveLiquidityFromPoolFailedParamsBuilder {
+pub struct WithdrawLiquidityFromPoolFailedParamsBuilder {
     pool_id: Option<String>,
     amount0: Option<Nat>,
     amount1: Option<Nat>,
 }
-impl RemoveLiquidityFromPoolFailedParamsBuilder {
+impl WithdrawLiquidityFromPoolFailedParamsBuilder {
     pub fn new() -> Self { Self::default() }
     pub fn pool_id(mut self, id: impl Into<String>) -> Self { self.pool_id = Some(id.into()); self }
     pub fn amount0(mut self, amount: Nat) -> Self { self.amount0 = Some(amount); self }
     pub fn amount1(mut self, amount: Nat) -> Self { self.amount1 = Some(amount); self }
     pub fn build(self) -> EventLogParams {
-        EventLogParams::remove_liquidity_from_pool_failed(
+        EventLogParams::withdraw_liquidity_from_pool_failed(
             self.pool_id.expect("pool_id required"),
             self.amount0,
             self.amount1,

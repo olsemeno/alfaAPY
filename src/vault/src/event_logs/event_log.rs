@@ -27,9 +27,9 @@ pub enum EventLogType {
     AddLiquidityToPoolCompleted,
     AddLiquidityToPoolFailed,
     // Remove liquidity from pool
-    RemoveLiquidityFromPoolStarted,
-    RemoveLiquidityFromPoolCompleted,
-    RemoveLiquidityFromPoolFailed,
+    WithdrawLiquidityFromPoolStarted,
+    WithdrawLiquidityFromPoolCompleted,
+    WithdrawLiquidityFromPoolFailed,
     // Swap token
     SwapTokenStarted,
     SwapTokenCompleted,
@@ -107,17 +107,17 @@ pub enum EventLogParams {
         amount1: Option<Nat>,
     },
     // Remove liquidity from pool
-    RemoveLiquidityFromPoolStarted {
+    WithdrawLiquidityFromPoolStarted {
         pool_id: String,
         amount0: Option<Nat>,
         amount1: Option<Nat>,
     },
-    RemoveLiquidityFromPoolCompleted {
+    WithdrawLiquidityFromPoolCompleted {
         pool_id: String,
         amount0: Option<Nat>,
         amount1: Option<Nat>,
     },
-    RemoveLiquidityFromPoolFailed {
+    WithdrawLiquidityFromPoolFailed {
         pool_id: String,
         amount0: Option<Nat>,
         amount1: Option<Nat>,
@@ -181,9 +181,9 @@ impl EventLogParams {
             EventLogParams::AddLiquidityToPoolCompleted { .. } => EventLogType::AddLiquidityToPoolCompleted,
             EventLogParams::AddLiquidityToPoolFailed { .. } => EventLogType::AddLiquidityToPoolFailed,
             // Remove liquidity from pool
-            EventLogParams::RemoveLiquidityFromPoolStarted { .. } => EventLogType::RemoveLiquidityFromPoolStarted,
-            EventLogParams::RemoveLiquidityFromPoolCompleted { .. } => EventLogType::RemoveLiquidityFromPoolCompleted,
-            EventLogParams::RemoveLiquidityFromPoolFailed { .. } => EventLogType::RemoveLiquidityFromPoolFailed,
+            EventLogParams::WithdrawLiquidityFromPoolStarted { .. } => EventLogType::WithdrawLiquidityFromPoolStarted,
+            EventLogParams::WithdrawLiquidityFromPoolCompleted { .. } => EventLogType::WithdrawLiquidityFromPoolCompleted,
+            EventLogParams::WithdrawLiquidityFromPoolFailed { .. } => EventLogType::WithdrawLiquidityFromPoolFailed,
             // Swap token
             EventLogParams::SwapTokenStarted { .. } => EventLogType::SwapTokenStarted,
             EventLogParams::SwapTokenCompleted { .. } => EventLogType::SwapTokenCompleted,
@@ -243,16 +243,16 @@ impl EventLogParams {
         EventLogParams::AddLiquidityToPoolFailed { pool_id, amount0, amount1 }
     }
     
-    pub fn remove_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        EventLogParams::RemoveLiquidityFromPoolStarted { pool_id, amount0, amount1 }
+    pub fn withdraw_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::WithdrawLiquidityFromPoolStarted { pool_id, amount0, amount1 }
     }
 
-    pub fn remove_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        EventLogParams::RemoveLiquidityFromPoolCompleted { pool_id, amount0, amount1 }
+    pub fn withdraw_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::WithdrawLiquidityFromPoolCompleted { pool_id, amount0, amount1 }
     }
     
-    pub fn remove_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        EventLogParams::RemoveLiquidityFromPoolFailed { pool_id, amount0, amount1 }
+    pub fn withdraw_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
+        EventLogParams::WithdrawLiquidityFromPoolFailed { pool_id, amount0, amount1 }
     }
 
     pub fn swap_token_started(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>) -> Self {

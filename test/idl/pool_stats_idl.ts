@@ -76,12 +76,12 @@ export const idlFactory = ({ IDL }) => {
   });
   const PoolMetrics = IDL.Record({ 'apy' : PoolApy, 'tvl' : IDL.Nat });
   const Result_4 = IDL.Variant({ 'Ok' : IDL.Vec(Pool), 'Err' : ResponseError });
-  const WithdrawFromPoolResponse = IDL.Record({
+  const WithdrawLiquidityResponse = IDL.Record({
     'token_0_amount' : IDL.Nat,
     'token_1_amount' : IDL.Nat,
   });
   const Result_5 = IDL.Variant({
-    'Ok' : WithdrawFromPoolResponse,
+    'Ok' : WithdrawLiquidityResponse,
     'Err' : ResponseError,
   });
   return IDL.Service({

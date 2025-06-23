@@ -57,9 +57,9 @@ export interface PositionData {
 }
 export type Result = { 'Ok' : AddLiquidityResponse } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : WithdrawFromPoolResponse } |
+export type Result_1 = { 'Ok' : WithdrawLiquidityResponse } |
   { 'Err' : string };
-export interface WithdrawFromPoolResponse {
+export interface WithdrawLiquidityResponse {
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
 }

@@ -3,13 +3,13 @@ use candid::Nat;
 use ic_cdk::caller;
 
 use types::exchange_id::ExchangeId;
-use types::liquidity::{AddLiquidityResponse, WithdrawFromPoolResponse};
+use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse};
 use types::context::Context;
 use types::CanisterId;
 use types::pool::PoolTrait;
 use errors::internal_error::error::InternalError;
-use icrc_ledger_client;
 use errors::internal_error::error::build_error_code;
+use icrc_ledger_client;
 
 use crate::pool_snapshots::pool_snapshot_service;
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
@@ -145,16 +145,16 @@ pub async fn add_liquidity_to_pool(
     Ok(response)
 }
 
-pub async fn remove_liquidity_from_pool(
+pub async fn withdraw_liquidity_from_pool(
     context: Context,
     pool_id: String
-) -> Result<WithdrawFromPoolResponse, InternalError> {
+) -> Result<WithdrawLiquidityResponse, InternalError> {
     let pool = pools_repo::get_pool_by_id(pool_id.clone());
 
     if pool.is_none() {
         let error = InternalError::not_found(
             build_error_code(4000, 1, 5), // 4000 01 05
-            "service::remove_liquidity_from_pool".to_string(),
+            "service::withdraw_liquidity_from_pool".to_string(),
             "Pool not found".to_string(),
             Some(HashMap::from([
                 ("pool_id".to_string(), pool_id.clone()),
@@ -162,7 +162,7 @@ pub async fn remove_liquidity_from_pool(
         );
 
         event_log_service::create_event_log(
-            EventLogParamsBuilder::remove_liquidity_from_pool_failed()
+            EventLogParamsBuilder::withdraw_liquidity_from_pool_failed()
                 .pool_id(pool_id)
                 .build(),
             context.correlation_id,
@@ -178,7 +178,7 @@ pub async fn remove_liquidity_from_pool(
     if pool.position_id.is_none() {
         let error = InternalError::business_logic(
             build_error_code(4000, 3, 6), // 4000 01 06
-            "service::remove_liquidity_from_pool".to_string(),
+            "service::withdraw_liquidity_from_pool".to_string(),
             "Pool has no liquidity".to_string(),
             Some(HashMap::from([
                 ("pool_id".to_string(), pool_id.clone()),
@@ -188,7 +188,7 @@ pub async fn remove_liquidity_from_pool(
         return Err(error);
     }
 
-    let response = liquidity_service::remove_liquidity_from_pool(
+    let response = liquidity_service::withdraw_liquidity_from_pool(
         context,
         pool.clone()
     ).await?;

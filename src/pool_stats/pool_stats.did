@@ -4,9 +4,22 @@ type AddLiquidityResponse = record {
   token_1_amount : nat;
 };
 
+type AddLiquidityResult = variant {
+  Ok : AddLiquidityResponse;
+  Err : ResponseError;
+};
+
+type AddPoolResult = variant { Ok : text; Err : ResponseError };
+
 type ApyValue = record { tokens_apy : float64; usd_apy : float64 };
 
+type DeletePoolResult = variant { Ok; Err : ResponseError };
+
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
+
+type GetPoolByIdResult = variant { Ok : Pool; Err : ResponseError };
+
+type GetPoolsResult = variant { Ok : vec Pool; Err : ResponseError };
 
 type InternalError = record {
   context : text;
@@ -69,39 +82,35 @@ type ResponseError = record {
   details : opt vec record { text; text };
 };
 
-type Result = variant { Ok : AddLiquidityResponse; Err : ResponseError };
+type TestCreatePoolSnapshotResult = variant {
+  Ok : PoolSnapshot;
+  Err : ResponseError;
+};
 
-type Result_1 = variant { Ok : text; Err : ResponseError };
-
-type Result_2 = variant { Ok : PoolSnapshot; Err : ResponseError };
-
-type Result_3 = variant { Ok; Err : ResponseError };
-
-type Result_4 = variant { Ok : Pool; Err : ResponseError };
-
-type Result_5 = variant { Ok : vec Pool; Err : ResponseError };
-
-type Result_6 = variant { Ok : WithdrawFromPoolResponse; Err : ResponseError };
-
-type WithdrawFromPoolResponse = record {
+type WithdrawLiquidityResponse = record {
   token_0_amount : nat;
   token_1_amount : nat;
 };
 
+type WithdrawLiquidityResult = variant {
+  Ok : WithdrawLiquidityResponse;
+  Err : ResponseError;
+};
+
 service : () -> {
-  add_liquidity_to_pool : (principal, text, nat) -> (Result);
-  add_pool : (principal, principal, ExchangeId) -> (Result_1);
-  add_pool_snapshot : (PoolSnapshotArgs) -> ();
-  create_pool_snapshot : (text) -> (Result_2);
-  delete_all_pools_and_snapshots : () -> (bool);
-  delete_pool : (text) -> (Result_3);
-  delete_pool_snapshot : (text, text) -> ();
-  delete_pool_snapshots : (text) -> ();
-  get_pool_by_id : (text) -> (Result_4);
+  add_liquidity_to_pool : (principal, text, nat) -> (AddLiquidityResult);
+  add_pool : (principal, principal, ExchangeId) -> (AddPoolResult);
+  delete_pool : (text) -> (DeletePoolResult);
+  get_pool_by_id : (text) -> (GetPoolByIdResult);
   get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
-  get_pools : () -> (Result_5);
+  get_pools : () -> (GetPoolsResult);
   get_pools_snapshots : (vec text) -> (vec record { text; vec PoolSnapshot });
-  remove_liquidity_from_pool : (text) -> (Result_6);
   set_operator : (principal) -> ();
-  update_pool_ids : () -> (bool);
+  test_add_pool_snapshot : (PoolSnapshotArgs) -> ();
+  test_create_pool_snapshot : (text) -> (TestCreatePoolSnapshotResult);
+  test_delete_all_pools_and_snapshots : () -> ();
+  test_delete_pool_snapshot : (text, text) -> ();
+  test_delete_pool_snapshots : (text) -> ();
+  test_update_pool_ids : () -> ();
+  withdraw_liquidity_from_pool : (text) -> (WithdrawLiquidityResult);
 }

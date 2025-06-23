@@ -56,12 +56,12 @@ export const idlFactory = ({ IDL }: { IDL: any }) => {
     'pool_id' : IDL.Text,
     'position_data' : IDL.Opt(PositionData),
   });
-  const WithdrawFromPoolResponse = IDL.Record({
+  const WithdrawLiquidityResponse = IDL.Record({
     'token_0_amount' : IDL.Nat,
     'token_1_amount' : IDL.Nat,
   });
   const Result_1 = IDL.Variant({
-    'Ok' : WithdrawFromPoolResponse,
+    'Ok' : WithdrawLiquidityResponse,
     'Err' : IDL.Text,
   });
   return IDL.Service({

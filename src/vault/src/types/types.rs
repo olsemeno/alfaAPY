@@ -3,6 +3,7 @@ use candid::{CandidType, Deserialize, Nat, Principal};
 use serde::Serialize;
 
 use types::CanisterId;
+use errors::response_error::error::ResponseError;
 
 use crate::pools::pool::Pool;
 
@@ -16,7 +17,7 @@ pub struct StrategyDepositArgs {
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct StrategyWithdrawArgs {
     pub ledger: CanisterId,
-    pub amount: Nat, // TODO:Rename to percentage
+    pub amount: Nat, // TODO: Rename to percentage
     pub strategy_id: StrategyId,
 }
 
@@ -28,20 +29,20 @@ pub struct StrategyDepositResponse {
     pub request_id: u64,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct StrategyWithdrawResponse {
     pub amount: Nat,
     pub current_shares: Nat,
 }
 
-#[derive(CandidType, Deserialize, Clone, Serialize)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct StrategyRebalanceResponse {
     pub previous_pool: Pool,
     pub current_pool: Pool,
     pub is_rebalanced: bool,
 }
 
-#[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct StrategyResponse {
     pub name: String,
     pub id: StrategyId,
@@ -55,7 +56,7 @@ pub struct StrategyResponse {
 }
 
 // TODO: rename to UserPositionResponse
-#[derive(CandidType, Deserialize, Clone, Serialize)]
+#[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
 pub struct UserStrategyResponse {
     pub strategy_id: StrategyId,
     pub strategy_name: String,
@@ -78,3 +79,9 @@ pub struct SupportedStandard {
 }
 
 pub type StrategyId = u16;
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct StrategyDepositResult(pub Result<StrategyDepositResponse, ResponseError>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseError>);
