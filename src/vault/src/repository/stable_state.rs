@@ -6,13 +6,13 @@ use crate::{Conf, CONF};
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::{StrategyCandid, Candid as StrategyToCandid};
 use crate::repository::strategies_repo::STRATEGIES;
-use crate::repository::event_logs_repo::EVENT_LOGS;
-use crate::event_logs::event_log::EventLog;
+use crate::repository::event_records_repo::EVENT_RECORDS;
+use crate::event_records::event_record::EventRecord;
 
 #[derive(Clone, Debug, CandidType, Serialize, Deserialize)]
 pub struct StableState {
     pub strategies: Vec<StrategyCandid>,
-    pub event_logs: Vec<EventLog>,
+    pub event_records: Vec<EventRecord>,
     pub config: Conf,
 }
 
@@ -25,13 +25,13 @@ pub fn stable_save() {
         strategies.borrow().iter().map(|strategy| strategy.to_candid()).collect()
     });
 
-    let event_logs: Vec<EventLog> = EVENT_LOGS.with(|events| {
+    let event_records: Vec<EventRecord> = EVENT_RECORDS.with(|events| {
         events.borrow().clone()
     });
 
     let state = StableState {
         strategies,
-        event_logs,
+        event_records,
         config: conf,
     };
 
@@ -58,9 +58,9 @@ pub fn stable_restore() {
         utrs.replace(strategies)
     });
 
-    // EventLogs
-    EVENT_LOGS.with(|event_logs| {
-        event_logs.borrow_mut();
-        event_logs.replace(state.event_logs)
+    // EventRecords
+    EVENT_RECORDS.with(|event_records| {
+        event_records.borrow_mut();
+        event_records.replace(state.event_records)
     });
 }

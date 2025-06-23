@@ -35,7 +35,7 @@ pub mod liquidity;
 pub mod repository;
 pub mod pool_snapshots;
 pub mod pool_metrics;
-pub mod event_logs;
+pub mod event_records;
 pub mod types;
 pub mod service;
 

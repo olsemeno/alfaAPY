@@ -4,6 +4,7 @@ use types::context::Context;
 use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse};
 use liquidity::liquidity_router::get_liquidity_client;
 use errors::internal_error::error::InternalError;
+use swap::swap_service;
 
 use crate::pools::pool_data::PoolData;
 use crate::pools::pool::Pool;
@@ -54,4 +55,29 @@ pub async fn withdraw_liquidity_from_pool(
     ).await;
 
     liquidity_client.withdraw_liquidity_from_pool(total_shares.clone(), shares.clone()).await
+}
+
+pub async fn withdraw_liquidity_from_pool_and_swap(
+    context: Context,
+    total_shares: Nat,
+    shares: Nat,
+    pool: Pool
+) -> Result<Nat, InternalError> {
+    let withdraw_response = withdraw_liquidity_from_pool(
+        context.clone(),
+        total_shares.clone(),
+        shares.clone(),
+        pool.clone(),
+    ).await?;
+
+    // Swap withdrawn token_1 to token_0 (base token)
+    let swap_response = swap_service::swap_icrc2_optimal(
+        pool.token1,
+        pool.token0,
+        withdraw_response.token_1_amount,
+    ).await?;
+
+    let amount_0_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
+
+    Ok(amount_0_to_withdraw)
 }

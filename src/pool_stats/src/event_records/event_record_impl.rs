@@ -2,25 +2,23 @@ use candid::Principal;
 use ic_cdk::api::time;
 
 use errors::internal_error::error::InternalError;
-use event_logs::generic_event_log::GenericEventLog;
+use event_records::generic_event_record::GenericEventRecord;
 
-use crate::event_logs::event_log::{EventLog, EventLogType, EventLogParams};
-use crate::repository::event_logs_repo;
+use crate::event_records::event_record::{EventRecord, Event};
+use crate::repository::event_records_repo;
 
-impl EventLog {
+impl EventRecord {
     pub fn new(
         id: u64,
         correlation_id: String,
-        event_type: EventLogType,
-        params: EventLogParams,
+        event: Event,
         timestamp: u64,
         user: Option<Principal>,
         error: Option<InternalError>,
     ) -> Self {
-        Self(GenericEventLog {
+        Self(GenericEventRecord {
             id,
-            event_type,
-            params,
+            event,
             timestamp,
             correlation_id,
             user,
@@ -31,15 +29,14 @@ impl EventLog {
     pub fn build(
         id: u64,
         correlation_id: String,
-        params: EventLogParams,
+        event: Event,
         user: Option<Principal>,
         error: Option<InternalError>,
     ) -> Self {
         Self::new(
             id,
             correlation_id,
-            params.event_type(),
-            params,
+            event,
             time(),
             user,
             error,
@@ -47,6 +44,6 @@ impl EventLog {
     }
 
     pub fn save(&self) {
-        event_logs_repo::save_event_log(self.clone());
+        event_records_repo::save_event_record(self.clone());
     }
 }

@@ -9,7 +9,6 @@ export interface EventLog {
   'error' : [] | [InternalError],
   'timestamp' : bigint,
   'correlation_id' : string,
-  'event_type' : EventLogType,
   'params' : EventLogParams,
 }
 export type EventLogParams = {

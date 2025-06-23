@@ -242,7 +242,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "event_logs"
+name = "event_records"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -867,7 +867,7 @@ dependencies = [
  "candid",
  "canister_client_macros",
  "errors",
- "event_logs",
+ "event_records",
  "ic-cdk 0.17.2",
  "ic-cdk-macros 0.17.2",
  "ic-cdk-timers",
@@ -1301,7 +1301,7 @@ dependencies = [
  "candid",
  "canister_client_macros",
  "errors",
- "event_logs",
+ "event_records",
  "ic-cdk 0.17.2",
  "ic-cdk-macros 0.17.2",
  "ic-ledger-types",

@@ -6,7 +6,6 @@ type EventLog = record {
   error : opt InternalError;
   timestamp : nat64;
   correlation_id : text;
-  event_type : EventLogType;
   params : EventLogParams;
 };
 

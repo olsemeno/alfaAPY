@@ -3,25 +3,28 @@ use candid::{Nat, Principal};
 use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::num::NonZero;
 
-use swap::swap_service;
 use liquidity::liquidity_calculator::LiquidityCalculator;
 use types::exchange_id::ExchangeId;
 use types::pool::PoolTrait;
-use errors::internal_error::error::InternalError;
-use utils::token_transfer::icrc1_transfer_to_user;
-use errors::internal_error::error::build_error_code;
 use types::context::Context;
+use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
+use utils::token_transfer::icrc1_transfer_to_user;
 
-use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
-use crate::event_logs::event_log_service;
+use crate::event_records::event_record::Event;
+use crate::event_records::event_record_service;
 use crate::repository::strategies_repo::save_strategy;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
-use crate::types::types::{StrategyDepositResponse, StrategyRebalanceResponse, StrategyResponse, StrategyWithdrawResponse};
 use crate::liquidity::liquidity_service;
 use crate::pools::pool::Pool;
+use crate::types::types::{
+    StrategyDepositResponse,
+    StrategyRebalanceResponse,
+    StrategyResponse,
+    StrategyWithdrawResponse,
+};
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
@@ -128,6 +131,81 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             .next()
     }
 
+    fn update_strategy_state_after_deposit(
+        &mut self,
+        investor: Principal,
+        amount: Nat,
+        pool: Pool,
+        position_id: u64,
+    ) -> Nat {
+        // Calculate new shares for investor's deposit
+        let new_user_shares = LiquidityCalculator::calculate_shares_for_deposit(
+            amount.clone(),
+            self.get_total_balance().clone(),
+            self.get_total_shares().clone(),
+        );
+
+        // Update strategy state with new shares, initial deposit and total balance
+        self.increase_total_shares(new_user_shares.clone());
+        self.increase_user_shares(investor, new_user_shares.clone());
+        self.increase_initial_deposit(investor, amount.clone());
+        self.increase_total_balance(amount.clone());
+
+        // Update current pool and position id
+        self.set_current_pool(Some(pool.clone()));
+        self.set_position_id(Some(position_id));
+
+        // Save strategy with new total balance, initial deposit,
+        // user shares and total shares, current pool and position id
+        save_strategy(self.clone_self());
+
+        new_user_shares
+    }
+
+    fn update_strategy_state_after_withdraw(
+        &mut self,
+        investor: Principal,
+        shares: Nat,
+    ) -> Nat {
+        // Update total shares
+        self.decrease_total_shares(shares.clone());
+
+        // Update user shares
+        let previous_user_shares = self.get_user_shares().get(&investor).cloned().unwrap();
+        let new_user_shares = previous_user_shares.clone() - shares.clone();
+        self.update_user_shares(investor.clone(), new_user_shares.clone());
+
+        // Update initial deposit proportional to the new shares
+        let mut initial_deposit = self.get_initial_deposit();
+        let user_initial_deposit = initial_deposit
+            .get(&investor)
+            .cloned()
+            .unwrap_or(Nat::from(0u64));
+
+        let new_user_initial_deposit = if previous_user_shares == Nat::from(0u64) {
+            Nat::from(0u64)
+        } else {
+            user_initial_deposit.clone() * new_user_shares.clone() / previous_user_shares.clone()
+        };
+
+        if new_user_initial_deposit == Nat::from(0u64) {
+            initial_deposit.remove(&investor);
+        } else {
+            initial_deposit.insert(investor.clone(), new_user_initial_deposit.clone());
+        }
+        self.set_initial_deposit(initial_deposit);
+
+        // Update total balance
+        let total_balance = self.get_total_balance().clone();
+        let new_total_balance = total_balance - user_initial_deposit + new_user_initial_deposit.clone();
+        self.set_total_balance(new_total_balance.clone());
+
+        // Save strategy with new total balance, initial deposit, user shares and total shares
+        save_strategy(self.clone_self());
+
+        new_user_shares
+    }
+
     /// Deposits an amount of tokens into the strategy
     ///
     /// # Arguments
@@ -160,10 +238,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         investor: Principal,
         amount: Nat,
     ) -> Result<StrategyDepositResponse, InternalError> {
-
-        // // TODO: remove this after testing
-        // self.set_current_pool(None);
-
+        let strategy_id = self.get_id().to_string();
         let mut current_pool = self.get_current_pool();
 
         // Set current pool to the best APY pool if not set
@@ -179,12 +254,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                     None,
                 );
 
-                event_log_service::create_event_log(
-                    EventLogParamsBuilder::strategy_deposit_failed()
-                        .strategy_id(self.get_id().to_string())
-                        .pool_id(None)
-                        .amount0(amount)
-                        .build(),
+                event_record_service::create_event_record(
+                    Event::add_liquidity_to_pool_failed(None, Some(amount), None),
                     context.correlation_id,
                     Some(investor),
                     Some(error.clone()),
@@ -205,33 +276,15 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             current_pool.clone()
         ).await?;
 
-        // Calculate new shares for investor's deposit
-        let new_shares = LiquidityCalculator::calculate_shares_for_deposit(
+        self.update_strategy_state_after_deposit(
+            investor,
             amount.clone(),
-            self.get_total_balance().clone(),
-            self.get_total_shares().clone(),
+            current_pool.clone(),
+            add_liquidity_response.position_id,
         );
 
-        // Update strategy state with new shares, initial deposit and total balance
-        self.increase_total_shares(new_shares.clone());
-        self.increase_user_shares(investor, new_shares.clone());
-        self.increase_initial_deposit(investor, amount.clone());
-        self.increase_total_balance(amount.clone());
-
-        // Update current pool and position id
-        self.set_current_pool(Some(current_pool.clone()));
-        self.set_position_id(Some(add_liquidity_response.position_id));
-
-        // Save strategy with new total balance, initial deposit, 
-        // user shares and total shares, current pool and position id
-        save_strategy(self.clone_self());
-
-        event_log_service::create_event_log(
-            EventLogParamsBuilder::strategy_deposit_completed()
-                .strategy_id(self.get_id().to_string())
-                .pool_id(Some(current_pool.get_id()))
-                .amount0(amount.clone())
-                .build(),
+        event_record_service::create_event_record(
+            Event::strategy_deposit_completed(strategy_id, Some(current_pool.get_id()), Some(amount.clone())),
             context.correlation_id,
             Some(investor),
             None,
@@ -269,6 +322,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     /// TODO: Rename `shares` to `percentage`
     async fn withdraw(&mut self, context: Context, mut shares: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
         let investor = context.user.unwrap();
+        let strategy_id = self.get_id().to_string();
         let user_shares = self.get_user_shares_by_principal(investor.clone());
         let current_pool = self.get_current_pool().clone();
         let current_pool_id = current_pool.clone().unwrap().get_id();
@@ -288,12 +342,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 ]))
             );
 
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::strategy_withdraw_failed()
-                    .strategy_id(self.get_id().to_string())
-                    .pool_id(Some(current_pool_id))
-                    .shares(shares.clone())
-                    .build(),
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(strategy_id, Some(current_pool_id), Some(shares.clone())),
                 context.correlation_id,
                 Some(investor),
                 Some(error.clone()),
@@ -315,12 +365,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 ]))
             );
 
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::strategy_withdraw_failed()
-                    .strategy_id(self.get_id().to_string())
-                    .pool_id(Some(current_pool_id))
-                    .shares(shares.clone())
-                    .build(),
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(strategy_id, Some(current_pool_id), Some(shares.clone())),
                 context.correlation_id,
                 Some(investor),
                 Some(error.clone()),
@@ -337,12 +383,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 None,
             );
 
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::strategy_withdraw_failed()
-                    .strategy_id(self.get_id().to_string())
-                    .pool_id(None)
-                    .shares(shares.clone())
-                    .build(),
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(strategy_id, None, Some(shares.clone())),
                 context.correlation_id,
                 Some(investor),
                 Some(error.clone()),
@@ -353,40 +395,27 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
         let current_pool = current_pool.unwrap();
 
-        let token0 = current_pool.token0.clone();
-        let token1 = current_pool.token1.clone();
-
-        // Withdraw liquidity from pool
-        let withdraw_response = liquidity_service::withdraw_liquidity_from_pool(
+        // Withdraw liquidity from pool and swap token_1 to token_0 (base token)
+        let amount_0_to_withdraw = liquidity_service::withdraw_liquidity_from_pool_and_swap(
             context.clone(),
             self.get_total_shares(),
             shares.clone(),
             current_pool.clone(),
         ).await?;
 
-        // Swap withdrawn token_1 to token_0 (base token)
-        let swap_response = swap_service::swap_icrc2_optimal(
-            token1.clone(),
-            token0.clone(),
-            withdraw_response.token_1_amount.clone(),
-        ).await?;
-
-        // Sum of token_0 amount and token_1 amount after swap to token_0 (base token)
-        let amount_0_to_withdraw = withdraw_response.token_0_amount + swap_response.amount_out;
-
         // Transfer amount of token_0 (base token) to user
         icrc1_transfer_to_user(
             investor,
-            token0,
+            current_pool.token0,
             amount_0_to_withdraw.clone(),
         ).await
             .map_err(|error| {
-                event_log_service::create_event_log(
-                    EventLogParamsBuilder::strategy_withdraw_failed()
-                        .strategy_id(self.get_id().to_string())
-                        .pool_id(Some(current_pool_id.to_string()))
-                        .shares(shares.clone())
-                        .build(),
+                event_record_service::create_event_record(
+                    Event::strategy_withdraw_failed(
+                        strategy_id.clone(),
+                        Some(current_pool_id.clone()),
+                        Some(shares.clone()),
+                    ),
                     context.correlation_id.clone(),
                     Some(investor),
                     Some(error.clone()),
@@ -395,49 +424,18 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 error
             })?;
 
-        // Update total shares
-        self.decrease_total_shares(shares.clone());
+        let new_user_shares = self.update_strategy_state_after_withdraw(
+            investor,
+            shares.clone(),
+        );
 
-        // Update user shares
-        let previous_user_shares = self.get_user_shares().get(&investor).cloned().unwrap();
-        let new_user_shares = previous_user_shares.clone() - shares.clone();
-        self.update_user_shares(investor.clone(), new_user_shares.clone());
-
-        // Update initial deposit proportional to the new shares
-        let mut initial_deposit = self.get_initial_deposit();
-        let user_initial_deposit = initial_deposit
-            .get(&investor)
-            .cloned()
-            .unwrap_or(Nat::from(0u64));
-
-        let new_user_initial_deposit = if previous_user_shares == Nat::from(0u64) {
-            Nat::from(0u64)
-        } else {
-            user_initial_deposit.clone() * new_user_shares.clone() / previous_user_shares.clone()
-        };
-
-        if new_user_initial_deposit == Nat::from(0u64) {
-            initial_deposit.remove(&investor);
-        } else {
-            initial_deposit.insert(investor.clone(), new_user_initial_deposit.clone());
-        }
-        self.set_initial_deposit(initial_deposit);
-
-        // Update total balance
-        let total_balance = self.get_total_balance().clone();
-        let new_total_balance = total_balance - user_initial_deposit + new_user_initial_deposit.clone();
-        self.set_total_balance(new_total_balance.clone());
-
-        // Save strategy with new total balance, initial deposit, user shares and total shares
-        save_strategy(self.clone_self());
-
-        event_log_service::create_event_log(
-            EventLogParamsBuilder::strategy_withdraw_completed()
-                .strategy_id(self.get_id().to_string())
-                .pool_id(Some(current_pool.clone().get_id()))
-                .shares(shares.clone())
-                .amount0(amount_0_to_withdraw.clone())
-                .build(),
+        event_record_service::create_event_record(
+            Event::strategy_withdraw_completed(
+                strategy_id,
+                Some(current_pool_id),
+                Some(shares.clone()),
+                Some(amount_0_to_withdraw.clone()),
+            ),
             context.correlation_id,
             Some(investor),
             None,
@@ -469,6 +467,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
     async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
         let context = Context::generate(None);
 
+        let strategy_id = self.get_id().to_string();
         let pools_data = liquidity_service::get_pools_data(self.get_pools()).await;
         let mut max_apy = 0.0;
         let mut max_apy_pool = None;
@@ -503,29 +502,13 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 });
             }
 
-            let token0 = current_pool.token0.clone();
-            let token1 = current_pool.token1.clone();
-
-            // Withdraw liquidity from current pool
-            let withdraw_response = liquidity_service::withdraw_liquidity_from_pool(
+            // Withdraw liquidity from current pool and swap token_1 to token_0 (base token)
+            let token_0_to_pool_amount = liquidity_service::withdraw_liquidity_from_pool_and_swap(
                 context.clone(),
                 self.get_total_shares(),
                 self.get_total_shares(),
                 current_pool.clone(),
             ).await?;
-
-            let token_0_withdrawn_amount = withdraw_response.token_0_amount;
-            let token_1_withdrawn_amount = withdraw_response.token_1_amount;
-
-            // Swap withdrawn token_1 to token_0 (base token)
-            let swap_response = swap_service::swap_icrc2_optimal(
-                token1.clone(),
-                token0.clone(),
-                token_1_withdrawn_amount.clone(),
-            ).await?;
-
-            // Calculate total token_0 to send in new pool after swap
-            let token_0_to_pool_amount = token_0_withdrawn_amount + swap_response.amount_out;
 
             // Add liquidity to new pool
             let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
@@ -534,12 +517,12 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 max_apy_pool.clone(),
             ).await?;
 
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::strategy_rebalance_completed()
-                    .strategy_id(self.get_id().to_string())
-                    .previous_pool_id(Some(current_pool.get_id()))
-                    .new_pool_id(Some(max_apy_pool.get_id()))
-                    .build(),
+            event_record_service::create_event_record(
+                Event::strategy_rebalance_completed(
+                    strategy_id,
+                    Some(current_pool.get_id()),
+                    Some(max_apy_pool.get_id()),
+                ),
                 context.correlation_id,
                 None,
                 None,
@@ -564,12 +547,8 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
                 None,
             );
 
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::strategy_rebalance_failed()
-                    .strategy_id(self.get_id().to_string())
-                    .previous_pool_id(None)
-                    .new_pool_id(None)
-                    .build(),
+            event_record_service::create_event_record(
+                Event::strategy_rebalance_failed(strategy_id, None, None),
                 context.correlation_id,
                 None,
                 Some(error.clone()),

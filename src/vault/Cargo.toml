@@ -39,5 +39,5 @@ liquidity = { path = "../libraries/liquidity" }
 types = { path = "../libraries/types" }
 utils = { path = "../libraries/utils" }
 errors = { path = "../libraries/errors" }
-event_logs = { path = "../libraries/event_logs" }
+event_records = { path = "../libraries/event_records" }
 icrc_ledger_client = { path = "../libraries/icrc_ledger_client" }

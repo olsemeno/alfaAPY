@@ -6,9 +6,9 @@ use errors::internal_error::error::InternalError;
 use liquidity::liquidity_client::LiquidityClient;
 use types::context::Context;
 
-use crate::event_logs::event_log_params_builder::EventLogParamsBuilder;
 use crate::pools::pool::Pool;
-use crate::event_logs::event_log_service;
+use crate::event_records::event_record_service;
+use crate::event_records::event_record::Event;
 
 pub async fn add_liquidity_to_pool(
     context: Context,
@@ -21,11 +21,8 @@ pub async fn add_liquidity_to_pool(
         amount.clone()
     ).await
         .map_err(|error| {
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::add_liquidity_to_pool_failed()
-                    .pool_id(pool.id.clone())
-                    .amount0(amount.clone())
-                    .build(),
+            event_record_service::create_event_record(
+                Event::add_liquidity_to_pool_failed(Some(pool.id), Some(amount), None),
                 context.correlation_id.clone(),
                 context.user.clone(),
                 Some(error.clone()),
@@ -47,10 +44,8 @@ pub async fn withdraw_liquidity_from_pool(context: Context, pool: Pool) -> Resul
         shares
     ).await
         .map_err(|error| {
-            event_log_service::create_event_log(
-                EventLogParamsBuilder::withdraw_liquidity_from_pool_failed()
-                    .pool_id(pool.id.clone())
-                    .build(),
+            event_record_service::create_event_record(
+                Event::withdraw_liquidity_from_pool_failed(pool.id, None, None),
                 context.correlation_id,
                 context.user,
                 Some(error.clone()),

@@ -3,28 +3,27 @@ pub mod liquidity;
 mod repository;
 mod user;
 mod types;
-mod event_logs;
+mod event_records;
 mod pools;
 mod pool_stats;
 mod service;
 
 use serde::Serialize;
 use std::cell::RefCell;
-use candid::{candid_method, CandidType, Deserialize, Nat};
-use candid::{export_service, Principal};
+use candid::{candid_method, export_service, CandidType, Deserialize, Nat, Principal};
 use ic_cdk::caller;
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
 use providers::{icpswap as icpswap_provider};
+use errors::response_error::error::ResponseError;
 use ::types::CanisterId;
 use ::types::context::Context;
-use errors::response_error::error::ResponseError;
 
 use crate::repository::stable_state;
 use crate::repository::strategies_repo;
 use crate::strategies::strategy_service;
-use crate::event_logs::event_log_service;
-use crate::event_logs::event_log::EventLog;
+use crate::event_records::event_record_service;
+use crate::event_records::event_record::EventRecord;
 use crate::types::types::*;
 
 thread_local! {
@@ -119,8 +118,8 @@ async fn test_reset_strategy(strategy_id: u16) {
 // =============== Events ===============
 
 #[update]
-async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
-    event_log_service::get_event_logs(offset as usize, limit as usize)
+async fn get_event_records(offset: u64, limit: u64) -> Vec<EventRecord> {
+    event_record_service::get_event_records(offset as usize, limit as usize)
 }
 
 // =============== Strategies ===============

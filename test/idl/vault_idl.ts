@@ -187,7 +187,6 @@ export const idlFactory = ({ IDL }) => {
     'error' : IDL.Opt(InternalError),
     'timestamp' : IDL.Nat64,
     'correlation_id' : IDL.Text,
-    'event_type' : EventLogType,
     'params' : EventLogParams,
   });
   const ExchangeId = IDL.Variant({
