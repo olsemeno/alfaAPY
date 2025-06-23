@@ -26,7 +26,7 @@ pub struct StrategyDepositResponse {
     pub amount: Nat,
     pub shares: Nat,
     pub tx_id: u64,
-    pub request_id: u64,
+    pub position_id: u64,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug)]
@@ -85,3 +85,6 @@ pub struct StrategyDepositResult(pub Result<StrategyDepositResponse, ResponseErr
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseError>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct StrategyLiquidityResult(pub Result<Nat, ResponseError>);

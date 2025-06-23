@@ -25,7 +25,7 @@
 //             AddLiquidityResponse {
 //                 token_0_amount: amount.clone(),
 //                 token_1_amount: Nat::from(0u64),
-//                 request_id: 123u64,
+//                 position_id: 123u64,
 //             }
 //         }
         
@@ -216,7 +216,7 @@
 //                     amount: amount,
 //                     shares: new_shares.clone(),
 //                     tx_id: 0,
-//                     request_id: resp.request_id,
+//                     position_id: resp.position_id,
 //                 }
 //             } else {
 //                 trap("Rebalance");

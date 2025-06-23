@@ -5,7 +5,7 @@ use types::pool_stats::PoolMetrics;
 use utils::constants::POOL_STATS_CANISTER_ID;
 
 pub async fn get_pool_metrics(pool_ids: Vec<String>) -> HashMap<String, PoolMetrics> {
-    let (pool_metrics,): (HashMap<String, PoolMetrics>, ) = call(
+    let (pool_metrics,): (HashMap<String, PoolMetrics>,) = call(
         *POOL_STATS_CANISTER_ID,
         "get_pool_metrics",
         (pool_ids,)

@@ -511,7 +511,7 @@ impl LiquidityClient for ICPSwapLiquidityClient {
         Ok(AddLiquidityResponse {
             token_0_amount: Nat::from(amount0_for_pool),
             token_1_amount: Nat::from(amount1_swapped_for_pool),
-            request_id: nat_to_u64(&position_id),
+            position_id: nat_to_u64(&position_id),
         })
     }
 

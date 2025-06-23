@@ -3,14 +3,24 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface AddLiquidityResponse {
-  'request_id' : bigint,
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
+  'position_id' : bigint,
 }
-export interface ApyValue { 'tokens_apy' : bigint, 'usd_apy' : bigint }
+export type AddLiquidityResult = { 'Ok' : AddLiquidityResponse } |
+  { 'Err' : ResponseError };
+export type AddPoolResult = { 'Ok' : string } |
+  { 'Err' : ResponseError };
+export interface ApyValue { 'tokens_apy' : number, 'usd_apy' : number }
+export type DeletePoolResult = { 'Ok' : null } |
+  { 'Err' : ResponseError };
 export type ExchangeId = { 'Sonic' : null } |
   { 'KongSwap' : null } |
   { 'ICPSwap' : null };
+export type GetPoolByIdResult = { 'Ok' : Pool } |
+  { 'Err' : ResponseError };
+export type GetPoolsResult = { 'Ok' : Array<Pool> } |
+  { 'Err' : ResponseError };
 export interface InternalError {
   'context' : string,
   'code' : number,
@@ -19,7 +29,6 @@ export interface InternalError {
   'message' : string,
 }
 export type InternalErrorKind = { 'AccessDenied' : null } |
-  { 'Infrastructure' : null } |
   { 'NotFound' : null } |
   { 'Timeout' : null } |
   { 'Unknown' : null } |
@@ -33,13 +42,8 @@ export interface Pool {
   'token1' : Principal,
   'position_id' : [] | [bigint],
 }
-export interface PoolApy {
-  'month' : ApyValue,
-  'week' : ApyValue,
-  'year' : ApyValue,
-}
 export interface PoolData { 'tvl' : bigint }
-export interface PoolMetrics { 'apy' : PoolApy, 'tvl' : bigint }
+export interface PoolMetrics { 'apy' : ApyValue, 'tvl' : bigint }
 export interface PoolSnapshot {
   'id' : string,
   'pool_data' : [] | [PoolData],
@@ -67,44 +71,45 @@ export interface ResponseError {
   'message' : string,
   'details' : [] | [Array<[string, string]>],
 }
-export type Result = { 'Ok' : AddLiquidityResponse } |
-  { 'Err' : ResponseError };
-export type Result_1 = { 'Ok' : string } |
-  { 'Err' : ResponseError };
-export type Result_2 = { 'Ok' : null } |
-  { 'Err' : ResponseError };
-export type Result_3 = { 'Ok' : Pool } |
-  { 'Err' : ResponseError };
-export type Result_4 = { 'Ok' : Array<Pool> } |
-  { 'Err' : ResponseError };
-export type Result_5 = { 'Ok' : WithdrawLiquidityResponse } |
+export type TestCreatePoolSnapshotResult = { 'Ok' : PoolSnapshot } |
   { 'Err' : ResponseError };
 export interface WithdrawLiquidityResponse {
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
 }
+export type WithdrawLiquidityResult = { 'Ok' : WithdrawLiquidityResponse } |
+  { 'Err' : ResponseError };
 export interface _SERVICE {
-  'add_liquidity_to_pool' : ActorMethod<[Principal, string, bigint], Result>,
-  'add_pool' : ActorMethod<[Principal, Principal, ExchangeId], Result_1>,
-  'add_pool_snapshot' : ActorMethod<[PoolSnapshotArgs], undefined>,
-  'create_pool_snapshot' : ActorMethod<[string], PoolSnapshot>,
-  'delete_all_pools_and_snapshots' : ActorMethod<[], boolean>,
-  'delete_pool' : ActorMethod<[string], Result_2>,
-  'delete_pool_snapshot' : ActorMethod<[string, string], undefined>,
-  'delete_pool_snapshots' : ActorMethod<[string], undefined>,
-  'get_pool_by_id' : ActorMethod<[string], Result_3>,
+  'add_liquidity_to_pool' : ActorMethod<
+    [Principal, string, bigint],
+    AddLiquidityResult
+  >,
+  'add_pool' : ActorMethod<[Principal, Principal, ExchangeId], AddPoolResult>,
+  'delete_pool' : ActorMethod<[string], DeletePoolResult>,
+  'get_pool_by_id' : ActorMethod<[string], GetPoolByIdResult>,
   'get_pool_metrics' : ActorMethod<
     [Array<string>],
     Array<[string, PoolMetrics]>
   >,
-  'get_pools' : ActorMethod<[], Result_4>,
+  'get_pools' : ActorMethod<[], GetPoolsResult>,
   'get_pools_snapshots' : ActorMethod<
     [Array<string>],
     Array<[string, Array<PoolSnapshot>]>
   >,
-  'remove_liquidity_from_pool' : ActorMethod<[string], Result_5>,
   'set_operator' : ActorMethod<[Principal], undefined>,
-  'update_pool_ids' : ActorMethod<[], boolean>,
+  'test_add_pool_snapshot' : ActorMethod<[PoolSnapshotArgs], undefined>,
+  'test_create_pool_snapshot' : ActorMethod<
+    [string],
+    TestCreatePoolSnapshotResult
+  >,
+  'test_delete_all_pools_and_snapshots' : ActorMethod<[], undefined>,
+  'test_delete_pool_snapshot' : ActorMethod<[string, string], undefined>,
+  'test_delete_pool_snapshots' : ActorMethod<[string], undefined>,
+  'test_update_pool_ids' : ActorMethod<[], undefined>,
+  'withdraw_liquidity_from_pool' : ActorMethod<
+    [string],
+    WithdrawLiquidityResult
+  >,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

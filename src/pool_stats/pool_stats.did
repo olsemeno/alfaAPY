@@ -1,5 +1,5 @@
 type AddLiquidityResponse = record {
-  request_id : nat64;
+  position_id : nat64;
   token_0_amount : nat;
   token_1_amount : nat;
 };

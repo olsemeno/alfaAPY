@@ -113,7 +113,7 @@ async fn test_icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Na
 #[update]
 async fn test_reset_strategy(strategy_id: u16) {
     let mut strategy = strategies_repo::get_strategy_by_id(strategy_id).unwrap();
-    strategy.reset_strategy().await;
+    strategy.test_reset_strategy().await;
 }
 
 // =============== Events ===============
@@ -124,7 +124,6 @@ async fn get_event_logs(offset: u64, limit: u64) -> Vec<EventLog> {
 }
 
 // =============== Strategies ===============
-
 
 #[update]
 async fn deposit(args: StrategyDepositArgs) -> StrategyDepositResult {
@@ -144,6 +143,16 @@ async fn withdraw(args: StrategyWithdrawArgs) -> StrategyWithdrawResult {
         .map_err(|error| ResponseError::from_internal_error(error));
 
     StrategyWithdrawResult(result)
+}
+
+#[update]
+async fn strategy_liquidity(strategy_id: u16) -> StrategyLiquidityResult {
+    let context = Context::generate(Some(caller()));
+
+    let result = service::strategy_liquidity(context, strategy_id).await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    StrategyLiquidityResult(result)
 }
 
 /// Retrieves the strategies for a specific user.

@@ -137,7 +137,7 @@ pub async fn add_liquidity_to_pool(
         amount
     ).await?;
 
-    pool.position_id = Some(response.request_id);
+    pool.position_id = Some(response.position_id);
     pools_repo::update_pool(pool_id.clone(), pool.clone());
 
     pool_snapshot_service::create_pool_snapshot(context, &pool).await?;

@@ -11,7 +11,7 @@ pub struct WithdrawLiquidityResponse {
 pub struct AddLiquidityResponse {
     pub token_0_amount: Nat,
     pub token_1_amount: Nat,
-    pub request_id: u64, // TODO: rename to position_id
+    pub position_id: u64,
 }
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]

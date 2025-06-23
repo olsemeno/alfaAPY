@@ -21,6 +21,7 @@ Where:
 | 1002 | External Service (ICPSwap)    |
 | 1100 | External Service (ICRC Ledger)|
 | 1200 | External Service (Canister)   |
+| 2000 | Swap (Service)                |
 | 2001 | Swap (KongSwap)               |
 | 2002 | Swap (ICPSwap)                |
 | 2101 | Liquidity (KongSwap)          |
@@ -190,7 +191,15 @@ Where:
 **1200 03 02** - Error calling canister_client::make_c2c_call from Utils::icrc1_transfer_to_user (Business Logic)  
 
 
+## 2000 - Swap (Service)
+
+**2000 03 01** - Invalid provider in swap_service::swap_icrc2 (BusinessLogic)
+
+**2000 03 02** - Invalid provider in swap_service::quote_swap_icrc2 (BusinessLogic)
+
+
 ## 2001 - Swap (KongSwap)
+
 
 
 ## 2002 - Swap (ICPSwap)
@@ -228,18 +237,21 @@ Where:
 
 **3000 01 02** - Strategy not found in service::withdraw (NotFound)  
 
+**3000 01 03** - Strategy not found in service::strategy_liquidity (NotFound)
+**3000 03 04** - Strategy has no current pool in service::strategy_liquidity (BusinessLogic)
+**3000 03 05** - Strategy has no position id in service::strategy_liquidity (BusinessLogic)
+
 
 ## 3100 - Strategies (Vault)
 
 **3100 01 01** - No pool found to deposit in BasicStrategy::deposit (NotFound)  
-**3100 01 02** - No current pool found to deposit in BasicStrategy::deposit (NotFound)  
+**3100 01 02** - **DEPRECATED** No current pool found to deposit in BasicStrategy::deposit (NotFound)  
 
 **3100 03 03** - No shares found for user in BasicStrategy::withdraw (BusinessLogic)  
 **3100 03 04** - Not sufficient shares for user in BasicStrategy::withdraw (BusinessLogic)  
 **3100 01 05** - No current pool found in strategy in BasicStrategy::withdraw (NotFound)  
 
 **3100 01 06** - No current pool found in strategy in BasicStrategy::rebalance (NotFound)  
-
 
 ## 4000 - Service (PoolStats)
 

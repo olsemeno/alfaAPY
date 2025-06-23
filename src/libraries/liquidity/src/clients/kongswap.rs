@@ -106,7 +106,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         Ok(AddLiquidityResponse {
             token_0_amount: Nat::from(token_0_for_pool_amount as u128),
             token_1_amount: Nat::from(token_1_for_pool_amount as u128),
-            request_id: response.request_id,
+            position_id: response.request_id,
         })
     }
 

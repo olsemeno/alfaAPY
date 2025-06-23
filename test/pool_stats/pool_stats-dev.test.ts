@@ -43,7 +43,7 @@ describe("Pool Stats Test DEV", () => {
             console.log("== START \"Creates pool snapshot\" TEST ==");
 
             const poolId = "1";
-            const result = await actorPoolStats.create_pool_snapshot(poolId);
+            const result = await actorPoolStats.test_create_pool_snapshot(poolId);
 
             console.log("Pool snapshot:", result);
         });
@@ -83,7 +83,7 @@ describe("Pool Stats Test DEV", () => {
 
                 if ('Ok' in result) {
                     const addLiquidityResp = result.Ok;
-                    console.log("Add liquidity success:", addLiquidityResp.token_0_amount, addLiquidityResp.token_1_amount, addLiquidityResp.request_id);
+                    console.log("Add liquidity success:", addLiquidityResp.token_0_amount, addLiquidityResp.token_1_amount, addLiquidityResp.position_id);
 
                     expect(addLiquidityResp.token_0_amount).to.equal(depositAmount);
                     expect(addLiquidityResp.token_1_amount).to.equal(depositAmount);

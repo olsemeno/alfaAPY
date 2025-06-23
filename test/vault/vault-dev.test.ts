@@ -22,8 +22,7 @@ describe("VR Test PROD", () => {
     const nfidwCanisterId = "mih44-vaaaa-aaaaq-aaekq-cai";
     const icsCanisterId = "ca6gz-lqaaa-aaaaq-aacwa-cai";
 
-    // const ledgerCanisterId = icpCanisterId; // ICP
-    const ledgerCanisterId = icsCanisterId;
+    const ledgerCanisterId = pandaCanisterId;
 
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
@@ -62,9 +61,11 @@ describe("VR Test PROD", () => {
     });
 
     describe(".deposit", () => {
-        const strategyId = 5;
+        const strategyId = 4;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(40_000_000);
+        // const depositAmount = BigInt(100_000_000);
+        const depositAmount = BigInt(100_000_000);
+        // const depositAmount = BigInt(40_000_000);
         // const depositAmount = BigInt(10_000);
 
         it("Deposits to strategy without any liquidity", async () => {
@@ -84,7 +85,7 @@ describe("VR Test PROD", () => {
 
                 if ('Ok' in result) {
                     const depositResp = result.Ok;
-                    console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
+                    console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.position_id);
 
                     expect(depositResp.amount).to.equal(depositAmount);
                     expect(depositResp.shares).to.equal(depositAmount);
@@ -103,9 +104,10 @@ describe("VR Test PROD", () => {
     });
 
     describe(".withdraw", () => {
-        const strategyId = 5;
+        const strategyId = 4;
         const approveAmount = BigInt(10000000000);
-        const depositAmount = BigInt(40_000_000);
+        const depositAmount = BigInt(100_000_000);
+        // const depositAmount = BigInt(40_000_000);
         // const depositAmount = BigInt(50_000);
 
         let shares: bigint;
@@ -128,7 +130,7 @@ describe("VR Test PROD", () => {
 
             //     if ('Ok' in result) {
             //         const depositResp = result.Ok;
-            //         console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.request_id);
+            //         console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.position_id);
 
             //         shares = BigInt(depositResp.shares);
             //     } else {
@@ -261,10 +263,10 @@ describe("VR Test PROD", () => {
         });
     });
 
-    describe(".reset_strategy", () => {
+    describe(".test_reset_strategy", () => {
         it("Resets strategy", async () => {
             const strategyId = 4;
-            const resetResult = await actorVault.reset_strategy(strategyId);
+            const resetResult = await actorVault.test_reset_strategy(strategyId);
             console.log("Reset result:", resetResult);
         });
     });
@@ -305,14 +307,14 @@ describe("VR Test PROD", () => {
         // });
 
         // Withdraw token from ICPSwap canister
-        describe(".icpswap_withdraw_1", () => {
+        describe(".test_icpswap_withdraw", () => {
             it("Withdraws", async () => {
                 const amount = 5_577_528_681n;
 
-                let withdrawResult = await actorVault.icpswap_withdraw(token0, 5_577_528_681n, token1Fee);
+                let withdrawResult = await actorVault.test_icpswap_withdraw(token0, 5_577_528_681n, token1Fee);
                 console.log("Withdraw result:", withdrawResult);
 
-                withdrawResult = await actorVault.icpswap_withdraw(token1, 353_486n, token1Fee);
+                withdrawResult = await actorVault.test_icpswap_withdraw(token1, 353_486n, token1Fee);
                 console.log("Withdraw result:", withdrawResult);
             });
         });

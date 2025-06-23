@@ -22,30 +22,37 @@ export type EventLogParams = {
   } |
   {
     'StrategyWithdrawCompleted' : {
-      'shares' : bigint,
+      'shares' : [] | [bigint],
       'strategy_id' : string,
-      'amount0' : bigint,
+      'amount0' : [] | [bigint],
       'pool_id' : [] | [string],
     }
   } |
   {
     'StrategyWithdrawStarted' : {
-      'shares' : bigint,
+      'shares' : [] | [bigint],
       'strategy_id' : string,
       'pool_id' : [] | [string],
     }
   } |
   {
     'AddLiquidityToPoolFailed' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
       'pool_id' : string,
     }
   } |
   {
     'AddLiquidityToPoolCompleted' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
+      'pool_id' : string,
+    }
+  } |
+  {
+    'WithdrawLiquidityFromPoolStarted' : {
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
       'pool_id' : string,
     }
   } |
@@ -60,36 +67,29 @@ export type EventLogParams = {
   {
     'SwapTokenFailed' : {
       'token_in' : Principal,
-      'amount_in' : bigint,
+      'amount_in' : [] | [bigint],
       'token_out' : Principal,
       'pool_id' : string,
     }
   } |
   {
-    'RemoveLiquidityFromPoolStarted' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
-      'pool_id' : string,
-    }
-  } |
-  {
     'AddLiquidityToPoolStarted' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
       'pool_id' : string,
     }
   } |
   {
     'StrategyDepositStarted' : {
       'strategy_id' : string,
-      'amount0' : bigint,
+      'amount0' : [] | [bigint],
       'pool_id' : [] | [string],
     }
   } |
   {
     'StrategyDepositCompleted' : {
       'strategy_id' : string,
-      'amount0' : bigint,
+      'amount0' : [] | [bigint],
       'pool_id' : [] | [string],
     }
   } |
@@ -101,24 +101,17 @@ export type EventLogParams = {
     }
   } |
   {
-    'RemoveLiquidityFromPoolFailed' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
-      'pool_id' : string,
-    }
-  } |
-  {
     'SwapTokenCompleted' : {
       'token_in' : Principal,
-      'amount_out' : bigint,
-      'amount_in' : bigint,
+      'amount_out' : [] | [bigint],
+      'amount_in' : [] | [bigint],
       'token_out' : Principal,
     }
   } |
   {
-    'RemoveLiquidityFromPoolCompleted' : {
-      'amount0' : bigint,
-      'amount1' : bigint,
+    'WithdrawLiquidityFromPoolCompleted' : {
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
       'pool_id' : string,
     }
   } |
@@ -131,7 +124,7 @@ export type EventLogParams = {
   {
     'SwapTokenStarted' : {
       'token_in' : Principal,
-      'amount_in' : bigint,
+      'amount_in' : [] | [bigint],
       'token_out' : Principal,
       'pool_id' : string,
     }
@@ -145,9 +138,16 @@ export type EventLogParams = {
   } |
   {
     'StrategyWithdrawFailed' : {
-      'shares' : bigint,
+      'shares' : [] | [bigint],
       'strategy_id' : string,
       'pool_id' : [] | [string],
+    }
+  } |
+  {
+    'WithdrawLiquidityFromPoolFailed' : {
+      'amount0' : [] | [bigint],
+      'amount1' : [] | [bigint],
+      'pool_id' : string,
     }
   } |
   {
@@ -160,7 +160,7 @@ export type EventLogParams = {
   {
     'StrategyDepositFailed' : {
       'strategy_id' : string,
-      'amount0' : bigint,
+      'amount0' : [] | [bigint],
       'pool_id' : [] | [string],
     }
   };
@@ -169,20 +169,20 @@ export type EventLogType = { 'ExternalCallCompleted' : null } |
   { 'StrategyWithdrawStarted' : null } |
   { 'AddLiquidityToPoolFailed' : null } |
   { 'AddLiquidityToPoolCompleted' : null } |
+  { 'WithdrawLiquidityFromPoolStarted' : null } |
   { 'ExternalCallFailed' : null } |
   { 'SwapTokenFailed' : null } |
-  { 'RemoveLiquidityFromPoolStarted' : null } |
   { 'AddLiquidityToPoolStarted' : null } |
   { 'StrategyDepositStarted' : null } |
   { 'StrategyDepositCompleted' : null } |
   { 'StrategyRebalanceFailed' : null } |
-  { 'RemoveLiquidityFromPoolFailed' : null } |
   { 'SwapTokenCompleted' : null } |
-  { 'RemoveLiquidityFromPoolCompleted' : null } |
+  { 'WithdrawLiquidityFromPoolCompleted' : null } |
   { 'StrategyRebalanceStarted' : null } |
   { 'SwapTokenStarted' : null } |
   { 'ExternalCallStarted' : null } |
   { 'StrategyWithdrawFailed' : null } |
+  { 'WithdrawLiquidityFromPoolFailed' : null } |
   { 'StrategyRebalanceCompleted' : null } |
   { 'StrategyDepositFailed' : null };
 export type ExchangeId = { 'Sonic' : null } |
@@ -193,12 +193,12 @@ export interface Icrc28TrustedOriginsResponse {
 }
 export interface InternalError {
   'context' : string,
+  'code' : number,
   'kind' : InternalErrorKind,
   'extra' : [] | [Array<[string, string]>],
   'message' : string,
 }
 export type InternalErrorKind = { 'AccessDenied' : null } |
-  { 'Infrastructure' : null } |
   { 'NotFound' : null } |
   { 'Timeout' : null } |
   { 'Unknown' : null } |
@@ -212,30 +212,33 @@ export interface Pool {
   'token1' : Principal,
 }
 export interface ResponseError {
-  'code' : ResponseErrorCode,
+  'code' : number,
+  'kind' : ResponseErrorKind,
   'message' : string,
   'details' : [] | [Array<[string, string]>],
 }
-export type ResponseErrorCode = { 'AccessDenied' : null } |
+export type ResponseErrorKind = { 'AccessDenied' : null } |
   { 'NotFound' : null } |
   { 'Timeout' : null } |
-  { 'Validation' : null } |
-  { 'InternalError' : null };
-export type Result = { 'Ok' : StrategyDepositResponse } |
-  { 'Err' : ResponseError };
-export type Result_1 = { 'Ok' : StrategyWithdrawResponse } |
-  { 'Err' : ResponseError };
+  { 'Unknown' : null } |
+  { 'BusinessLogic' : null } |
+  { 'ExternalService' : null } |
+  { 'Validation' : null };
 export interface StrategyDepositArgs {
   'strategy_id' : number,
   'ledger' : Principal,
   'amount' : bigint,
 }
 export interface StrategyDepositResponse {
-  'request_id' : bigint,
   'tx_id' : bigint,
   'shares' : bigint,
   'amount' : bigint,
+  'position_id' : bigint,
 }
+export type StrategyDepositResult = { 'Ok' : StrategyDepositResponse } |
+  { 'Err' : ResponseError };
+export type StrategyLiquidityResult = { 'Ok' : bigint } |
+  { 'Err' : ResponseError };
 export interface StrategyResponse {
   'id' : number,
   'name' : string,
@@ -247,15 +250,12 @@ export interface StrategyResponse {
   'total_balance' : bigint,
   'pools' : Array<Pool>,
 }
-export interface StrategyWithdrawArgs {
-  'strategy_id' : number,
-  'ledger' : Principal,
-  'amount' : bigint,
-}
 export interface StrategyWithdrawResponse {
   'current_shares' : bigint,
   'amount' : bigint,
 }
+export type StrategyWithdrawResult = { 'Ok' : StrategyWithdrawResponse } |
+  { 'Err' : ResponseError };
 export interface SupportedStandard { 'url' : string, 'name' : string }
 export interface UserStrategyResponse {
   'strategy_current_pool' : Pool,
@@ -267,16 +267,17 @@ export interface UserStrategyResponse {
   'users_count' : number,
 }
 export interface _SERVICE {
-  'deposit' : ActorMethod<[StrategyDepositArgs], Result>,
+  'deposit' : ActorMethod<[StrategyDepositArgs], StrategyDepositResult>,
   'get_config' : ActorMethod<[], Conf>,
   'get_event_logs' : ActorMethod<[bigint, bigint], Array<EventLog>>,
   'get_strategies' : ActorMethod<[], Array<StrategyResponse>>,
-  'icpswap_withdraw' : ActorMethod<[Principal, bigint, bigint], bigint>,
   'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
   'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
-  'reset_strategy' : ActorMethod<[number], undefined>,
+  'strategy_liquidity' : ActorMethod<[number], StrategyLiquidityResult>,
+  'test_icpswap_withdraw' : ActorMethod<[Principal, bigint, bigint], bigint>,
+  'test_reset_strategy' : ActorMethod<[number], undefined>,
   'user_strategies' : ActorMethod<[Principal], Array<UserStrategyResponse>>,
-  'withdraw' : ActorMethod<[StrategyWithdrawArgs], Result_1>,
+  'withdraw' : ActorMethod<[StrategyDepositArgs], StrategyWithdrawResult>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

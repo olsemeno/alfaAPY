@@ -1,14 +1,14 @@
+use async_trait::async_trait;
+use candid::{CandidType, Deserialize, Nat, Principal};
+use serde::Serialize;
+use std::collections::HashMap;
+
 use crate::impl_strategy_methods;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy::IStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::types::types::StrategyId;
 use crate::pools::pool::Pool;
-use async_trait::async_trait;
-use candid::{CandidType, Deserialize, Nat, Principal};
-use kongswap_canister::PoolReply;
-use serde::Serialize;
-use std::collections::HashMap;
 use crate::strategies::r#impl::description::STRATEGY_MAP;
 
 impl_strategy_methods!(ckBTCStrategy);
@@ -17,6 +17,7 @@ impl_strategy_methods!(ckBTCStrategy);
 pub struct ckBTCStrategy {
     id: StrategyId,
     current_pool: Option<Pool>,
+    position_id: Option<u64>,
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
@@ -25,10 +26,11 @@ pub struct ckBTCStrategy {
 
 impl ckBTCStrategy {
     pub fn new() -> Self {
-        //TODO move to config
+        // TODO: move to config
         ckBTCStrategy {
+            position_id: None,
             current_pool: None,
-            total_balance: Nat::from(0u64),
+            total_balance: Nat::from(0u64), // TODO: rename to total_initial_balance
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
             initial_deposit: HashMap::new(),

@@ -19,7 +19,7 @@ pub async fn get_pools_data(pools: Vec<Pool>) -> Vec<PoolData> {
         .map(|(pool, pool_metric)|
             PoolData {
                 pool: pool.clone(),
-                apy: pool_metric.1.apy.month.tokens_apy,
+                apy: pool_metric.1.apy.tokens_apy,
             }
         )
         .collect();

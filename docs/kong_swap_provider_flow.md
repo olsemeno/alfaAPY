@@ -147,9 +147,9 @@ Example:
 - `amount_0 = 0.5 ckBTC`
 - `amount_1 = computed ckUSDT amount from Step 2`
 
-The response contains a `request_id` of type `AddLiquidity`, e.g., `765054n`.
+The response contains a `position_id` of type `AddLiquidity`, e.g., `765054n`.
 
-We can check our position using `requests(request_id)`. The field `add_lp_token_amount` represents our LP tokens, which denote our share of the pool. These LP tokens should be stored as they are needed for withdrawal.
+We can check our position using `requests(position_id)`. The field `add_lp_token_amount` represents our LP tokens, which denote our share of the pool. These LP tokens should be stored as they are needed for withdrawal.
 
 Method `user_balances(wallet_id)` returns a list of LP positions along with details.
 
@@ -170,7 +170,7 @@ remove_liquidity_async(token0, token1, lpAmount)
 - `lpAmount` is the number of LP tokens we wish to redeem.
 - To withdraw everything, provide all LP tokens.
 
-The response contains a `request_id` of type `RemoveLiquidity`, which can be queried using `requests(request_id)`. Fields `lp_fee_0` and `lp_fee_1` represent earned fees.
+The response contains a `position_id` of type `RemoveLiquidity`, which can be queried using `requests(position_id)`. Fields `lp_fee_0` and `lp_fee_1` represent earned fees.
 
 All fees appear to be included in the withdrawn liquidity. There is no separate mechanism to manage them.
 

@@ -16,6 +16,7 @@ impl_strategy_methods!(PandaTestStrategy);
 pub struct PandaTestStrategy {
     id: StrategyId,
     current_pool: Option<Pool>,
+    position_id: Option<u64>,
     total_balance: Nat,
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
@@ -27,6 +28,7 @@ impl PandaTestStrategy {
         //TODO move to config
         PandaTestStrategy {
             current_pool: None,
+            position_id: None,
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),

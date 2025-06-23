@@ -6,30 +6,32 @@ export const idlFactory = ({ IDL }) => {
     'amount' : IDL.Nat,
   });
   const StrategyDepositResponse = IDL.Record({
-    'request_id' : IDL.Nat64,
     'tx_id' : IDL.Nat64,
     'shares' : IDL.Nat,
     'amount' : IDL.Nat,
+    'position_id' : IDL.Nat64,
   });
-  const ResponseErrorCode = IDL.Variant({
+  const ResponseErrorKind = IDL.Variant({
     'AccessDenied' : IDL.Null,
     'NotFound' : IDL.Null,
     'Timeout' : IDL.Null,
+    'Unknown' : IDL.Null,
+    'BusinessLogic' : IDL.Null,
+    'ExternalService' : IDL.Null,
     'Validation' : IDL.Null,
-    'InternalError' : IDL.Null,
   });
   const ResponseError = IDL.Record({
-    'code' : ResponseErrorCode,
+    'code' : IDL.Nat32,
+    'kind' : ResponseErrorKind,
     'message' : IDL.Text,
     'details' : IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))),
   });
-  const Result = IDL.Variant({
+  const StrategyDepositResult = IDL.Variant({
     'Ok' : StrategyDepositResponse,
     'Err' : ResponseError,
   });
   const InternalErrorKind = IDL.Variant({
     'AccessDenied' : IDL.Null,
-    'Infrastructure' : IDL.Null,
     'NotFound' : IDL.Null,
     'Timeout' : IDL.Null,
     'Unknown' : IDL.Null,
@@ -39,6 +41,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const InternalError = IDL.Record({
     'context' : IDL.Text,
+    'code' : IDL.Nat32,
     'kind' : InternalErrorKind,
     'extra' : IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))),
     'message' : IDL.Text,
@@ -49,20 +52,20 @@ export const idlFactory = ({ IDL }) => {
     'StrategyWithdrawStarted' : IDL.Null,
     'AddLiquidityToPoolFailed' : IDL.Null,
     'AddLiquidityToPoolCompleted' : IDL.Null,
+    'WithdrawLiquidityFromPoolStarted' : IDL.Null,
     'ExternalCallFailed' : IDL.Null,
     'SwapTokenFailed' : IDL.Null,
-    'RemoveLiquidityFromPoolStarted' : IDL.Null,
     'AddLiquidityToPoolStarted' : IDL.Null,
     'StrategyDepositStarted' : IDL.Null,
     'StrategyDepositCompleted' : IDL.Null,
     'StrategyRebalanceFailed' : IDL.Null,
-    'RemoveLiquidityFromPoolFailed' : IDL.Null,
     'SwapTokenCompleted' : IDL.Null,
-    'RemoveLiquidityFromPoolCompleted' : IDL.Null,
+    'WithdrawLiquidityFromPoolCompleted' : IDL.Null,
     'StrategyRebalanceStarted' : IDL.Null,
     'SwapTokenStarted' : IDL.Null,
     'ExternalCallStarted' : IDL.Null,
     'StrategyWithdrawFailed' : IDL.Null,
+    'WithdrawLiquidityFromPoolFailed' : IDL.Null,
     'StrategyRebalanceCompleted' : IDL.Null,
     'StrategyDepositFailed' : IDL.Null,
   });
@@ -74,24 +77,29 @@ export const idlFactory = ({ IDL }) => {
       'params' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     }),
     'StrategyWithdrawCompleted' : IDL.Record({
-      'shares' : IDL.Nat,
+      'shares' : IDL.Opt(IDL.Nat),
       'strategy_id' : IDL.Text,
-      'amount0' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Opt(IDL.Text),
     }),
     'StrategyWithdrawStarted' : IDL.Record({
-      'shares' : IDL.Nat,
+      'shares' : IDL.Opt(IDL.Nat),
       'strategy_id' : IDL.Text,
       'pool_id' : IDL.Opt(IDL.Text),
     }),
     'AddLiquidityToPoolFailed' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Text,
     }),
     'AddLiquidityToPoolCompleted' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
+      'pool_id' : IDL.Text,
+    }),
+    'WithdrawLiquidityFromPoolStarted' : IDL.Record({
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Text,
     }),
     'ExternalCallFailed' : IDL.Record({
@@ -102,28 +110,23 @@ export const idlFactory = ({ IDL }) => {
     }),
     'SwapTokenFailed' : IDL.Record({
       'token_in' : IDL.Principal,
-      'amount_in' : IDL.Nat,
+      'amount_in' : IDL.Opt(IDL.Nat),
       'token_out' : IDL.Principal,
       'pool_id' : IDL.Text,
     }),
-    'RemoveLiquidityFromPoolStarted' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
-      'pool_id' : IDL.Text,
-    }),
     'AddLiquidityToPoolStarted' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Text,
     }),
     'StrategyDepositStarted' : IDL.Record({
       'strategy_id' : IDL.Text,
-      'amount0' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Opt(IDL.Text),
     }),
     'StrategyDepositCompleted' : IDL.Record({
       'strategy_id' : IDL.Text,
-      'amount0' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Opt(IDL.Text),
     }),
     'StrategyRebalanceFailed' : IDL.Record({
@@ -131,20 +134,15 @@ export const idlFactory = ({ IDL }) => {
       'strategy_id' : IDL.Text,
       'previous_pool_id' : IDL.Opt(IDL.Text),
     }),
-    'RemoveLiquidityFromPoolFailed' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
-      'pool_id' : IDL.Text,
-    }),
     'SwapTokenCompleted' : IDL.Record({
       'token_in' : IDL.Principal,
-      'amount_out' : IDL.Nat,
-      'amount_in' : IDL.Nat,
+      'amount_out' : IDL.Opt(IDL.Nat),
+      'amount_in' : IDL.Opt(IDL.Nat),
       'token_out' : IDL.Principal,
     }),
-    'RemoveLiquidityFromPoolCompleted' : IDL.Record({
-      'amount0' : IDL.Nat,
-      'amount1' : IDL.Nat,
+    'WithdrawLiquidityFromPoolCompleted' : IDL.Record({
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Text,
     }),
     'StrategyRebalanceStarted' : IDL.Record({
@@ -153,7 +151,7 @@ export const idlFactory = ({ IDL }) => {
     }),
     'SwapTokenStarted' : IDL.Record({
       'token_in' : IDL.Principal,
-      'amount_in' : IDL.Nat,
+      'amount_in' : IDL.Opt(IDL.Nat),
       'token_out' : IDL.Principal,
       'pool_id' : IDL.Text,
     }),
@@ -163,9 +161,14 @@ export const idlFactory = ({ IDL }) => {
       'params' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     }),
     'StrategyWithdrawFailed' : IDL.Record({
-      'shares' : IDL.Nat,
+      'shares' : IDL.Opt(IDL.Nat),
       'strategy_id' : IDL.Text,
       'pool_id' : IDL.Opt(IDL.Text),
+    }),
+    'WithdrawLiquidityFromPoolFailed' : IDL.Record({
+      'amount0' : IDL.Opt(IDL.Nat),
+      'amount1' : IDL.Opt(IDL.Nat),
+      'pool_id' : IDL.Text,
     }),
     'StrategyRebalanceCompleted' : IDL.Record({
       'new_pool_id' : IDL.Opt(IDL.Text),
@@ -174,7 +177,7 @@ export const idlFactory = ({ IDL }) => {
     }),
     'StrategyDepositFailed' : IDL.Record({
       'strategy_id' : IDL.Text,
-      'amount0' : IDL.Nat,
+      'amount0' : IDL.Opt(IDL.Nat),
       'pool_id' : IDL.Opt(IDL.Text),
     }),
   });
@@ -213,6 +216,10 @@ export const idlFactory = ({ IDL }) => {
   const Icrc28TrustedOriginsResponse = IDL.Record({
     'trusted_origins' : IDL.Vec(IDL.Text),
   });
+  const StrategyLiquidityResult = IDL.Variant({
+    'Ok' : IDL.Nat,
+    'Err' : ResponseError,
+  });
   const UserStrategyResponse = IDL.Record({
     'strategy_current_pool' : Pool,
     'total_shares' : IDL.Nat,
@@ -222,21 +229,16 @@ export const idlFactory = ({ IDL }) => {
     'strategy_name' : IDL.Text,
     'users_count' : IDL.Nat32,
   });
-  const StrategyWithdrawArgs = IDL.Record({
-    'strategy_id' : IDL.Nat16,
-    'ledger' : IDL.Principal,
-    'amount' : IDL.Nat,
-  });
   const StrategyWithdrawResponse = IDL.Record({
     'current_shares' : IDL.Nat,
     'amount' : IDL.Nat,
   });
-  const Result_1 = IDL.Variant({
+  const StrategyWithdrawResult = IDL.Variant({
     'Ok' : StrategyWithdrawResponse,
     'Err' : ResponseError,
   });
   return IDL.Service({
-    'deposit' : IDL.Func([StrategyDepositArgs], [Result], []),
+    'deposit' : IDL.Func([StrategyDepositArgs], [StrategyDepositResult], []),
     'get_config' : IDL.Func([], [Conf], ['query']),
     'get_event_logs' : IDL.Func(
         [IDL.Nat64, IDL.Nat64],
@@ -244,24 +246,25 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'get_strategies' : IDL.Func([], [IDL.Vec(StrategyResponse)], ['query']),
-    'icpswap_withdraw' : IDL.Func(
-        [IDL.Principal, IDL.Nat, IDL.Nat],
-        [IDL.Nat],
-        [],
-      ),
     'icrc10_supported_standards' : IDL.Func(
         [],
         [IDL.Vec(SupportedStandard)],
         ['query'],
       ),
     'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
-    'reset_strategy' : IDL.Func([IDL.Nat16], [], []),
+    'strategy_liquidity' : IDL.Func([IDL.Nat16], [StrategyLiquidityResult], []),
+    'test_icpswap_withdraw' : IDL.Func(
+        [IDL.Principal, IDL.Nat, IDL.Nat],
+        [IDL.Nat],
+        [],
+      ),
+    'test_reset_strategy' : IDL.Func([IDL.Nat16], [], []),
     'user_strategies' : IDL.Func(
         [IDL.Principal],
         [IDL.Vec(UserStrategyResponse)],
         [],
       ),
-    'withdraw' : IDL.Func([StrategyWithdrawArgs], [Result_1], []),
+    'withdraw' : IDL.Func([StrategyDepositArgs], [StrategyWithdrawResult], []),
   });
 };
 export const init = ({ IDL }) => {

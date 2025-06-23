@@ -200,7 +200,7 @@ type StrategyDepositArgs = record {
 };
 
 type StrategyDepositResponse = record {
-  request_id : nat64;
+  position_id : nat64;
   tx_id : nat64;
   shares : nat;
   amount : nat;
@@ -210,6 +210,8 @@ type StrategyDepositResult = variant {
   Ok : StrategyDepositResponse;
   Err : ResponseError;
 };
+
+type StrategyLiquidityResult = variant { Ok : nat; Err : ResponseError };
 
 type StrategyResponse = record {
   id : nat16;
@@ -249,6 +251,7 @@ service : (opt Conf) -> {
   get_strategies : () -> (vec StrategyResponse) query;
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
+  strategy_liquidity : (nat16) -> (StrategyLiquidityResult);
   test_icpswap_withdraw : (principal, nat, nat) -> (nat);
   test_reset_strategy : (nat16) -> ();
   user_strategies : (principal) -> (vec UserStrategyResponse);

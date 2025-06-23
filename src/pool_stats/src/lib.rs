@@ -1,7 +1,6 @@
 use candid::{CandidType, Deserialize, Principal, Nat};
 use serde::Serialize;
 use std::cell::RefCell;
-use std::collections::HashMap;
 use ic_cdk::{call, id, trap, update, caller};
 use ic_cdk::api::call::CallResult;
 use candid::export_service;

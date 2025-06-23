@@ -20,6 +20,8 @@ pub trait BasicStrategy {
     fn set_initial_deposit(&mut self, map: HashMap<Principal, Nat>);
     fn get_users_count(&self) -> u32;
     fn get_user_shares_by_principal(&self, principal: Principal) -> Nat;
+    fn get_position_id(&self) -> Option<u64>;
+    fn set_position_id(&mut self, position_id: Option<u64>);
 }
 
 #[macro_export]
@@ -89,6 +91,14 @@ macro_rules! impl_strategy_methods {
 
             fn get_user_shares_by_principal(&self, principal: Principal) -> Nat {
                 self.user_shares.get(&principal).unwrap().clone()
+            }
+
+            fn get_position_id(&self) -> Option<u64> {
+                self.position_id.clone()
+            }
+
+            fn set_position_id(&mut self, position_id: Option<u64>) {
+                self.position_id = position_id;
             }
         }
     };

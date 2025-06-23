@@ -1,6 +1,6 @@
 use candid::Nat;
 use std::collections::HashMap;
-use types::swap_tokens::{SuccessResult, QuoteResult};
+use types::swap_tokens::{SwapResponse, QuoteResponse};
 use types::exchange_id::ExchangeId;
 use utils::constants::KONGSWAP_CANISTER_ID;
 use types::CanisterId;
@@ -16,7 +16,7 @@ pub async fn swap_icrc2_optimal(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<SuccessResult, InternalError> {
+) -> Result<SwapResponse, InternalError> {
     let provider = quote_swap_icrc2_optimal(
         input_token.clone(),
         output_token.clone(),
@@ -31,7 +31,7 @@ pub async fn swap_icrc2(
     output_token: CanisterId,
     amount: Nat,
     provider: ExchangeId,
-) -> Result<SuccessResult, InternalError> {
+) -> Result<SwapResponse, InternalError> {
     match provider {
         ExchangeId::KongSwap => swap_icrc2_kongswap(input_token, output_token, amount).await,
         ExchangeId::ICPSwap => swap_icrc2_icpswap(input_token, output_token, amount).await,
@@ -53,7 +53,7 @@ pub async fn quote_swap_icrc2_optimal(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<QuoteResult, InternalError> {
+) -> Result<QuoteResponse, InternalError> {
     let kong_quote = quote_swap_kongswap(input_token.clone(), output_token.clone(), amount).await;
     // let icp_quote = quote_swap_icpswap(input_token, output_token, amount).await;
 
@@ -68,6 +68,29 @@ pub async fn quote_swap_icrc2_optimal(
     Ok(kong_quote?)
 }
 
+pub async fn quote_swap_icrc2(
+    input_token: CanisterId,
+    output_token: CanisterId,
+    amount: Nat,
+    provider: ExchangeId,
+) -> Result<QuoteResponse, InternalError> {
+    match provider {
+        ExchangeId::KongSwap => quote_swap_kongswap(input_token, output_token, amount).await,
+        ExchangeId::ICPSwap => quote_swap_icpswap(input_token, output_token, amount).await,
+        _ => Err(InternalError::business_logic(
+            build_error_code(2000, 3, 2), // 2000 03 02
+            "swap_service::quote_swap_icrc2".to_string(),
+            "Invalid provider".to_string(),
+            Some(HashMap::from([
+                ("input_token".to_string(), input_token.to_text()),
+                ("output_token".to_string(), output_token.to_text()),
+                ("amount".to_string(), amount.to_string()),
+                ("provider".to_string(), provider.to_string()),
+            ])),
+        )),
+    }
+}
+
 
 // TODO: move to separate services for each provider
 
@@ -76,7 +99,7 @@ pub async fn swap_icrc2_icpswap(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<SuccessResult, InternalError> {
+) -> Result<SwapResponse, InternalError> {
     let swap_client = Box::new(
         ICPSwapSwapClient::new(
             input_token.clone(),
@@ -92,7 +115,7 @@ pub async fn swap_icrc2_icpswap(
 
     let swap_result = swap_client.swap(amount.clone()).await?;
 
-    Ok(SuccessResult {
+    Ok(SwapResponse {
         provider: ExchangeId::ICPSwap,
         amount_out: swap_result.amount_out,
     })
@@ -103,7 +126,7 @@ pub async fn swap_icrc2_kongswap(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<SuccessResult, InternalError> {
+) -> Result<SwapResponse, InternalError> {
     let swap_client = Box::new(
         KongSwapSwapClient::new(
             *KONGSWAP_CANISTER_ID,
@@ -120,7 +143,7 @@ pub async fn swap_icrc2_kongswap(
 
     let swap_result = swap_client.swap(amount.clone()).await?;
 
-    Ok(SuccessResult {
+    Ok(SwapResponse {
         provider: ExchangeId::KongSwap,
         amount_out: swap_result.amount_out,
     })
@@ -131,7 +154,7 @@ pub async fn quote_swap_kongswap(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<QuoteResult, InternalError> {
+) -> Result<QuoteResponse, InternalError> {
     let swap_client = Box::new(
         KongSwapSwapClient::new(
             *KONGSWAP_CANISTER_ID,
@@ -142,7 +165,7 @@ pub async fn quote_swap_kongswap(
 
     let result = swap_client.quote(amount.clone()).await?;
 
-    Ok(QuoteResult {
+    Ok(QuoteResponse {
         provider: ExchangeId::KongSwap,
         amount_out: result.amount_out,
     })
@@ -153,7 +176,7 @@ pub async fn quote_swap_icpswap(
     input_token: CanisterId,
     output_token: CanisterId,
     amount: Nat,
-) -> Result<QuoteResult, InternalError> {
+) -> Result<QuoteResponse, InternalError> {
     let swap_client = Box::new(
         ICPSwapSwapClient::new(
             input_token.clone(),
@@ -163,7 +186,7 @@ pub async fn quote_swap_icpswap(
 
     let result = swap_client.quote(amount.clone()).await?;
 
-    Ok(QuoteResult {
+    Ok(QuoteResponse {
         provider: ExchangeId::ICPSwap,
         amount_out: result.amount_out,
     })

@@ -51,7 +51,7 @@ pub type KongSwapArgs = ICPSwapArgs;
 
 #[derive(CandidType, Serialize, Deserialize, Debug)]
 pub enum Response {
-    Success(SuccessResult),
+    Success(SwapResponse),
     SwapFailed,
     PinRequired,
     PinIncorrect(Milliseconds),
@@ -60,13 +60,13 @@ pub enum Response {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug)]
-pub struct SuccessResult {
+pub struct SwapResponse {
     pub provider: ExchangeId,
     pub amount_out: u128,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug)]
-pub struct QuoteResult {
+pub struct QuoteResponse {
     pub provider: ExchangeId,
     pub amount_out: u128,
 }
