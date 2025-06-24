@@ -1,7 +1,7 @@
 type AddLiquidityResponse = record {
-  position_id : nat64;
   token_0_amount : nat;
   token_1_amount : nat;
+  position_id : nat64;
 };
 
 type AddLiquidityResult = variant {
@@ -9,17 +9,72 @@ type AddLiquidityResult = variant {
   Err : ResponseError;
 };
 
-type AddPoolResult = variant { Ok : text; Err : ResponseError };
+type AddLiquidityToPoolFailed = record {
+  error : InternalError;
+  amount0 : opt nat;
+  pool_id : text;
+};
 
-type ApyValue = record { tokens_apy : float64; usd_apy : float64 };
+type AddLiquidityToPoolStarted = record {
+  amount0 : opt nat;
+  amount1 : opt nat;
+  pool_id : text;
+};
 
-type DeletePoolResult = variant { Ok; Err : ResponseError };
+type AddLiquidityToPoolCompleted = record {
+  amount0 : opt nat;
+  amount1 : opt nat;
+  pool_id : text;
+};
+
+type AddPoolResult = variant {
+  Ok : text;
+  Err : ResponseError;
+};
+
+type ApyValue = record {
+  tokens_apy : float64;
+  usd_apy : float64;
+};
+
+type DeletePoolResult = variant {
+  Ok;
+  Err : ResponseError;
+};
+
+type Event = variant {
+  AddLiquidityToPoolFailed : AddLiquidityToPoolFailed;
+  AddLiquidityToPoolCompleted : AddLiquidityToPoolCompleted;
+  WithdrawLiquidityFromPoolStarted : WithdrawLiquidityFromPoolStarted;
+  AddLiquidityToPoolStarted : AddLiquidityToPoolStarted;
+  WithdrawLiquidityFromPoolCompleted : WithdrawLiquidityFromPoolCompleted;
+  WithdrawLiquidityFromPoolFailed : WithdrawLiquidityFromPoolFailed;
+};
+
+type EventRecord = record {
+  id : nat64;
+  user : opt principal;
+  event : Event;
+  timestamp : nat64;
+  correlation_id : text;
+};
 
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
 
-type GetPoolByIdResult = variant { Ok : Pool; Err : ResponseError };
+type GetEventRecordsResult = variant {
+  Ok : vec EventRecord;
+  Err : ResponseError;
+};
 
-type GetPoolsResult = variant { Ok : vec Pool; Err : ResponseError };
+type GetPoolByIdResult = variant {
+  Ok : Pool;
+  Err : ResponseError;
+};
+
+type GetPoolsResult = variant {
+  Ok : vec Pool;
+  Err : ResponseError;
+};
 
 type InternalError = record {
   context : text;
@@ -47,9 +102,14 @@ type Pool = record {
   position_id : opt nat64;
 };
 
-type PoolData = record { tvl : nat };
+type PoolData = record {
+  tvl : nat;
+};
 
-type PoolMetrics = record { apy : ApyValue; tvl : nat };
+type PoolMetrics = record {
+  apy : ApyValue;
+  tvl : nat;
+};
 
 type PoolSnapshot = record {
   id : text;
@@ -75,7 +135,6 @@ type PositionData = record {
 };
 
 type ResponseError = record {
-  source : opt InternalError;
   code : nat32;
   kind : InternalErrorKind;
   message : text;
@@ -85,6 +144,27 @@ type ResponseError = record {
 type TestCreatePoolSnapshotResult = variant {
   Ok : PoolSnapshot;
   Err : ResponseError;
+};
+
+type WithdrawLiquidityFromPoolCompleted = record {
+  shares : nat;
+  total_shares : nat;
+  amount_token0 : nat;
+  amount_token1 : nat;
+  pool_id : text;
+};
+
+type WithdrawLiquidityFromPoolFailed = record {
+  shares : nat;
+  total_shares : nat;
+  error : InternalError;
+  pool_id : text;
+};
+
+type WithdrawLiquidityFromPoolStarted = record {
+  shares : nat;
+  total_shares : nat;
+  pool_id : text;
 };
 
 type WithdrawLiquidityResponse = record {
@@ -101,6 +181,7 @@ service : () -> {
   add_liquidity_to_pool : (principal, text, nat) -> (AddLiquidityResult);
   add_pool : (principal, principal, ExchangeId) -> (AddPoolResult);
   delete_pool : (text) -> (DeletePoolResult);
+  get_event_records : (nat64, nat64) -> (GetEventRecordsResult);
   get_pool_by_id : (text) -> (GetPoolByIdResult);
   get_pool_metrics : (vec text) -> (vec record { text; PoolMetrics });
   get_pools : () -> (GetPoolsResult);

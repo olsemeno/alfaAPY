@@ -28,6 +28,7 @@ use crate::types::types::{
     GetPoolByIdResult,
     GetPoolMetricsResult,
     GetPoolsSnapshotsResult,
+    GetEventRecordsResult,
 };
 
 pub mod pools;
@@ -239,6 +240,16 @@ pub async fn withdraw_liquidity_from_pool(pool_id: String) -> WithdrawLiquidityR
 
 fn generate_context() -> Context {
     Context::generate(Some(caller()))
+}
+
+// ========================== Event records ==========================
+
+#[update]
+pub fn get_event_records(offset: u64, limit: u64) -> GetEventRecordsResult {
+    let result = service::get_event_records(offset, limit)
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    GetEventRecordsResult(result)
 }
 
 // ========================== Vault management ==========================

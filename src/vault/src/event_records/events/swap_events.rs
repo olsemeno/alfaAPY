@@ -1,5 +1,6 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
+use errors::internal_error::error::InternalError;
 
 use types::CanisterId;
 
@@ -13,6 +14,7 @@ pub struct SwapTokenStarted {
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct SwapTokenCompleted {
+    pub pool_id: String,
     pub token_in: CanisterId,
     pub token_out: CanisterId,
     pub amount_in: Option<Nat>,
@@ -25,4 +27,5 @@ pub struct SwapTokenFailed {
     pub token_in: CanisterId,
     pub token_out: CanisterId,
     pub amount_in: Option<Nat>,
+    pub error: InternalError,
 }

@@ -18,8 +18,8 @@ use crate::pool_metrics::pool_metrics::PoolMetrics;
 use crate::pool_metrics::pool_metrics_service;
 use crate::repository::pools_repo;
 use crate::liquidity::liquidity_service;
-use crate::event_records::event_record_service;
-use crate::event_records::event_record::Event;
+use crate::repository::event_records_repo;
+use crate::event_records::event_record::EventRecord;
 
 // ========================== Pools management ==========================
 
@@ -101,13 +101,6 @@ pub async fn add_liquidity_to_pool(
             ])),
         );
 
-        event_record_service::create_event_record(
-            Event::add_liquidity_to_pool_failed(Some(pool_id), Some(amount), None),
-            context.correlation_id,
-            context.user,
-            Some(error.clone()),
-        );
-
         return Err(error);
     }
 
@@ -158,13 +151,6 @@ pub async fn withdraw_liquidity_from_pool(
             ])),
         );
 
-        event_record_service::create_event_record(
-            Event::withdraw_liquidity_from_pool_failed(pool_id, None, None),
-            context.correlation_id,
-            context.user,
-            Some(error.clone()),
-        );
-
         return Err(error);
     }
 
@@ -192,4 +178,11 @@ pub async fn withdraw_liquidity_from_pool(
     pools_repo::update_pool(pool_id.clone(), pool.clone());
 
     Ok(response)
+}
+
+// ========================== Event records ==========================
+
+pub fn get_event_records(offset: u64, limit: u64) -> Result<Vec<EventRecord>, InternalError> {
+    let result = event_records_repo::get_event_records(offset as usize, limit as usize);
+    Ok(result)
 }

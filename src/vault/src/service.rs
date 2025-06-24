@@ -12,6 +12,10 @@ use crate::repository::strategies_repo;
 use crate::user::user_service;
 use crate::strategies::strategy::IStrategy;
 use crate::types::types::*;
+use crate::repository::event_records_repo;
+use crate::event_records::event_record::EventRecord;
+
+// ========================== Strategies ==========================
 
 /// Accepts an investment into a specified strategy.
 ///
@@ -72,7 +76,7 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
             )
         })?;
 
-    strategy.withdraw(context.clone(), args.amount.clone()).await
+    strategy.withdraw(context.clone(), args.percentage.clone()).await
 }
 
 pub async fn strategy_liquidity(context: Context, strategy_id: u16) -> Result<Nat, InternalError> {
@@ -134,6 +138,14 @@ pub async fn strategy_liquidity(context: Context, strategy_id: u16) -> Result<Na
 
     Ok(base_token_amount)
 }
+
+// ========================== Event records ==========================
+
+pub fn get_event_records(offset: u64, limit: u64) -> Result<Vec<EventRecord>, InternalError> {
+    let result = event_records_repo::get_event_records(offset as usize, limit as usize);
+    Ok(result)
+}
+
 
 /// Retrieves a strategy by its ID.
 ///

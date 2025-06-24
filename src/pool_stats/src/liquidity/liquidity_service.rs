@@ -15,46 +15,90 @@ pub async fn add_liquidity_to_pool(
     pool: Pool,
     amount: Nat
 ) -> Result<AddLiquidityResponse, InternalError> {
+    let user = context.user.clone().unwrap();
+
+    // Event: Add liquidity to pool started
+    event_record_service::create_event_record(
+        Event::add_liquidity_to_pool_started(pool.id.clone(), Some(amount.clone()), None),
+        context.correlation_id.clone(),
+        Some(user),
+    );
+
     let liquidity_client = liquidity_client(pool.clone()).await;
 
-    liquidity_client.add_liquidity_to_pool(
+    let add_liquidity_response = liquidity_client.add_liquidity_to_pool(
         amount.clone()
     ).await
         .map_err(|error| {
+            // Event: Add liquidity to pool failed
             event_record_service::create_event_record(
-                Event::add_liquidity_to_pool_failed(Some(pool.id), Some(amount), None),
+                Event::add_liquidity_to_pool_failed(pool.id.clone(), Some(amount.clone()), error.clone()),
                 context.correlation_id.clone(),
                 context.user.clone(),
-                Some(error.clone()),
-            );
-
-            error
-        })
-}
-
-pub async fn withdraw_liquidity_from_pool(context: Context, pool: Pool) -> Result<WithdrawLiquidityResponse, InternalError> {
-    let liquidity_client = liquidity_client(pool.clone()).await;
-
-    // Remove 100% liquidity from pool
-    let total_shares = Nat::from(1 as u8);
-    let shares = Nat::from(1 as u8);
-
-    let response = liquidity_client.withdraw_liquidity_from_pool(
-        total_shares,
-        shares
-    ).await
-        .map_err(|error| {
-            event_record_service::create_event_record(
-                Event::withdraw_liquidity_from_pool_failed(pool.id, None, None),
-                context.correlation_id,
-                context.user,
-                Some(error.clone()),
             );
 
             error
         })?;
 
-    Ok(response)
+    // Event: Add liquidity to pool completed
+    event_record_service::create_event_record(
+        Event::add_liquidity_to_pool_completed(pool.id, Some(amount), None),
+        context.correlation_id.clone(),
+        Some(user),
+    );
+
+    Ok(add_liquidity_response)
+}
+
+pub async fn withdraw_liquidity_from_pool(context: Context, pool: Pool) -> Result<WithdrawLiquidityResponse, InternalError> {
+    let user = context.user.clone().unwrap();
+    // Remove 100% liquidity from pool
+    let total_shares = Nat::from(1 as u8);
+    let shares = Nat::from(1 as u8);
+
+    // Event: Withdraw liquidity from pool started
+    event_record_service::create_event_record(
+        Event::withdraw_liquidity_from_pool_started(pool.id.clone(), total_shares.clone(), shares.clone()),
+        context.correlation_id.clone(),
+        Some(user),
+    );
+
+    let liquidity_client = liquidity_client(pool.clone()).await;
+
+    let withdraw_liquidity_response = liquidity_client.withdraw_liquidity_from_pool(
+        total_shares.clone(),
+        shares.clone()
+    ).await
+        .map_err(|error| {
+            // Event: Withdraw liquidity from pool failed
+            event_record_service::create_event_record(
+                Event::withdraw_liquidity_from_pool_failed(
+                    pool.id.clone(),
+                    total_shares.clone(),
+                    shares.clone(),
+                    error.clone()
+                ),
+                context.correlation_id.clone(),
+                Some(user),
+            );
+
+            error
+        })?;
+
+    // Event: Withdraw liquidity from pool completed
+    event_record_service::create_event_record(
+        Event::withdraw_liquidity_from_pool_completed(
+            pool.id.clone(),
+            total_shares,
+            shares,
+            withdraw_liquidity_response.token_0_amount.clone(),
+            withdraw_liquidity_response.token_1_amount.clone()
+        ),
+        context.correlation_id.clone(),
+        Some(user),
+    );
+
+    Ok(withdraw_liquidity_response)
 }
 
 async fn liquidity_client(pool: Pool) -> Box<dyn LiquidityClient> {

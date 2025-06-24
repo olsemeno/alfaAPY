@@ -1,7 +1,6 @@
 use candid::Principal;
 use ic_cdk::api::time;
 
-use errors::internal_error::error::InternalError;
 use event_records::generic_event_record::GenericEventRecord;
 
 use crate::event_records::event_record::{EventRecord, Event};
@@ -14,7 +13,6 @@ impl EventRecord {
         event: Event,
         timestamp: u64,
         user: Option<Principal>,
-        error: Option<InternalError>,
     ) -> Self {
         Self(GenericEventRecord {
             id,
@@ -22,7 +20,6 @@ impl EventRecord {
             timestamp,
             correlation_id,
             user,
-            error,
         })
     }
 
@@ -31,7 +28,6 @@ impl EventRecord {
         correlation_id: String,
         event: Event,
         user: Option<Principal>,
-        error: Option<InternalError>,
     ) -> Self {
         Self::new(
             id,
@@ -39,7 +35,6 @@ impl EventRecord {
             event,
             time(),
             user,
-            error,
         )
     }
 

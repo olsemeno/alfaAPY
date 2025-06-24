@@ -1,6 +1,7 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
+use errors::internal_error::error::InternalError;
 use event_records::generic_event_record::GenericEventRecord;
 use event_records::events::pool_events::*;
 
@@ -39,19 +40,19 @@ impl Event {
         Self::AddLiquidityToPoolCompleted(AddLiquidityToPoolCompleted { pool_id, amount0, amount1 })
     }
 
-    pub fn add_liquidity_to_pool_failed(pool_id: Option<String>, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::AddLiquidityToPoolFailed(AddLiquidityToPoolFailed { pool_id, amount0, amount1 })
+    pub fn add_liquidity_to_pool_failed(pool_id: String, amount0: Option<Nat>, error: InternalError) -> Self {
+        Self::AddLiquidityToPoolFailed(AddLiquidityToPoolFailed { pool_id, amount0, error })
     }
 
-    pub fn withdraw_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolStarted(WithdrawLiquidityFromPoolStarted { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_started(pool_id: String, total_shares: Nat, shares: Nat) -> Self {
+        Self::WithdrawLiquidityFromPoolStarted(WithdrawLiquidityFromPoolStarted { pool_id, total_shares, shares })
     }
 
-    pub fn withdraw_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolCompleted(WithdrawLiquidityFromPoolCompleted { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_completed(pool_id: String, total_shares: Nat, shares: Nat, amount_token0: Nat, amount_token1: Nat) -> Self {
+        Self::WithdrawLiquidityFromPoolCompleted(WithdrawLiquidityFromPoolCompleted { pool_id, total_shares, shares, amount_token0, amount_token1 })
     }
 
-    pub fn withdraw_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolFailed(WithdrawLiquidityFromPoolFailed { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_failed(pool_id: String, total_shares: Nat, shares: Nat, error: InternalError) -> Self {
+        Self::WithdrawLiquidityFromPoolFailed(WithdrawLiquidityFromPoolFailed { pool_id, total_shares, shares, error })
     }
 }

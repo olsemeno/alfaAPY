@@ -1,5 +1,6 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
+use errors::internal_error::error::InternalError;
 
 // Strategy Deposit
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
@@ -21,6 +22,7 @@ pub struct StrategyDepositFailed {
     pub strategy_id: String,
     pub pool_id: Option<String>,
     pub amount0: Option<Nat>,
+    pub error: InternalError,
 }
 
 // Strategy Withdraw
@@ -44,6 +46,7 @@ pub struct StrategyWithdrawFailed {
     pub strategy_id: String,
     pub pool_id: Option<String>,
     pub shares: Option<Nat>,
+    pub error: InternalError,
 }
 
 // Strategy Rebalance
@@ -65,4 +68,5 @@ pub struct StrategyRebalanceFailed {
     pub strategy_id: String,
     pub previous_pool_id: Option<String>,
     pub new_pool_id: Option<String>,
+    pub error: InternalError,
 }

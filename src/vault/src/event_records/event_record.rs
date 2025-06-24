@@ -4,6 +4,7 @@ use types::CanisterId;
 
 use event_records::generic_event_record::GenericEventRecord;
 use event_records::events::pool_events::*;
+use errors::internal_error::error::InternalError;
 
 use crate::event_records::events::strategy_events::*;
 use crate::event_records::events::swap_events::*;
@@ -77,8 +78,8 @@ impl Event {
         Self::StrategyDepositCompleted(StrategyDepositCompleted { strategy_id, pool_id, amount0 })
     }
 
-    pub fn strategy_deposit_failed(strategy_id: String, pool_id: Option<String>, amount0: Option<Nat>) -> Self {
-        Self::StrategyDepositFailed(StrategyDepositFailed { strategy_id, pool_id, amount0 })
+    pub fn strategy_deposit_failed(strategy_id: String, pool_id: Option<String>, amount0: Option<Nat>, error: InternalError) -> Self {
+        Self::StrategyDepositFailed(StrategyDepositFailed { strategy_id, pool_id, amount0, error })
     }
     
     pub fn strategy_withdraw_started(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>) -> Self {
@@ -89,8 +90,8 @@ impl Event {
         Self::StrategyWithdrawCompleted(StrategyWithdrawCompleted { strategy_id, pool_id, shares, amount0 })
     }
 
-    pub fn strategy_withdraw_failed(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>) -> Self {
-        Self::StrategyWithdrawFailed(StrategyWithdrawFailed { strategy_id, pool_id, shares })
+    pub fn strategy_withdraw_failed(strategy_id: String, pool_id: Option<String>, shares: Option<Nat>, error: InternalError) -> Self {
+        Self::StrategyWithdrawFailed(StrategyWithdrawFailed { strategy_id, pool_id, shares, error })
     }
     
     pub fn strategy_rebalance_started(strategy_id: String, previous_pool_id: Option<String>) -> Self {
@@ -101,8 +102,8 @@ impl Event {
         Self::StrategyRebalanceCompleted(StrategyRebalanceCompleted { strategy_id, previous_pool_id, new_pool_id })
     }
 
-    pub fn strategy_rebalance_failed(strategy_id: String, previous_pool_id: Option<String>, new_pool_id: Option<String>) -> Self {
-        Self::StrategyRebalanceFailed(StrategyRebalanceFailed { strategy_id, previous_pool_id, new_pool_id })
+    pub fn strategy_rebalance_failed(strategy_id: String, previous_pool_id: Option<String>, new_pool_id: Option<String>, error: InternalError) -> Self {
+        Self::StrategyRebalanceFailed(StrategyRebalanceFailed { strategy_id, previous_pool_id, new_pool_id, error })
     }
     
     pub fn add_liquidity_to_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
@@ -113,31 +114,31 @@ impl Event {
         Self::AddLiquidityToPoolCompleted(AddLiquidityToPoolCompleted { pool_id, amount0, amount1 })
     }
 
-    pub fn add_liquidity_to_pool_failed(pool_id: Option<String>, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::AddLiquidityToPoolFailed(AddLiquidityToPoolFailed { pool_id, amount0, amount1 })
+    pub fn add_liquidity_to_pool_failed(pool_id: String, amount0: Option<Nat>, error: InternalError) -> Self {
+        Self::AddLiquidityToPoolFailed(AddLiquidityToPoolFailed { pool_id, amount0, error })
     }
     
-    pub fn withdraw_liquidity_from_pool_started(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolStarted(WithdrawLiquidityFromPoolStarted { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_started(pool_id: String, total_shares: Nat, shares: Nat) -> Self {
+        Self::WithdrawLiquidityFromPoolStarted(WithdrawLiquidityFromPoolStarted { pool_id, total_shares, shares })
     }
 
-    pub fn withdraw_liquidity_from_pool_completed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolCompleted(WithdrawLiquidityFromPoolCompleted { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_completed(pool_id: String, total_shares: Nat, shares: Nat, amount_token0: Nat, amount_token1: Nat) -> Self {
+        Self::WithdrawLiquidityFromPoolCompleted(WithdrawLiquidityFromPoolCompleted { pool_id, total_shares, shares, amount_token0, amount_token1 })
     }
     
-    pub fn withdraw_liquidity_from_pool_failed(pool_id: String, amount0: Option<Nat>, amount1: Option<Nat>) -> Self {
-        Self::WithdrawLiquidityFromPoolFailed(WithdrawLiquidityFromPoolFailed { pool_id, amount0, amount1 })
+    pub fn withdraw_liquidity_from_pool_failed(pool_id: String, total_shares: Nat, shares: Nat, error: InternalError) -> Self {
+        Self::WithdrawLiquidityFromPoolFailed(WithdrawLiquidityFromPoolFailed { pool_id, total_shares, shares, error })
     }
 
     pub fn swap_token_started(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>) -> Self {
         Self::SwapTokenStarted(SwapTokenStarted { pool_id, token_in, token_out, amount_in })
     }
 
-    pub fn swap_token_completed(token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>, amount_out: Option<Nat>) -> Self {
-        Self::SwapTokenCompleted(SwapTokenCompleted { token_in, token_out, amount_in, amount_out })
+    pub fn swap_token_completed(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>, amount_out: Option<Nat>) -> Self {
+        Self::SwapTokenCompleted(SwapTokenCompleted { pool_id, token_in, token_out, amount_in, amount_out })
     }
 
-    pub fn swap_token_failed(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>) -> Self {
-        Self::SwapTokenFailed(SwapTokenFailed { pool_id, token_in, token_out, amount_in })
+    pub fn swap_token_failed(pool_id: String, token_in: CanisterId, token_out: CanisterId, amount_in: Option<Nat>, error: InternalError) -> Self {
+        Self::SwapTokenFailed(SwapTokenFailed { pool_id, token_in, token_out, amount_in, error })
     }
 }

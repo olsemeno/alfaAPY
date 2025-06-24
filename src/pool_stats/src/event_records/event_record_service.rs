@@ -1,7 +1,5 @@
 use candid::Principal;
 
-use errors::internal_error::error::InternalError;
-
 use crate::event_records::event_record::{EventRecord, Event};
 use crate::repository::event_records_repo;
 
@@ -9,14 +7,12 @@ pub fn create_event_record(
     event: Event,
     correlation_id: String,
     user: Option<Principal>,
-    error: Option<InternalError>,
 ) -> EventRecord {
     let event_record = EventRecord::build(
         next_id(),
         correlation_id,
         event,
         user,
-        error,
     );
     event_record.save();
     event_record

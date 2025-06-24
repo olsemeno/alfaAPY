@@ -28,19 +28,395 @@ use crate::types::types::{
 
 #[async_trait]
 pub trait IStrategy: Send + Sync + BasicStrategy {
-    /// Updates the shares owned by a specific user in the strategy
+    /// Deposits an amount of tokens into the strategy
     ///
     /// # Arguments
     ///
-    /// * `user` - The Principal ID of the user whose shares are being updated
-    /// * `shares` - The new total number of shares for this user
+    /// * `investor` - The Principal ID of the investor who is depositing tokens
+    /// * `amount` - The amount of tokens to deposit
+    ///
+    /// # Returns
+    ///
+    /// A `StrategyDepositResponse` struct containing the following fields:
+    /// - `amount`: The amount of tokens deposited
+    /// - `shares`: The number of shares received
+    /// - `tx_id`: The transaction ID (always 0 for this implementation)
+    /// - `position_id`: The request ID from the deposit call
     ///
     /// # Details
     ///
     /// This function:
-    /// 1. Gets the current user shares mapping
-    /// 2. Updates or inserts the new share amount for the specified user
-    /// 3. Saves the updated mapping back to the strategy state
+    /// 1. Retrieves the current pool from the strategy
+    /// 2. Calculates the new shares for the investor's deposit
+    /// 3. Updates the total balance and total shares
+    /// 4. Updates the user shares mapping
+    /// 5. Updates the initial deposit mapping
+    /// 6. Adds liquidity to the pool
+    /// 7. Saves the updated strategy state
+    ///
+    async fn deposit(
+        &mut self,
+        context: Context,
+        investor: Principal,
+        amount: Nat,
+    ) -> Result<StrategyDepositResponse, InternalError> {
+        let strategy_id = self.get_id().to_string();
+
+        // Event: Strategy deposit started
+        event_record_service::create_event_record(
+            Event::strategy_deposit_started(strategy_id.clone(), None, Some(amount.clone())),
+            context.correlation_id.clone(),
+            Some(investor),
+        );
+
+        let mut current_pool = self.get_current_pool();
+
+        // Set current pool to the best APY pool if not set
+        if current_pool.is_none() {
+            // Find the best APY pool
+            let best_apy_pool = self.get_best_apy_pool().await;
+
+            if best_apy_pool.is_none() {
+                let error = InternalError::not_found(
+                    build_error_code(3100, 1, 1), // 3100 01 01
+                    "BasicStrategy::deposit".to_string(),
+                    "No pool found to deposit".to_string(),
+                    None,
+                );
+
+                // Event: Strategy deposit failed
+                event_record_service::create_event_record(
+                    Event::strategy_deposit_failed(strategy_id.clone(), None, Some(amount), error.clone()),
+                    context.correlation_id,
+                    Some(investor),
+                );
+
+                return Err(error);
+            }
+
+            current_pool = best_apy_pool;
+        }
+
+        let current_pool = current_pool.unwrap();
+
+        // Add liquidity to pool
+        let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
+            context.clone(),
+            amount.clone(),
+            current_pool.clone()
+        ).await?;
+
+        self.update_strategy_state_after_deposit(
+            investor,
+            amount.clone(),
+            current_pool.clone(),
+            add_liquidity_response.position_id,
+        );
+
+        // Event: Strategy deposit completed
+        event_record_service::create_event_record(
+            Event::strategy_deposit_completed(strategy_id, Some(current_pool.get_id()), Some(amount.clone())),
+            context.correlation_id,
+            Some(investor),
+        );
+
+        Ok(StrategyDepositResponse {
+            amount: amount,
+            shares: self.get_user_shares().get(&investor).unwrap().clone(),
+            tx_id: 0,
+            position_id: add_liquidity_response.position_id,
+        })
+    }
+
+    /// Withdraws shares from the strategy and returns the corresponding tokens to the investor
+    ///
+    /// # Arguments
+    ///
+    /// * `shares` - The number of shares to withdraw
+    ///
+    /// # Returns
+    ///
+    /// * `StrategyWithdrawResponse` - Contains the amount of tokens withdrawn and remaining shares
+    ///
+    /// # Details
+    ///
+    /// This function:
+    /// 1. Verifies the caller has sufficient shares
+    /// 2. Gets the current pool and token information
+    /// 3. Removes liquidity from the pool proportional to shares
+    /// 4. Swaps secondary token to base token
+    /// 5. Transfers total tokens to caller
+    /// 6. Updates total shares, user shares and initial deposit
+    /// 7. Saves updated strategy state
+    ///
+    /// TODO: Rename `shares` to `percentage`
+    async fn withdraw(&mut self, context: Context, percentage: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
+        let strategy_id = self.get_id().to_string();
+        let investor = context.user.unwrap();
+        let user_shares = self.get_user_shares_by_principal(investor.clone());
+        let shares = user_shares.clone() * percentage.clone() / Nat::from(100u64); // TODO: Check this operation
+
+        // Event: Strategy withdraw started
+        event_record_service::create_event_record(
+            Event::strategy_withdraw_started(strategy_id.clone(), None, Some(shares.clone())),
+            context.correlation_id.clone(),
+            Some(investor),
+        );
+
+        let current_pool = self.get_current_pool().clone();
+        let current_pool_id = current_pool.clone().unwrap().get_id();
+
+        if user_shares == Nat::from(0u8) {
+            let error = InternalError::business_logic(
+                build_error_code(3100, 3, 3), // 3100 03 03
+                "BasicStrategy::withdraw".to_string(),
+                "No shares found for user".to_string(),
+                Some(HashMap::from([
+                    ("percentage".to_string(), percentage.to_string()),
+                    ("user_shares".to_string(), user_shares.to_string()),
+                    ("shares".to_string(), shares.to_string()),
+                ]))
+            );
+
+            // Event: Strategy withdraw failed
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(
+                    strategy_id,
+                    Some(current_pool_id),
+                    Some(shares.clone()),
+                    error.clone(),
+                ),
+                context.correlation_id,
+                Some(investor),
+            );
+
+            return Err(error);
+        }
+
+        // Check if user has enough shares
+        if shares > user_shares {
+            let error = InternalError::business_logic(
+                build_error_code(3100, 3, 4), // 3100 03 04
+                "BasicStrategy::withdraw".to_string(),
+                "Not sufficient shares for user".to_string(),
+                Some(HashMap::from([
+                    ("percentage".to_string(), percentage.to_string()),
+                    ("user_shares".to_string(), user_shares.to_string()),
+                    ("shares".to_string(), shares.to_string()),
+                ]))
+            );
+
+            // Event: Strategy withdraw failed
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(
+                    strategy_id,
+                    Some(current_pool_id),
+                    Some(shares.clone()),
+                    error.clone(),
+                ),
+                context.correlation_id,
+                Some(investor),
+            );
+
+            return Err(error);
+        }
+
+        if current_pool.is_none() {
+            let error = InternalError::not_found(
+                build_error_code(3100, 1, 5), // 3100 01 05
+                "BasicStrategy::withdraw".to_string(),
+                "No current pool found in strategy".to_string(),
+                None,
+            );
+
+            // Event: Strategy withdraw failed
+            event_record_service::create_event_record(
+                Event::strategy_withdraw_failed(
+                    strategy_id,
+                    None,
+                    Some(shares.clone()),
+                    error.clone(),
+                ),
+                context.correlation_id,
+                Some(investor),
+            );
+
+            return Err(error);
+        }
+
+        let current_pool = current_pool.unwrap();
+
+        // Withdraw liquidity from pool and swap token_1 to token_0 (base token)
+        let amount_0_to_withdraw = liquidity_service::withdraw_liquidity_from_pool_and_swap(
+            context.clone(),
+            self.get_total_shares(),
+            shares.clone(),
+            current_pool.clone(),
+        ).await?;
+
+        // Transfer amount of token_0 (base token) to user
+        icrc1_transfer_to_user(
+            investor,
+            current_pool.token0,
+            amount_0_to_withdraw.clone(),
+        ).await
+            .map_err(|error| {
+                // Event: Strategy withdraw failed
+                event_record_service::create_event_record(
+                    Event::strategy_withdraw_failed(
+                        strategy_id.clone(),
+                        Some(current_pool_id.clone()),
+                        Some(shares.clone()),
+                        error.clone(),
+                    ),
+                    context.correlation_id.clone(),
+                    Some(investor),
+                );
+
+                error
+            })?;
+
+        let new_user_shares = self.update_strategy_state_after_withdraw(
+            investor,
+            shares.clone(),
+        );
+
+        // Event: Strategy withdraw completed
+        event_record_service::create_event_record(
+            Event::strategy_withdraw_completed(
+                strategy_id,
+                Some(current_pool_id),
+                Some(shares.clone()),
+                Some(amount_0_to_withdraw.clone()),
+            ),
+            context.correlation_id,
+            Some(investor),
+        );
+
+        Ok(StrategyWithdrawResponse {
+            amount: amount_0_to_withdraw,
+            current_shares: new_user_shares.clone(),
+        })
+    }
+
+    /// Rebalances the strategy by finding and moving to the pool with the highest APY
+    ///
+    /// # Details
+    ///
+    /// 1. Gets data for all available pools
+    /// 2. Finds the pool with highest APY
+    /// 3. If current pool is different from highest APY pool:
+    ///    - Withdraws liquidity from current pool
+    ///    - Swaps token_1 to token_0 (base token)
+    ///    - Adds liquidity to new pool
+    ///    - Updates current pool
+    ///
+    /// # Returns
+    ///
+    /// * `StrategyRebalanceResponse` - Contains:
+    ///   * `pool` - The pool being used after rebalancing
+    ///
+    async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
+        let context = Context::generate(None);
+        let strategy_id = self.get_id().to_string();
+
+        // Event: Strategy rebalance started
+        event_record_service::create_event_record(
+            Event::strategy_rebalance_started(strategy_id.clone(), None),
+            context.correlation_id.clone(),
+            None,
+        );
+
+        let pools_data = liquidity_service::get_pools_data(self.get_pools()).await;
+        let mut max_apy = 0.0;
+        let mut max_apy_pool = None;
+
+        // Find pool with highest APY
+        for pool_data in pools_data {
+            if pool_data.apy > max_apy {
+                max_apy = pool_data.apy;
+                max_apy_pool = Some(pool_data.pool);
+            }
+        }
+
+        let current_pool = self.get_current_pool();
+
+        if max_apy_pool.is_none() {
+            return Ok(StrategyRebalanceResponse {
+                previous_pool: current_pool.clone().unwrap(),
+                current_pool: current_pool.clone().unwrap(),
+                is_rebalanced: false,
+            });
+        }
+
+        let max_apy_pool = max_apy_pool.unwrap();
+
+        if let Some(current_pool) = &current_pool {
+             // If current pool is the same as max APY pool, return
+            if current_pool.is_same_pool(&max_apy_pool) {
+                return Ok(StrategyRebalanceResponse {
+                    previous_pool: current_pool.clone(),
+                    current_pool: current_pool.clone(),
+                    is_rebalanced: false,
+                });
+            }
+
+            // Withdraw liquidity from current pool and swap token_1 to token_0 (base token)
+            let token_0_to_pool_amount = liquidity_service::withdraw_liquidity_from_pool_and_swap(
+                context.clone(),
+                self.get_total_shares(),
+                self.get_total_shares(),
+                current_pool.clone(),
+            ).await?;
+
+            // Add liquidity to new pool
+            let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
+                context.clone(),
+                token_0_to_pool_amount.clone(),
+                max_apy_pool.clone(),
+            ).await?;
+
+            // Event: Strategy rebalance completed
+            event_record_service::create_event_record(
+                Event::strategy_rebalance_completed(
+                    strategy_id,
+                    Some(current_pool.get_id()),
+                    Some(max_apy_pool.get_id()),
+                ),
+                context.correlation_id,
+                None,
+            );
+
+            // Update current pool
+            self.set_current_pool(Some(max_apy_pool));
+
+            // Update position id
+            self.set_position_id(Some(add_liquidity_response.position_id));
+
+            Ok(StrategyRebalanceResponse {
+                previous_pool: current_pool.clone(),
+                current_pool: self.get_current_pool().unwrap(),
+                is_rebalanced: true,
+            })
+        } else {
+            let error = InternalError::not_found(
+                build_error_code(3100, 1, 6), // 3100 01 06
+                "BasicStrategy::rebalance".to_string(),
+                "No current pool found in strategy".to_string(),
+                None,
+            );
+
+            // Event: Strategy rebalance failed
+            event_record_service::create_event_record(
+                Event::strategy_rebalance_failed(strategy_id, None, None, error.clone()),
+                context.correlation_id,
+                None,
+            );
+
+            return Err(error);
+        }
+    }
+
     fn update_user_shares(&mut self, user: Principal, shares: Nat) {
         let mut user_shares_map = self.get_user_shares();
         if shares == Nat::from(0u64) {
@@ -204,358 +580,6 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         save_strategy(self.clone_self());
 
         new_user_shares
-    }
-
-    /// Deposits an amount of tokens into the strategy
-    ///
-    /// # Arguments
-    ///
-    /// * `investor` - The Principal ID of the investor who is depositing tokens
-    /// * `amount` - The amount of tokens to deposit
-    ///
-    /// # Returns
-    ///
-    /// A `StrategyDepositResponse` struct containing the following fields:
-    /// - `amount`: The amount of tokens deposited
-    /// - `shares`: The number of shares received
-    /// - `tx_id`: The transaction ID (always 0 for this implementation)
-    /// - `position_id`: The request ID from the deposit call
-    ///
-    /// # Details
-    ///
-    /// This function:
-    /// 1. Retrieves the current pool from the strategy
-    /// 2. Calculates the new shares for the investor's deposit
-    /// 3. Updates the total balance and total shares
-    /// 4. Updates the user shares mapping
-    /// 5. Updates the initial deposit mapping
-    /// 6. Adds liquidity to the pool
-    /// 7. Saves the updated strategy state
-    ///
-    async fn deposit(
-        &mut self,
-        context: Context,
-        investor: Principal,
-        amount: Nat,
-    ) -> Result<StrategyDepositResponse, InternalError> {
-        let strategy_id = self.get_id().to_string();
-        let mut current_pool = self.get_current_pool();
-
-        // Set current pool to the best APY pool if not set
-        if current_pool.is_none() {
-            // Find the best APY pool
-            let best_apy_pool = self.get_best_apy_pool().await;
-
-            if best_apy_pool.is_none() {
-                let error = InternalError::not_found(
-                    build_error_code(3100, 1, 1), // 3100 01 01
-                    "BasicStrategy::deposit".to_string(),
-                    "No pool found to deposit".to_string(),
-                    None,
-                );
-
-                event_record_service::create_event_record(
-                    Event::add_liquidity_to_pool_failed(None, Some(amount), None),
-                    context.correlation_id,
-                    Some(investor),
-                    Some(error.clone()),
-                );
-
-                return Err(error);
-            }
-
-            current_pool = best_apy_pool;
-        }
-
-        let current_pool = current_pool.unwrap();
-
-        // Add liquidity to pool
-        let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
-            context.clone(),
-            amount.clone(),
-            current_pool.clone()
-        ).await?;
-
-        self.update_strategy_state_after_deposit(
-            investor,
-            amount.clone(),
-            current_pool.clone(),
-            add_liquidity_response.position_id,
-        );
-
-        event_record_service::create_event_record(
-            Event::strategy_deposit_completed(strategy_id, Some(current_pool.get_id()), Some(amount.clone())),
-            context.correlation_id,
-            Some(investor),
-            None,
-        );
-
-        Ok(StrategyDepositResponse {
-            amount: amount,
-            shares: self.get_user_shares().get(&investor).unwrap().clone(),
-            tx_id: 0,
-            position_id: add_liquidity_response.position_id,
-        })
-    }
-
-    /// Withdraws shares from the strategy and returns the corresponding tokens to the investor
-    ///
-    /// # Arguments
-    ///
-    /// * `shares` - The number of shares to withdraw
-    ///
-    /// # Returns
-    ///
-    /// * `StrategyWithdrawResponse` - Contains the amount of tokens withdrawn and remaining shares
-    ///
-    /// # Details
-    ///
-    /// This function:
-    /// 1. Verifies the caller has sufficient shares
-    /// 2. Gets the current pool and token information
-    /// 3. Removes liquidity from the pool proportional to shares
-    /// 4. Swaps secondary token to base token
-    /// 5. Transfers total tokens to caller
-    /// 6. Updates total shares, user shares and initial deposit
-    /// 7. Saves updated strategy state
-    ///
-    /// TODO: Rename `shares` to `percentage`
-    async fn withdraw(&mut self, context: Context, mut shares: Nat) -> Result<StrategyWithdrawResponse, InternalError> {
-        let investor = context.user.unwrap();
-        let strategy_id = self.get_id().to_string();
-        let user_shares = self.get_user_shares_by_principal(investor.clone());
-        let current_pool = self.get_current_pool().clone();
-        let current_pool_id = current_pool.clone().unwrap().get_id();
-
-        let percentage = shares; // TODO: Fix naming (shares -> percentage)
-        shares = user_shares.clone() * percentage.clone() / Nat::from(100u64); // TODO: Check this operation
-
-        if user_shares == Nat::from(0u8) {
-            let error = InternalError::business_logic(
-                build_error_code(3100, 3, 3), // 3100 03 03
-                "BasicStrategy::withdraw".to_string(),
-                "No shares found for user".to_string(),
-                Some(HashMap::from([
-                    ("percentage".to_string(), percentage.to_string()),
-                    ("user_shares".to_string(), user_shares.to_string()),
-                    ("shares".to_string(), shares.to_string()),
-                ]))
-            );
-
-            event_record_service::create_event_record(
-                Event::strategy_withdraw_failed(strategy_id, Some(current_pool_id), Some(shares.clone())),
-                context.correlation_id,
-                Some(investor),
-                Some(error.clone()),
-            );
-
-            return Err(error);
-        }
-
-        // Check if user has enough shares
-        if shares > user_shares {
-            let error = InternalError::business_logic(
-                build_error_code(3100, 3, 4), // 3100 03 04
-                "BasicStrategy::withdraw".to_string(),
-                "Not sufficient shares for user".to_string(),
-                Some(HashMap::from([
-                    ("percentage".to_string(), percentage.to_string()),
-                    ("user_shares".to_string(), user_shares.to_string()),
-                    ("shares".to_string(), shares.to_string()),
-                ]))
-            );
-
-            event_record_service::create_event_record(
-                Event::strategy_withdraw_failed(strategy_id, Some(current_pool_id), Some(shares.clone())),
-                context.correlation_id,
-                Some(investor),
-                Some(error.clone()),
-            );
-
-            return Err(error);
-        }
-
-        if current_pool.is_none() {
-            let error = InternalError::not_found(
-                build_error_code(3100, 1, 5), // 3100 01 05
-                "BasicStrategy::withdraw".to_string(),
-                "No current pool found in strategy".to_string(),
-                None,
-            );
-
-            event_record_service::create_event_record(
-                Event::strategy_withdraw_failed(strategy_id, None, Some(shares.clone())),
-                context.correlation_id,
-                Some(investor),
-                Some(error.clone()),
-            );
-
-            return Err(error);
-        }
-
-        let current_pool = current_pool.unwrap();
-
-        // Withdraw liquidity from pool and swap token_1 to token_0 (base token)
-        let amount_0_to_withdraw = liquidity_service::withdraw_liquidity_from_pool_and_swap(
-            context.clone(),
-            self.get_total_shares(),
-            shares.clone(),
-            current_pool.clone(),
-        ).await?;
-
-        // Transfer amount of token_0 (base token) to user
-        icrc1_transfer_to_user(
-            investor,
-            current_pool.token0,
-            amount_0_to_withdraw.clone(),
-        ).await
-            .map_err(|error| {
-                event_record_service::create_event_record(
-                    Event::strategy_withdraw_failed(
-                        strategy_id.clone(),
-                        Some(current_pool_id.clone()),
-                        Some(shares.clone()),
-                    ),
-                    context.correlation_id.clone(),
-                    Some(investor),
-                    Some(error.clone()),
-                );
-
-                error
-            })?;
-
-        let new_user_shares = self.update_strategy_state_after_withdraw(
-            investor,
-            shares.clone(),
-        );
-
-        event_record_service::create_event_record(
-            Event::strategy_withdraw_completed(
-                strategy_id,
-                Some(current_pool_id),
-                Some(shares.clone()),
-                Some(amount_0_to_withdraw.clone()),
-            ),
-            context.correlation_id,
-            Some(investor),
-            None,
-        );
-
-        Ok(StrategyWithdrawResponse {
-            amount: amount_0_to_withdraw,
-            current_shares: new_user_shares.clone(),
-        })
-    }
-
-    /// Rebalances the strategy by finding and moving to the pool with the highest APY
-    ///
-    /// # Details
-    ///
-    /// 1. Gets data for all available pools
-    /// 2. Finds the pool with highest APY
-    /// 3. If current pool is different from highest APY pool:
-    ///    - Withdraws liquidity from current pool
-    ///    - Swaps token_1 to token_0 (base token)
-    ///    - Adds liquidity to new pool
-    ///    - Updates current pool
-    ///
-    /// # Returns
-    ///
-    /// * `StrategyRebalanceResponse` - Contains:
-    ///   * `pool` - The pool being used after rebalancing
-    ///
-    async fn rebalance(&mut self) -> Result<StrategyRebalanceResponse, InternalError> {
-        let context = Context::generate(None);
-
-        let strategy_id = self.get_id().to_string();
-        let pools_data = liquidity_service::get_pools_data(self.get_pools()).await;
-        let mut max_apy = 0.0;
-        let mut max_apy_pool = None;
-
-        // Find pool with highest APY
-        for pool_data in pools_data {
-            if pool_data.apy > max_apy {
-                max_apy = pool_data.apy;
-                max_apy_pool = Some(pool_data.pool);
-            }
-        }
-
-        let current_pool = self.get_current_pool();
-
-        if max_apy_pool.is_none() {
-            return Ok(StrategyRebalanceResponse {
-                previous_pool: current_pool.clone().unwrap(),
-                current_pool: current_pool.clone().unwrap(),
-                is_rebalanced: false,
-            });
-        }
-
-        let max_apy_pool = max_apy_pool.unwrap();
-
-        if let Some(current_pool) = &current_pool {
-             // If current pool is the same as max APY pool, return
-            if current_pool.is_same_pool(&max_apy_pool) {
-                return Ok(StrategyRebalanceResponse {
-                    previous_pool: current_pool.clone(),
-                    current_pool: current_pool.clone(),
-                    is_rebalanced: false,
-                });
-            }
-
-            // Withdraw liquidity from current pool and swap token_1 to token_0 (base token)
-            let token_0_to_pool_amount = liquidity_service::withdraw_liquidity_from_pool_and_swap(
-                context.clone(),
-                self.get_total_shares(),
-                self.get_total_shares(),
-                current_pool.clone(),
-            ).await?;
-
-            // Add liquidity to new pool
-            let add_liquidity_response = liquidity_service::add_liquidity_to_pool(
-                context.clone(),
-                token_0_to_pool_amount.clone(),
-                max_apy_pool.clone(),
-            ).await?;
-
-            event_record_service::create_event_record(
-                Event::strategy_rebalance_completed(
-                    strategy_id,
-                    Some(current_pool.get_id()),
-                    Some(max_apy_pool.get_id()),
-                ),
-                context.correlation_id,
-                None,
-                None,
-            );
-
-            // Update current pool
-            self.set_current_pool(Some(max_apy_pool));
-
-            // Update position id
-            self.set_position_id(Some(add_liquidity_response.position_id));
-
-            Ok(StrategyRebalanceResponse {
-                previous_pool: current_pool.clone(),
-                current_pool: self.get_current_pool().unwrap(),
-                is_rebalanced: true,
-            })
-        } else {
-            let error = InternalError::not_found(
-                build_error_code(3100, 1, 6), // 3100 01 06
-                "BasicStrategy::rebalance".to_string(),
-                "No current pool found in strategy".to_string(),
-                None,
-            );
-
-            event_record_service::create_event_record(
-                Event::strategy_rebalance_failed(strategy_id, None, None),
-                context.correlation_id,
-                None,
-                Some(error.clone()),
-            );
-
-            return Err(error);
-        }
     }
 
     fn to_candid(&self) -> StrategyCandid;

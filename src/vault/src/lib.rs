@@ -22,8 +22,6 @@ use ::types::context::Context;
 use crate::repository::stable_state;
 use crate::repository::strategies_repo;
 use crate::strategies::strategy_service;
-use crate::event_records::event_record_service;
-use crate::event_records::event_record::EventRecord;
 use crate::types::types::*;
 
 thread_local! {
@@ -118,8 +116,11 @@ async fn test_reset_strategy(strategy_id: u16) {
 // =============== Events ===============
 
 #[update]
-async fn get_event_records(offset: u64, limit: u64) -> Vec<EventRecord> {
-    event_record_service::get_event_records(offset as usize, limit as usize)
+async fn get_event_records(offset: u64, limit: u64) -> GetEventRecordsResult {
+    let result = service::get_event_records(offset, limit)
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    GetEventRecordsResult(result)
 }
 
 // =============== Strategies ===============

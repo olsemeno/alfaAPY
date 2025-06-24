@@ -6,6 +6,7 @@ use types::CanisterId;
 use errors::response_error::error::ResponseError;
 
 use crate::pools::pool::Pool;
+use crate::event_records::event_record::EventRecord;
 
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct StrategyDepositArgs {
@@ -17,7 +18,7 @@ pub struct StrategyDepositArgs {
 #[derive(CandidType, Deserialize, Clone, Serialize)]
 pub struct StrategyWithdrawArgs {
     pub ledger: CanisterId,
-    pub amount: Nat, // TODO: Rename to percentage
+    pub percentage: Nat,
     pub strategy_id: StrategyId,
 }
 
@@ -88,3 +89,6 @@ pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseE
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct StrategyLiquidityResult(pub Result<Nat, ResponseError>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct GetEventRecordsResult(pub Result<Vec<EventRecord>, ResponseError>);
