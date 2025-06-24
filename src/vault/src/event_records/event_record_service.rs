@@ -2,6 +2,7 @@ use candid::Principal;
 
 use crate::event_records::event_record::{EventRecord, Event};
 use crate::repository::event_records_repo;
+use crate::types::types::ListItemsPaginationRequest;
 
 pub fn create_event_record(
     event: Event,
@@ -18,8 +19,8 @@ pub fn create_event_record(
     event_record
 }
 
-pub fn get_event_records(offset: usize, limit: usize) -> Vec<EventRecord> {
-    event_records_repo::get_event_records(offset, limit)
+pub fn get_event_records(request: ListItemsPaginationRequest) -> Vec<EventRecord> {
+    event_records_repo::get_event_records(request)
 }
 
 fn next_id() -> u64 {

@@ -94,4 +94,29 @@ pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseE
 pub struct StrategyLiquidityResult(pub Result<Nat, ResponseError>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub struct GetEventRecordsResult(pub Result<Vec<EventRecord>, ResponseError>);
+pub struct GetEventRecordsResult(pub Result<EventRecordsPaginationResponse, ResponseError>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct EventRecordsPaginationResponse(pub ListItemsPaginationResponse<EventRecord>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub enum SortOrder {
+    Asc,
+    Desc,
+}
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct ListItemsPaginationRequest {
+    pub page: u64,
+    pub page_size: u64,
+    pub sort_order: SortOrder,
+    pub search: Option<String>,
+}
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct ListItemsPaginationResponse<T> {
+    pub items: Vec<T>,
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
+}

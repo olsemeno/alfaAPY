@@ -102,9 +102,10 @@ async fn test_update_strategy_stats() {
 // =============== Events ===============
 
 #[update]
-async fn get_event_records(offset: u64, limit: u64) -> GetEventRecordsResult {
-    let result = service::get_event_records(offset, limit)
-        .map_err(|error| ResponseError::from_internal_error(error));
+async fn get_event_records(request: ListItemsPaginationRequest) -> GetEventRecordsResult {
+    let result = service::get_event_records(request)
+        .map_err(|error| ResponseError::from_internal_error(error))
+        .map(|response| EventRecordsPaginationResponse(response));
 
     GetEventRecordsResult(result)
 }

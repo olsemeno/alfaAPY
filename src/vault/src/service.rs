@@ -1,19 +1,15 @@
 use std::collections::HashMap;
-use candid::Nat;
 
 use ::types::context::Context;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
-use liquidity::liquidity_router;
-use swap::swap_service;
-use types::exchange_id::ExchangeId;
 
 use crate::repository::strategies_repo;
 use crate::user::user_service;
 use crate::strategies::strategy::IStrategy;
 use crate::types::types::*;
-use crate::repository::event_records_repo;
 use crate::event_records::event_record::EventRecord;
+use crate::event_records::event_record_service;
 
 
 /// Accepts an investment into a specified strategy.
@@ -80,9 +76,15 @@ pub async fn withdraw(context: Context, args: StrategyWithdrawArgs) -> Result<St
 
 // ========================== Event records ==========================
 
-pub fn get_event_records(offset: u64, limit: u64) -> Result<Vec<EventRecord>, InternalError> {
-    let result = event_records_repo::get_event_records(offset as usize, limit as usize);
-    Ok(result)
+pub fn get_event_records(request: ListItemsPaginationRequest) -> Result<ListItemsPaginationResponse<EventRecord>, InternalError> {
+    let event_records = event_record_service::get_event_records(request.clone());
+
+    Ok(ListItemsPaginationResponse {
+        items: event_records.clone(),
+        total: event_records.len() as u64,
+        page: request.page,
+        page_size: request.page_size,
+    })
 }
 
 /// Retrieves a strategy by its ID.

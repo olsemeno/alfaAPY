@@ -49,12 +49,19 @@ type EventRecord = record {
   correlation_id : text;
 };
 
-type GetEventRecordsResult = variant {
-  Ok : vec EventRecord;
-  Err : ResponseError;
+type EventRecordsPaginationResponse = record {
+  page_size : nat64;
+  total : nat64;
+  page : nat64;
+  items : vec EventRecord;
 };
 
 type ExchangeId = variant { Sonic; KongSwap; ICPSwap };
+
+type GetEventRecordsResult = variant {
+  Ok : EventRecordsPaginationResponse;
+  Err : ResponseError;
+};
 
 type Icrc28TrustedOriginsResponse = record {
   trusted_origins : vec text;
@@ -78,6 +85,14 @@ type InternalErrorKind = variant {
   Validation;
 };
 
+
+type ListItemsPaginationRequest = record {
+  page_size : nat64;
+  page : nat64;
+  sort_order : SortOrder;
+  search : opt text;
+};
+
 type Pool = record {
   id : text;
   provider : ExchangeId;
@@ -91,6 +106,8 @@ type ResponseError = record {
   message : text;
   details : opt vec record { text; text };
 };
+
+type SortOrder = variant { Asc; Desc };
 
 type StrategyDepositArgs = record {
   strategy_id : nat16;
@@ -265,7 +282,7 @@ type WithdrawLiquidityFromPoolStarted = record {
 service : (opt Conf) -> {
   deposit : (StrategyDepositArgs) -> (StrategyDepositResult);
   get_config : () -> (Conf) query;
-  get_event_records : (nat64, nat64) -> (GetEventRecordsResult);
+  get_event_records : (ListItemsPaginationRequest) -> (GetEventRecordsResult);
   get_strategies : () -> (vec StrategyResponse) query;
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
