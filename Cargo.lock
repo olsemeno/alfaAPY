@@ -1304,6 +1304,7 @@ dependencies = [
  "event_records",
  "ic-cdk 0.17.2",
  "ic-cdk-macros 0.17.2",
+ "ic-cdk-timers",
  "ic-ledger-types",
  "ic-response-codes",
  "ic-stable-structures",

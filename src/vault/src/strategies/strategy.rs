@@ -14,11 +14,12 @@ use utils::token_transfer::icrc1_transfer_to_user;
 
 use crate::event_records::event_record::Event;
 use crate::event_records::event_record_service;
-use crate::repository::strategies_repo::save_strategy;
+use crate::repository::strategies_repo;
 use crate::strategies::basic_strategy::BasicStrategy;
 use crate::strategies::strategy_candid::StrategyCandid;
 use crate::liquidity::liquidity_service;
 use crate::pools::pool::Pool;
+use crate::strategies::stats::strategy_stats_service;
 use crate::types::types::{
     StrategyDepositResponse,
     StrategyRebalanceResponse,
@@ -492,7 +493,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         self.set_current_pool(None);
         self.set_position_id(None);
 
-        save_strategy(self.clone_self());
+        strategies_repo::save_strategy(self.clone_self());
     }
 
     async fn get_best_apy_pool(&self) -> Option<Pool> {
@@ -507,7 +508,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             .next()
     }
 
-    fn update_strategy_state_after_deposit(
+    async fn update_strategy_state_after_deposit(
         &mut self,
         investor: Principal,
         amount: Nat,
@@ -533,7 +534,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
 
         // Save strategy with new total balance, initial deposit,
         // user shares and total shares, current pool and position id
-        save_strategy(self.clone_self());
+        strategies_repo::save_strategy(self.clone_self());
 
         new_user_shares
     }
@@ -577,7 +578,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         self.set_total_balance(new_total_balance.clone());
 
         // Save strategy with new total balance, initial deposit, user shares and total shares
-        save_strategy(self.clone_self());
+        strategies_repo::save_strategy(self.clone_self());
 
         new_user_shares
     }
@@ -608,6 +609,9 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             total_shares: self.get_total_shares(),
             user_shares: self.get_user_shares(),
             initial_deposit: self.get_initial_deposit(),
+            users_count: self.get_user_shares().len() as u32,
+            current_liquidity: self.get_current_liquidity(),
+            current_liquidity_updated_at: self.get_current_liquidity_updated_at(),
         }
     }
 

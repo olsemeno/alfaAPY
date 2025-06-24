@@ -237,10 +237,6 @@ Where:
 
 **3000 01 02** - Strategy not found in service::withdraw (NotFound)  
 
-**3000 01 03** - Strategy not found in service::strategy_liquidity (NotFound)
-**3000 03 04** - Strategy has no current pool in service::strategy_liquidity (BusinessLogic)
-**3000 03 05** - Strategy has no position id in service::strategy_liquidity (BusinessLogic)
-
 
 ## 3100 - Strategies (Vault)
 
@@ -252,6 +248,9 @@ Where:
 **3100 01 05** - No current pool found in strategy in BasicStrategy::withdraw (NotFound)  
 
 **3100 01 06** - No current pool found in strategy in BasicStrategy::rebalance (NotFound)  
+
+**3100 03 07** - Strategy has no current pool in strategy_stats_service::strategy_liquidity (BusinessLogic)
+**3100 03 08** - Strategy has no position id in strategy_stats_service::strategy_liquidity (BusinessLogic)
 
 ## 4000 - Service (PoolStats)
 

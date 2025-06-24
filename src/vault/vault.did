@@ -154,14 +154,17 @@ type StrategyRebalanceStarted = record {
 
 type StrategyResponse = record {
   id : nat16;
+  current_liquidity_updated_at : opt nat64;
   name : text;
   description : text;
   total_shares : nat;
   initial_deposit : vec record { principal; nat };
   user_shares : vec record { principal; nat };
+  current_liquidity : opt nat;
   current_pool : opt Pool;
   total_balance : nat;
   pools : vec Pool;
+  users_count : nat32;
 };
 
 type StrategyWithdrawArgs = record {
@@ -271,4 +274,5 @@ service : (opt Conf) -> {
   test_reset_strategy : (nat16) -> ();
   user_strategies : (principal) -> (vec UserStrategyResponse);
   withdraw : (StrategyWithdrawArgs) -> (StrategyWithdrawResult);
+  test_update_strategy_stats : () -> ();
 };

@@ -54,6 +54,9 @@ pub struct StrategyResponse {
     pub total_shares: Nat,
     pub user_shares: HashMap<Principal, Nat>,
     pub initial_deposit: HashMap<Principal, Nat>,
+    pub users_count: u32,
+    pub current_liquidity: Option<Nat>,
+    pub current_liquidity_updated_at: Option<u64>,
 }
 
 // TODO: rename to UserPositionResponse

@@ -30,8 +30,8 @@ export class StrategyWrapper {
     }
 
     //todo accept identity-kit actor
-    public async withdraw(strategy_id: number, ledger: string, amount: bigint): Promise<StrategyWithdrawResponse> {
-        const result = await this.actor.withdraw({strategy_id, ledger: Principal.fromText(ledger), amount});
+    public async withdraw(strategy_id: number, ledger: string, percentage: bigint): Promise<StrategyWithdrawResponse> {
+        const result = await this.actor.withdraw({strategy_id, ledger: Principal.fromText(ledger), percentage});
 
         if ('Ok' in result) {
             return result.Ok;

@@ -80,7 +80,7 @@ describe("VR Test", () => {
         console.log(balance2)
 
         let withdraw = await actorVault.withdraw({
-            ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"), amount: BigInt(100000000), strategy_id: 1
+            ledger: Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"), percentage: BigInt(100), strategy_id: 1
         })
 
         console.log(withdraw)

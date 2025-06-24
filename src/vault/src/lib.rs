@@ -23,6 +23,9 @@ use crate::repository::stable_state;
 use crate::repository::strategies_repo;
 use crate::strategies::strategy_service;
 use crate::types::types::*;
+use crate::strategies::stats::strategy_stats_service;
+
+const STRATEGY_STATS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
 thread_local! {
     pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
@@ -40,29 +43,6 @@ impl Default for Conf {
             controllers: Default::default()
         }
     }
-}
-
-/// Initializes the canister with the given configuration.
-///
-/// # Arguments
-///
-/// * `conf` - An optional configuration object of type `Conf`.
-///
-/// # Description
-///
-/// This function sets the initial configuration for the canister. If a configuration
-/// is provided, it replaces the default configuration with the provided one. It also
-/// initializes the strategies by calling ` strategy_service::init_strategies()`.
-#[init]
-#[candid_method(init)]
-fn init(conf: Option<Conf>) {
-    match conf {
-        None => {}
-        Some(conf) => {
-            CONF.with(|c| c.replace(conf));
-        }
-    };
-    strategy_service::init_strategies();
 }
 
 /// The heartbeat function is called periodically to perform maintenance tasks.
@@ -113,6 +93,12 @@ async fn test_reset_strategy(strategy_id: u16) {
     strategy.test_reset_strategy().await;
 }
 
+// TODO: Test function. Remove after testing.
+#[update]
+async fn test_update_strategy_stats() {
+    strategy_stats_service::update_all_strategy_liquidity().await;
+}
+
 // =============== Events ===============
 
 #[update]
@@ -143,16 +129,6 @@ async fn withdraw(args: StrategyWithdrawArgs) -> StrategyWithdrawResult {
         .map_err(|error| ResponseError::from_internal_error(error));
 
     StrategyWithdrawResult(result)
-}
-
-#[update]
-async fn strategy_liquidity(strategy_id: u16) -> StrategyLiquidityResult {
-    let context = Context::generate(Some(caller()));
-
-    let result = service::strategy_liquidity(context, strategy_id).await
-        .map_err(|error| ResponseError::from_internal_error(error));
-
-    StrategyLiquidityResult(result)
 }
 
 /// Retrieves the strategies for a specific user.
@@ -248,16 +224,42 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
     Icrc28TrustedOriginsResponse { trusted_origins }
 }
 
-// =============== Upgrade ===============
+// =============== Vault management ===============
+
+/// Initializes the canister with the given configuration.
+///
+/// # Arguments
+///
+/// * `conf` - An optional configuration object of type `Conf`.
+///
+/// # Description
+///
+/// This function sets the initial configuration for the canister. If a configuration
+/// is provided, it replaces the default configuration with the provided one. It also
+/// initializes the strategies by calling ` strategy_service::init_strategies()`.
+#[init]
+#[candid_method(init)]
+fn init(conf: Option<Conf>) {
+    match conf {
+        None => {}
+        Some(conf) => {
+            CONF.with(|c| c.replace(conf));
+        }
+    };
+    strategy_service::init_strategies();
+    strategy_stats_service::start_strategy_stats_timer(STRATEGY_STATS_FETCHING_INTERVAL);
+}
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    stable_state::stable_save()
+    stable_state::stable_save();
+    strategy_stats_service::stop_strategy_stats_timer();
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    stable_state::stable_restore()
+    stable_state::stable_restore();
+    strategy_stats_service::start_strategy_stats_timer(STRATEGY_STATS_FETCHING_INTERVAL);
 }
 
 export_service!();

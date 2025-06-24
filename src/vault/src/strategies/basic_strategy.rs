@@ -22,6 +22,10 @@ pub trait BasicStrategy {
     fn get_user_shares_by_principal(&self, principal: Principal) -> Nat;
     fn get_position_id(&self) -> Option<u64>;
     fn set_position_id(&mut self, position_id: Option<u64>);
+    fn get_current_liquidity(&self) -> Option<Nat>;
+    fn set_current_liquidity(&mut self, current_liquidity: Option<Nat>);
+    fn get_current_liquidity_updated_at(&self) -> Option<u64>;
+    fn set_current_liquidity_updated_at(&mut self, current_liquidity_updated_at: Option<u64>);
 }
 
 #[macro_export]
@@ -99,6 +103,22 @@ macro_rules! impl_strategy_methods {
 
             fn set_position_id(&mut self, position_id: Option<u64>) {
                 self.position_id = position_id;
+            }
+
+            fn get_current_liquidity(&self) -> Option<Nat> {
+                self.current_liquidity.clone()
+            }
+
+            fn get_current_liquidity_updated_at(&self) -> Option<u64> {
+                self.current_liquidity_updated_at.clone()
+            }
+
+            fn set_current_liquidity(&mut self, current_liquidity: Option<Nat>) {
+                self.current_liquidity = current_liquidity;
+            }
+
+            fn set_current_liquidity_updated_at(&mut self, current_liquidity_updated_at: Option<u64>) {
+                self.current_liquidity_updated_at = current_liquidity_updated_at;
             }
         }
     };

@@ -24,19 +24,23 @@ pub struct IcpCkUSDTStrategy {
     total_shares: Nat,
     user_shares: HashMap<Principal, Nat>,
     initial_deposit: HashMap<Principal, Nat>,
+    current_liquidity: Option<Nat>,
+    current_liquidity_updated_at: Option<u64>,
 }
 
 impl IcpCkUSDTStrategy {
     pub fn new() -> Self {
         //TODO move to config
         IcpCkUSDTStrategy {
+            id: 3,
             current_pool: None,
             position_id: None,
             total_balance: Nat::from(0u64),
             total_shares: Nat::from(0u64),
             user_shares: HashMap::new(),
             initial_deposit: HashMap::new(),
-            id: 3,
+            current_liquidity: None,
+            current_liquidity_updated_at: None,
         }
     }
 }

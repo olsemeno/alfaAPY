@@ -13,15 +13,7 @@ export const idlFactory = ({ IDL }) => {
     'ExternalService' : IDL.Null,
     'Validation' : IDL.Null,
   });
-  const InternalError = IDL.Record({
-    'context' : IDL.Text,
-    'code' : IDL.Nat32,
-    'kind' : InternalErrorKind,
-    'extra' : IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))),
-    'message' : IDL.Text,
-  });
   const ResponseError = IDL.Record({
-    'source' : IDL.Opt(InternalError),
     'code' : IDL.Nat32,
     'kind' : InternalErrorKind,
     'message' : IDL.Text,
@@ -39,6 +31,65 @@ export const idlFactory = ({ IDL }) => {
   const AddPoolResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ResponseError });
   const DeletePoolResult = IDL.Variant({
     'Ok' : IDL.Null,
+    'Err' : ResponseError,
+  });
+  const InternalError = IDL.Record({
+    'context' : IDL.Text,
+    'code' : IDL.Nat32,
+    'kind' : InternalErrorKind,
+    'extra' : IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))),
+    'message' : IDL.Text,
+  });
+  const AddLiquidityToPoolFailed = IDL.Record({
+    'error' : InternalError,
+    'amount0' : IDL.Opt(IDL.Nat),
+    'pool_id' : IDL.Text,
+  });
+  const AddLiquidityToPoolCompleted = IDL.Record({
+    'amount0' : IDL.Opt(IDL.Nat),
+    'amount1' : IDL.Opt(IDL.Nat),
+    'pool_id' : IDL.Text,
+  });
+  const WithdrawLiquidityFromPoolStarted = IDL.Record({
+    'shares' : IDL.Nat,
+    'total_shares' : IDL.Nat,
+    'pool_id' : IDL.Text,
+  });
+  const AddLiquidityToPoolStarted = IDL.Record({
+    'amount0' : IDL.Opt(IDL.Nat),
+    'amount1' : IDL.Opt(IDL.Nat),
+    'pool_id' : IDL.Text,
+  });
+  const WithdrawLiquidityFromPoolCompleted = IDL.Record({
+    'shares' : IDL.Nat,
+    'total_shares' : IDL.Nat,
+    'amount_token0' : IDL.Nat,
+    'amount_token1' : IDL.Nat,
+    'pool_id' : IDL.Text,
+  });
+  const WithdrawLiquidityFromPoolFailed = IDL.Record({
+    'shares' : IDL.Nat,
+    'total_shares' : IDL.Nat,
+    'error' : InternalError,
+    'pool_id' : IDL.Text,
+  });
+  const Event = IDL.Variant({
+    'AddLiquidityToPoolFailed' : AddLiquidityToPoolFailed,
+    'AddLiquidityToPoolCompleted' : AddLiquidityToPoolCompleted,
+    'WithdrawLiquidityFromPoolStarted' : WithdrawLiquidityFromPoolStarted,
+    'AddLiquidityToPoolStarted' : AddLiquidityToPoolStarted,
+    'WithdrawLiquidityFromPoolCompleted' : WithdrawLiquidityFromPoolCompleted,
+    'WithdrawLiquidityFromPoolFailed' : WithdrawLiquidityFromPoolFailed,
+  });
+  const EventRecord = IDL.Record({
+    'id' : IDL.Nat64,
+    'user' : IDL.Opt(IDL.Principal),
+    'event' : Event,
+    'timestamp' : IDL.Nat64,
+    'correlation_id' : IDL.Text,
+  });
+  const GetEventRecordsResult = IDL.Variant({
+    'Ok' : IDL.Vec(EventRecord),
     'Err' : ResponseError,
   });
   const Pool = IDL.Record({
@@ -103,6 +154,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'delete_pool' : IDL.Func([IDL.Text], [DeletePoolResult], []),
+    'get_event_records' : IDL.Func(
+        [IDL.Nat64, IDL.Nat64],
+        [GetEventRecordsResult],
+        [],
+      ),
     'get_pool_by_id' : IDL.Func([IDL.Text], [GetPoolByIdResult], []),
     'get_pool_metrics' : IDL.Func(
         [IDL.Vec(IDL.Text)],

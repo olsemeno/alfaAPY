@@ -9,14 +9,46 @@ export interface AddLiquidityResponse {
 }
 export type AddLiquidityResult = { 'Ok' : AddLiquidityResponse } |
   { 'Err' : ResponseError };
+export interface AddLiquidityToPoolCompleted {
+  'amount0' : [] | [bigint],
+  'amount1' : [] | [bigint],
+  'pool_id' : string,
+}
+export interface AddLiquidityToPoolFailed {
+  'error' : InternalError,
+  'amount0' : [] | [bigint],
+  'pool_id' : string,
+}
+export interface AddLiquidityToPoolStarted {
+  'amount0' : [] | [bigint],
+  'amount1' : [] | [bigint],
+  'pool_id' : string,
+}
 export type AddPoolResult = { 'Ok' : string } |
   { 'Err' : ResponseError };
 export interface ApyValue { 'tokens_apy' : number, 'usd_apy' : number }
 export type DeletePoolResult = { 'Ok' : null } |
   { 'Err' : ResponseError };
+export type Event = { 'AddLiquidityToPoolFailed' : AddLiquidityToPoolFailed } |
+  { 'AddLiquidityToPoolCompleted' : AddLiquidityToPoolCompleted } |
+  { 'WithdrawLiquidityFromPoolStarted' : WithdrawLiquidityFromPoolStarted } |
+  { 'AddLiquidityToPoolStarted' : AddLiquidityToPoolStarted } |
+  {
+    'WithdrawLiquidityFromPoolCompleted' : WithdrawLiquidityFromPoolCompleted
+  } |
+  { 'WithdrawLiquidityFromPoolFailed' : WithdrawLiquidityFromPoolFailed };
+export interface EventRecord {
+  'id' : bigint,
+  'user' : [] | [Principal],
+  'event' : Event,
+  'timestamp' : bigint,
+  'correlation_id' : string,
+}
 export type ExchangeId = { 'Sonic' : null } |
   { 'KongSwap' : null } |
   { 'ICPSwap' : null };
+export type GetEventRecordsResult = { 'Ok' : Array<EventRecord> } |
+  { 'Err' : ResponseError };
 export type GetPoolByIdResult = { 'Ok' : Pool } |
   { 'Err' : ResponseError };
 export type GetPoolsResult = { 'Ok' : Array<Pool> } |
@@ -65,7 +97,6 @@ export interface PositionData {
   'amount1' : bigint,
 }
 export interface ResponseError {
-  'source' : [] | [InternalError],
   'code' : number,
   'kind' : InternalErrorKind,
   'message' : string,
@@ -73,6 +104,24 @@ export interface ResponseError {
 }
 export type TestCreatePoolSnapshotResult = { 'Ok' : PoolSnapshot } |
   { 'Err' : ResponseError };
+export interface WithdrawLiquidityFromPoolCompleted {
+  'shares' : bigint,
+  'total_shares' : bigint,
+  'amount_token0' : bigint,
+  'amount_token1' : bigint,
+  'pool_id' : string,
+}
+export interface WithdrawLiquidityFromPoolFailed {
+  'shares' : bigint,
+  'total_shares' : bigint,
+  'error' : InternalError,
+  'pool_id' : string,
+}
+export interface WithdrawLiquidityFromPoolStarted {
+  'shares' : bigint,
+  'total_shares' : bigint,
+  'pool_id' : string,
+}
 export interface WithdrawLiquidityResponse {
   'token_0_amount' : bigint,
   'token_1_amount' : bigint,
@@ -86,6 +135,7 @@ export interface _SERVICE {
   >,
   'add_pool' : ActorMethod<[Principal, Principal, ExchangeId], AddPoolResult>,
   'delete_pool' : ActorMethod<[string], DeletePoolResult>,
+  'get_event_records' : ActorMethod<[bigint, bigint], GetEventRecordsResult>,
   'get_pool_by_id' : ActorMethod<[string], GetPoolByIdResult>,
   'get_pool_metrics' : ActorMethod<
     [Array<string>],

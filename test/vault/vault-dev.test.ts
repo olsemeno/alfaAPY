@@ -85,7 +85,13 @@ describe("VR Test PROD", () => {
 
                 if ('Ok' in result) {
                     const depositResp = result.Ok;
-                    console.log("Deposit success:", depositResp.amount, depositResp.shares, depositResp.tx_id, depositResp.position_id);
+                    console.log(
+                        "Deposit success:",
+                        depositResp.amount,
+                        depositResp.shares,
+                        depositResp.tx_id,
+                        depositResp.position_id,
+                    );
 
                     expect(depositResp.amount).to.equal(depositAmount);
                     expect(depositResp.shares).to.equal(depositAmount);
@@ -146,13 +152,12 @@ describe("VR Test PROD", () => {
             console.log("== START \"Withdraws full balance\" TEST ==");
             console.log("Shares:", shares);
 
-            shares = 100n; // For testing without deposit
-            sharesToWithdraw = shares; // All shares
+            let percentage = 100n; // For testing without deposit
             remainingShares = 0n; // No shares left
 
             try {
                 const result = await actorVault.withdraw({
-                    amount: sharesToWithdraw,
+                    percentage: percentage,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
@@ -176,7 +181,7 @@ describe("VR Test PROD", () => {
             console.log("== START \"Withdraws part of balance\" TEST ==");
 
             shares = depositAmount; // For testing without deposit
-            let sharesToWithdraw = BigInt(shares) / 2n; // 50% of shares
+            let percentage = 50n; // 50% withdraw
             // let sharesToWithdraw = BigInt(100_000_000);
             let remainingShares = BigInt(shares) - sharesToWithdraw;
 
@@ -184,7 +189,7 @@ describe("VR Test PROD", () => {
                 console.log("Withdraw starting...");
 
                 const result = await actorVault.withdraw({
-                    amount: sharesToWithdraw,
+                    percentage: percentage,
                     strategy_id: strategyId,
                     ledger: Principal.fromText(ledgerCanisterId)
                 });
