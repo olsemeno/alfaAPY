@@ -146,11 +146,6 @@ type StrategyDepositCompleted = record {
   pool_id : opt text;
 };
 
-type StrategyLiquidityResult = variant {
-  Ok : nat;
-  Err : ResponseError;
-};
-
 type StrategyRebalanceCompleted = record {
   new_pool_id : opt text;
   strategy_id : text;
@@ -286,7 +281,6 @@ service : (opt Conf) -> {
   get_strategies : () -> (vec StrategyResponse) query;
   icrc10_supported_standards : () -> (vec SupportedStandard) query;
   icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
-  strategy_liquidity : (nat16) -> (StrategyLiquidityResult);
   test_icpswap_withdraw : (principal, nat, nat) -> (nat);
   test_reset_strategy : (nat16) -> ();
   user_strategies : (principal) -> (vec UserStrategyResponse);

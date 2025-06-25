@@ -110,8 +110,6 @@ export interface StrategyDepositStarted {
   'amount0' : [] | [bigint],
   'pool_id' : [] | [string],
 }
-export type StrategyLiquidityResult = { 'Ok' : bigint } |
-  { 'Err' : ResponseError };
 export interface StrategyRebalanceCompleted {
   'new_pool_id' : [] | [string],
   'strategy_id' : string,
@@ -221,7 +219,6 @@ export interface _SERVICE {
   'get_strategies' : ActorMethod<[], Array<StrategyResponse>>,
   'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
   'icrc28_trusted_origins' : ActorMethod<[], Icrc28TrustedOriginsResponse>,
-  'strategy_liquidity' : ActorMethod<[number], StrategyLiquidityResult>,
   'test_icpswap_withdraw' : ActorMethod<[Principal, bigint, bigint], bigint>,
   'test_reset_strategy' : ActorMethod<[number], undefined>,
   'test_update_strategy_stats' : ActorMethod<[], undefined>,

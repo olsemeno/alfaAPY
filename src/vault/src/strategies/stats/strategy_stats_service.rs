@@ -24,7 +24,7 @@ fn set_timer_interval(
     ic_cdk_timers::set_timer_interval(interval, func)
 }
 
-pub fn start_strategy_stats_timer(interval: u64) {
+pub fn start_strategy_stats_update_timer(interval: u64) {
     let timer_id = set_timer_interval(Duration::from_secs(interval), || {
         ic_cdk::spawn(async {
             update_all_strategy_liquidity().await;
@@ -36,7 +36,7 @@ pub fn start_strategy_stats_timer(interval: u64) {
     });
 }
 
-pub fn stop_strategy_stats_timer() {
+pub fn stop_strategy_stats_update_timer() {
     STRATEGY_STATS_TIMER_ID.with(|timer_id| {
         if let Some(timer_id) = timer_id.borrow_mut().take() {
             ic_cdk_timers::clear_timer(timer_id);
@@ -64,6 +64,12 @@ pub async fn update_strategy_liquidity(mut strategy: Box<dyn IStrategy>) -> Resu
     strategies_repo::save_strategy(strategy);
     
     Ok(())
+}
+
+pub fn spawn_update_strategy_liquidity(strategy: Box<dyn IStrategy>) -> () {
+    ic_cdk::spawn(async move {
+        update_strategy_liquidity(strategy).await; // TODO: handle error
+    });
 }
 
 pub async fn get_strategy_current_liquidity(strategy: &dyn IStrategy) -> Result<Nat, InternalError> {

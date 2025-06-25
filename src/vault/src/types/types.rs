@@ -91,9 +91,6 @@ pub struct StrategyDepositResult(pub Result<StrategyDepositResponse, ResponseErr
 pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseError>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub struct StrategyLiquidityResult(pub Result<Nat, ResponseError>);
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct GetEventRecordsResult(pub Result<EventRecordsPaginationResponse, ResponseError>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]

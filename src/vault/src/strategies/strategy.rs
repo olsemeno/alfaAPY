@@ -80,7 +80,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             if best_apy_pool.is_none() {
                 let error = InternalError::not_found(
                     build_error_code(3100, 1, 1), // 3100 01 01
-                    "BasicStrategy::deposit".to_string(),
+                    "Strategy::deposit".to_string(),
                     "No pool found to deposit".to_string(),
                     None,
                 );
@@ -170,7 +170,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if user_shares == Nat::from(0u8) {
             let error = InternalError::business_logic(
                 build_error_code(3100, 3, 3), // 3100 03 03
-                "BasicStrategy::withdraw".to_string(),
+                "Strategy::withdraw".to_string(),
                 "No shares found for user".to_string(),
                 Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
@@ -198,7 +198,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if shares > user_shares {
             let error = InternalError::business_logic(
                 build_error_code(3100, 3, 4), // 3100 03 04
-                "BasicStrategy::withdraw".to_string(),
+                "Strategy::withdraw".to_string(),
                 "Not sufficient shares for user".to_string(),
                 Some(HashMap::from([
                     ("percentage".to_string(), percentage.to_string()),
@@ -225,7 +225,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         if current_pool.is_none() {
             let error = InternalError::not_found(
                 build_error_code(3100, 1, 5), // 3100 01 05
-                "BasicStrategy::withdraw".to_string(),
+                "Strategy::withdraw".to_string(),
                 "No current pool found in strategy".to_string(),
                 None,
             );
@@ -402,7 +402,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         } else {
             let error = InternalError::not_found(
                 build_error_code(3100, 1, 6), // 3100 01 06
-                "BasicStrategy::rebalance".to_string(),
+                "Strategy::rebalance".to_string(),
                 "No current pool found in strategy".to_string(),
                 None,
             );
@@ -493,6 +493,9 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         self.set_current_pool(None);
         self.set_position_id(None);
 
+        self.set_current_liquidity(None);
+        self.set_current_liquidity_updated_at(None);
+
         strategies_repo::save_strategy(self.clone_self());
     }
 
@@ -508,7 +511,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             .next()
     }
 
-    async fn update_strategy_state_after_deposit(
+    fn update_strategy_state_after_deposit(
         &mut self,
         investor: Principal,
         amount: Nat,
@@ -532,9 +535,10 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         self.set_current_pool(Some(pool.clone()));
         self.set_position_id(Some(position_id));
 
-        // Save strategy with new total balance, initial deposit,
-        // user shares and total shares, current pool and position id
         strategies_repo::save_strategy(self.clone_self());
+
+        // Update strategy current liquidity
+        strategy_stats_service::spawn_update_strategy_liquidity(self.clone_self());
 
         new_user_shares
     }
@@ -548,7 +552,7 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         self.decrease_total_shares(shares.clone());
 
         // Update user shares
-        let previous_user_shares = self.get_user_shares().get(&investor).cloned().unwrap();
+        let previous_user_shares = self.get_user_shares_by_principal(investor);
         let new_user_shares = previous_user_shares.clone() - shares.clone();
         self.update_user_shares(investor.clone(), new_user_shares.clone());
 
@@ -577,8 +581,15 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
         let new_total_balance = total_balance - user_initial_deposit + new_user_initial_deposit.clone();
         self.set_total_balance(new_total_balance.clone());
 
-        // Save strategy with new total balance, initial deposit, user shares and total shares
+        if self.get_total_shares() == Nat::from(0u64) {
+            self.set_current_liquidity(None);
+            self.set_position_id(None);
+        }
+
         strategies_repo::save_strategy(self.clone_self());
+
+        // Update strategy current liquidity
+        strategy_stats_service::spawn_update_strategy_liquidity(self.clone_self());
 
         new_user_shares
     }

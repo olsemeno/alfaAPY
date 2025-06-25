@@ -240,17 +240,17 @@ Where:
 
 ## 3100 - Strategies (Vault)
 
-**3100 01 01** - No pool found to deposit in BasicStrategy::deposit (NotFound)  
-**3100 01 02** - **DEPRECATED** No current pool found to deposit in BasicStrategy::deposit (NotFound)  
+**3100 01 01** - No pool found to deposit in Strategy::deposit (NotFound)  
+**3100 01 02** - **DEPRECATED** No current pool found to deposit in Strategy::deposit (NotFound)  
 
-**3100 03 03** - No shares found for user in BasicStrategy::withdraw (BusinessLogic)  
-**3100 03 04** - Not sufficient shares for user in BasicStrategy::withdraw (BusinessLogic)  
-**3100 01 05** - No current pool found in strategy in BasicStrategy::withdraw (NotFound)  
+**3100 03 03** - No shares found for user in Strategy::withdraw (BusinessLogic)  
+**3100 03 04** - Not sufficient shares for user in Strategy::withdraw (BusinessLogic)  
+**3100 01 05** - No current pool found in strategy in Strategy::withdraw (NotFound)  
 
-**3100 01 06** - No current pool found in strategy in BasicStrategy::rebalance (NotFound)  
+**3100 01 06** - No current pool found in strategy in Strategy::rebalance (NotFound)  
 
-**3100 03 07** - Strategy has no current pool in strategy_stats_service::strategy_liquidity (BusinessLogic)
-**3100 03 08** - Strategy has no position id in strategy_stats_service::strategy_liquidity (BusinessLogic)
+**3100 03 07** - Strategy has no current pool in strategy_stats_service::get_strategy_current_liquidity (BusinessLogic)
+**3100 03 08** - Strategy has no position id in strategy_stats_service::get_strategy_current_liquidity (BusinessLogic)
 
 ## 4000 - Service (PoolStats)
 

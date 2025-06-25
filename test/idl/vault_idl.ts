@@ -195,10 +195,6 @@ export const idlFactory = ({ IDL }) => {
   const Icrc28TrustedOriginsResponse = IDL.Record({
     'trusted_origins' : IDL.Vec(IDL.Text),
   });
-  const StrategyLiquidityResult = IDL.Variant({
-    'Ok' : IDL.Nat,
-    'Err' : ResponseError,
-  });
   const UserStrategyResponse = IDL.Record({
     'strategy_current_pool' : Pool,
     'total_shares' : IDL.Nat,
@@ -236,7 +232,6 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'icrc28_trusted_origins' : IDL.Func([], [Icrc28TrustedOriginsResponse], []),
-    'strategy_liquidity' : IDL.Func([IDL.Nat16], [StrategyLiquidityResult], []),
     'test_icpswap_withdraw' : IDL.Func(
         [IDL.Principal, IDL.Nat, IDL.Nat],
         [IDL.Nat],

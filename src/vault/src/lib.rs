@@ -248,19 +248,19 @@ fn init(conf: Option<Conf>) {
         }
     };
     strategy_service::init_strategies();
-    strategy_stats_service::start_strategy_stats_timer(STRATEGY_STATS_FETCHING_INTERVAL);
+    strategy_stats_service::start_strategy_stats_update_timer(STRATEGY_STATS_FETCHING_INTERVAL);
 }
 
 #[pre_upgrade]
 fn pre_upgrade() {
     stable_state::stable_save();
-    strategy_stats_service::stop_strategy_stats_timer();
+    strategy_stats_service::stop_strategy_stats_update_timer();
 }
 
 #[post_upgrade]
 fn post_upgrade() {
     stable_state::stable_restore();
-    strategy_stats_service::start_strategy_stats_timer(STRATEGY_STATS_FETCHING_INTERVAL);
+    strategy_stats_service::start_strategy_stats_update_timer(STRATEGY_STATS_FETCHING_INTERVAL);
 }
 
 export_service!();
