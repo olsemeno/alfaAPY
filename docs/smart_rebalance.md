@@ -31,22 +31,22 @@ This reflects changes in the total market value of the LP position over a time p
 
 Let:
 
-`V₀` — initial total value in USD
+`amount_usd_initial` — initial total value in USD
 
-`V₁` — final total value in USD after Δt
+`amount_usd_final` — final total value in USD after Δt
 
-`G = V₁ / V₀` — growth factor
+`growth_factor = amount_usd_final / amount_usd_initial`
 
 Then:
 
 ```
-APY_usd = (G ^ (365 / Δt) - 1) × 100
+APY_usd = (growth_factor ^ (365 / Δt) - 1) × 100
 ```
 
 The USD value is computed as:
 
 ```
-V = usd_amount0 + usd_amount1
+amount_usd = amount0_usd + amount1_usd
 ```
 
 #### 2. Token-based APY
@@ -56,8 +56,8 @@ This captures the growth in token balances, independent of price changes:
 For each token:
 
 ```
-G_tokenX = final_amountX / initial_amountX
-APY_tokenX = (G_tokenX ^ (365 / Δt) - 1) × 100
+growth_factor_tokenX = amount_tokenX_final / amount_tokenX_initial
+APY_tokenX = (growth_factor_tokenX ^ (365 / Δt) - 1) × 100
 ```
 
 Then:
@@ -99,7 +99,7 @@ score =
     W1 × SMA_APY_usd +
     W2 × SMA_APY_tokens +
     W3 × log(TVL) +
-    W4 × (volume / TVL) -
+    W4 × capital_efficiency -
     W5 × APY_volatility -
     W6 × rebalance_cost -
     W7 × token_price_volatility
@@ -124,12 +124,12 @@ Encourages large, stable pools without over-penalizing small but efficient ones.
 log_score = log10(TVL)
 ```
 
-### W4 × (Volume / TVL)
+### W4 × capital_efficiency (Volume / TVL)
 
-Measures capital efficiency — how much trading activity per dollar of liquidity.
+Measures capital capital efficiency — how much trading activity per dollar of liquidity.
 
 ```
-efficiency = volume_period / TVL
+capital_efficiency = volume_period / TVL
 ```
 
 Period is strategy-dependent (e.g. 1d, 7d, 30d). High value = more fee revenue per dollar.
@@ -149,12 +149,12 @@ Pools with stable yields will have low APY volatility (close to 0)
 Pools with sharp fluctuations will be penalized more heavily in the score
 This discourages rebalancing into unpredictable pools, even if their short-term APY appears high.
 
-### W6 × RebalanceCost
+### W6 × rebalance_cost
 
 Total estimated cost of moving liquidity into the pool.
 
 ```
-RebalanceCost = (fee_percent × position_value) + gas_cost
+rebalance_cost = (fee_percent × position_value) + gas_cost
 ```
 
 Where:
@@ -165,7 +165,7 @@ Where:
 
 Discourages frequent reallocation unless gain significantly exceeds cost.
 
-### W7 × TokenPriceVolatility
+### W7 × token_price_volatility
 
 This penalty captures token-level risk (not LP performance), by measuring how volatile the token prices are.
 
@@ -255,7 +255,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 
 ## Strategy Parameters
 
-| Strategy         | cooldown | threshold  | Gain/Cost | W1  | W2  | W3   | W4  | W5  | W6  | W7  |
+| Strategy         | Cooldown | Threshold  | Gain/Cost | W1  | W2  | W3   | W4  | W5  | W6  | W7  |
 | ---------------- | -------- | ---------- | --------- | --- | --- | ---- | --- | --- | --- | --- |
 | Conservative     | 72h      | 8          | 3.0x      | 1   | 0.2 | 0.01 | 0.3 | 2   | 1.5 | 2.0 |
 | Balanced         | 24–48h   | 5          | 2.0x      | 1   | 0.4 | 0.02 | 0.5 | 1   | 1.0 | 0.5 |
@@ -267,7 +267,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 
 ## Strategy Scoring Weights
 
-### W1 × USD APY Weight
+### W1 – USD APY Weight
 
 | Strategy         | W1  | Rationale                                 |
 | ---------------- | --- | ----------------------------------------- |
@@ -278,7 +278,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | IncentiveFarmer  | 0.8 | Boosted pools with attractive yield       |
 | StableOnly       | 1.0 | Requires consistent USD-based return      |
 
-### W2 × Token APY Weight
+### W2 – Token APY Weight
 
 | Strategy         | W2  | Rationale                                |
 | ---------------- | --- | ---------------------------------------- |
@@ -289,7 +289,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | IncentiveFarmer  | 0.7 | Yield from farming boosted token rewards |
 | StableOnly       | 0.3 | Limited but included if stable           |
 
-### W3 × log(TVL) Weight
+### W3 – log(TVL) Weight
 
 | Strategy         | W3   | Rationale                                   |
 | ---------------- | ---- | ------------------------------------------- |
@@ -300,7 +300,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | IncentiveFarmer  | 0.01 | Slight bias to larger pools with incentives |
 | StableOnly       | 0.05 | Strong preference for deeply liquid stables |
 
-### W4 × Volume / TVL
+### W4 – Capital Efficiency (Volume / TVL)
 
 | Strategy         | W4  | Rationale                                        |
 | ---------------- | --- | ------------------------------------------------ |
@@ -311,7 +311,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | IncentiveFarmer  | 0.7 | Active pools likely to give more yield           |
 | StableOnly       | 0.2 | Efficiency useful, but not at the cost of safety |
 
-### W5 × APY Volatility
+### W5 – APY Volatility
 
 | Strategy         | W5  | Rationale                               |
 | ---------------- | --- | --------------------------------------- |
@@ -323,7 +323,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | StableOnly       | 2.5 | Rejects any significant APY instability |
 
 
-### W6 × Rebalance Cost
+### W6 – Rebalance Cost
 
 | Strategy         | W6  | Rationale                                 |
 | ---------------- | --- | ----------------------------------------- |
@@ -334,7 +334,7 @@ Smart Rebalance supports different strategy profiles with custom weights and thr
 | IncentiveFarmer  | 0.7 | Will pay cost for extra farming rewards   |
 | StableOnly       | 1.2 | Avoids unnecessary cost in low-risk pools |
 
-### W7 × Token Price Volatility
+### W7 – Token Price Volatility
 
 | Strategy         | W7  | Rationale                                      |
 | ---------------- | --- | ---------------------------------------------- |
