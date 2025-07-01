@@ -65,7 +65,8 @@ describe("Pool Stats Test DEV", () => {
             console.log("== START \"Add liquidity to pool\" TEST ==");
 
             // const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
-            const poolId = "ICPSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+            // const poolId = "ICPSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+            const poolId = "KongSwap_ca6gz-lqaaa-aaaaq-aacwa-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
             const approveAmount = BigInt(10000000000);
             // const depositAmount = BigInt(100_000_000);
             const depositAmount = BigInt(100_000_000);
@@ -101,8 +102,8 @@ describe("Pool Stats Test DEV", () => {
         it("Withdraw liquidity from pool", async () => {
             console.log("== START \"Withdraw liquidity from pool\" TEST ==");
 
-            // const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
-            const poolId = "ICPSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+            const poolId = "KongSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
+            // const poolId = "ICPSwap_druyg-tyaaa-aaaaq-aactq-cai_ryjl3-tyaaa-aaaaa-aaaba-cai";
 
             try {
                 console.log("Withdraw liquidity from pool starting...");

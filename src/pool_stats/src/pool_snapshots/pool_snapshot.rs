@@ -1,8 +1,12 @@
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
 
-use crate::repository::pools_repo;
+use errors::internal_error::error::InternalError;
 use utils::util::current_timestamp;
+
+use crate::repository::pools_repo;
+use crate::pool_snapshots::position_data::position_data::PositionData;
+use crate::pool_snapshots::pool_data::pool_data::PoolData;
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshot {
@@ -43,31 +47,17 @@ impl PoolSnapshot {
         )
     }
 
-    pub fn create(pool_id: String, position_data: Option<PositionData>, pool_data: Option<PoolData>) -> Self {
+    pub fn create(
+        pool_id: String,
+        position_data: Option<PositionData>,
+        pool_data: Option<PoolData>,
+    ) -> Result<Self, InternalError> {
         let snapshot = Self::build(pool_id, position_data, pool_data);
         snapshot.save();
-        snapshot
+        Ok(snapshot)
     }
 
     pub fn save(&self) {
         pools_repo::save_pool_snapshot(self.clone());
     }
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct PositionData {
-    pub id: u64,
-    pub amount0: Nat,
-    pub amount1: Nat,
-    pub usd_amount0: Nat,
-    pub usd_amount1: Nat,
-}
-
-#[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct PoolData {
-    pub tvl: Nat,
-    // pub balance0: Nat,
-    // pub balance1: Nat,
-    // pub lp_fee_0: Nat,
-    // pub lp_fee_1: Nat,
 }

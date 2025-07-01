@@ -895,6 +895,7 @@ dependencies = [
  "serde_json",
  "types",
  "utils",
+ "validation",
 ]
 
 [[package]]
@@ -1288,6 +1289,20 @@ dependencies = [
  "icrc_ledger_canister_c2c_client",
  "num-bigint",
  "once_cell",
+ "serde_json",
+ "types",
+]
+
+[[package]]
+name = "validation"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "errors",
+ "hex",
+ "ic-cdk 0.17.2",
+ "num-bigint",
+ "serde",
  "serde_json",
  "types",
 ]

@@ -11,8 +11,9 @@ pub fn create_pool_metrics(pool: Pool) -> PoolMetrics {
     let apy = pool_yield_service::calculate_pool_yield(&snapshots, current_timestamp());
     let tvl = snapshots.iter()
         .max_by_key(|snapshot| snapshot.timestamp)
-        .and_then(|snapshot| snapshot.pool_data.as_ref().map(|pool_data| pool_data.tvl.clone()))
-        .unwrap_or(Nat::from(0 as u128));
+        .and_then(|snapshot| {
+            snapshot.pool_data.as_ref().map(|pool_data| pool_data.tvl.clone())
+        }).unwrap_or(Nat::from(0 as u128));
 
     PoolMetrics {
         apy,

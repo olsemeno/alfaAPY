@@ -49,9 +49,6 @@ impl<'a> YieldCalculator<'a> {
             let percent_loss = (growth_factor - 1.0) * 100.0;
             return percent_loss;
         };
-
-        //panic!("initial_value: {}, final_value: {}, period_days: {}, growth_factor: {}, result: {}", initial_value, final_value, period_days, growth_factor, result);
-
     }
 
     fn calculate_tokens_yield(&self) -> f64 {
@@ -76,8 +73,9 @@ impl<'a> YieldCalculator<'a> {
 
     fn calculate_usd_yield(&self) -> f64 {
         let extract_usd_value = |snapshot: &PoolSnapshot| {
-            let position = snapshot.position_data.as_ref().unwrap();
-            position.usd_amount0.clone() + position.usd_amount1.clone() // Value of tokens in pool in USD
+            snapshot.position_data.as_ref().map_or(Nat::from(0u64), |position| {
+                position.usd_amount0.clone() + position.usd_amount1.clone() // amount of tokens in pool in USD
+            })
         };
 
         self.calculate_yield(extract_usd_value)
@@ -88,7 +86,9 @@ pub fn calculate_pool_yield(snapshots: &[PoolSnapshot], now: u64) -> ApyValue {
     // Get snapshots for different periods
     let get_period_snapshots = |from: u64| {
         snapshots.iter()
-            .filter(|s| s.timestamp >= from && s.timestamp <= now)
+            .filter(|s| {
+                s.timestamp >= from && s.timestamp <= now && s.position_data.is_some()
+            })
             .collect::<Vec<_>>()
     };
 

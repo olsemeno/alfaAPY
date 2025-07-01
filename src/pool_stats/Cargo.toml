@@ -40,3 +40,4 @@ errors = { path = "../libraries/errors" }
 event_records = { path = "../libraries/event_records" }
 types = { path = "../libraries/types" }
 icrc_ledger_client = { path = "../libraries/icrc_ledger_client" }
+validation = { path = "../libraries/validation" }

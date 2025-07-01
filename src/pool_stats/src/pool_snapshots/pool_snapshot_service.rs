@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::time::Duration;
 use ic_cdk_timers::TimerId;
 
@@ -6,9 +7,12 @@ use liquidity::liquidity_router;
 use liquidity::liquidity_client::LiquidityClient;
 use types::context::Context;
 use errors::internal_error::error::InternalError;
+use errors::internal_error::error::build_error_code;
 
 use crate::pools::pool::Pool;
-use crate::pool_snapshots::pool_snapshot::{PoolSnapshot, PositionData, PoolData};
+use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
+use crate::pool_snapshots::position_data::position_data::PositionData;
+use crate::pool_snapshots::pool_data::pool_data::PoolData;
 use crate::repository::pools_repo;
 
 thread_local! {
@@ -56,10 +60,23 @@ pub async fn create_all_pool_snapshots() {
 }
 
 pub async fn create_pool_snapshot(context: Context, pool: &Pool) -> Result<PoolSnapshot, InternalError> {
+    if pool.position_id.is_none() {
+        return Err(InternalError::business_logic(
+            build_error_code(4100, 3, 1), // 4100 03 01
+            "pool_snapshot_service::create_pool_snapshot".to_string(),
+            "Pool has no position_id".to_string(),
+            Some(HashMap::from([
+                ("pool_id".to_string(), pool.id.to_string()),
+            ])),
+        ));
+    }
+
     let pool_data = get_pool_data(context.clone(), pool).await?;
     let position_data = get_position_data(context, pool).await?;
 
-    Ok(PoolSnapshot::create(pool.id.clone(), position_data, pool_data))
+    let snapshot = PoolSnapshot::create(pool.id.clone(), position_data, pool_data)?;
+
+    Ok(snapshot)
 }
 
 async fn get_position_data(context: Context, pool: &Pool) -> Result<Option<PositionData>, InternalError> {

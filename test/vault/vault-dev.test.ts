@@ -22,7 +22,7 @@ describe("VR Test PROD", () => {
     const nfidwCanisterId = "mih44-vaaaa-aaaaq-aaekq-cai";
     const icsCanisterId = "ca6gz-lqaaa-aaaaq-aacwa-cai";
 
-    const ledgerCanisterId = pandaCanisterId;
+    const ledgerCanisterId = icsCanisterId;
 
     let principalId: Principal;
     let memberIdentity: Ed25519KeyIdentity;
@@ -61,7 +61,7 @@ describe("VR Test PROD", () => {
     });
 
     describe(".deposit", () => {
-        const strategyId = 4;
+        const strategyId = 5;
         const approveAmount = BigInt(10000000000);
         // const depositAmount = BigInt(100_000_000);
         const depositAmount = BigInt(100_000_000);
@@ -110,7 +110,7 @@ describe("VR Test PROD", () => {
     });
 
     describe(".withdraw", () => {
-        const strategyId = 4;
+        const strategyId = 5;
         const approveAmount = BigInt(10000000000);
         const depositAmount = BigInt(100_000_000);
         // const depositAmount = BigInt(40_000_000);

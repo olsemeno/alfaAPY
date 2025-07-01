@@ -95,6 +95,21 @@ impl InternalError {
             extra
         )
     }
+
+    pub fn validation(
+        code: u32,
+        context: String,
+        message: String,
+        extra: Option<HashMap<String, String>>
+    ) -> Self {
+        Self::new(
+            code,
+            InternalErrorKind::Validation,
+            context,
+            message,
+            extra
+        )
+    }
 }
 
 

@@ -40,7 +40,8 @@ pub mod event_records;
 pub mod types;
 pub mod service;
 
-const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
+// const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
+const SNAPSHOTS_FETCHING_INTERVAL: u64 = 604_800; // 1 week
 
 #[derive(CandidType, Debug, Clone, Deserialize)]
 pub struct CanisterIdRequest {
@@ -66,7 +67,8 @@ thread_local! {
 // ========================== Test methods ==========================
 
 // TODO: test method, remove after testing
-use crate::pool_snapshots::pool_snapshot::{PositionData, PoolData};
+use crate::pool_snapshots::position_data::position_data::PositionData;
+use crate::pool_snapshots::pool_data::pool_data::PoolData;
 
 #[derive(CandidType, Deserialize, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PoolSnapshotArgs {

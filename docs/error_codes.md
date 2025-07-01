@@ -15,20 +15,22 @@ Where:
 
 ### Module (MMMM)
 
-| Code | Module                        |
-|------|-------------------------------|
-| 1001 | External Service (KongSwap)   |
-| 1002 | External Service (ICPSwap)    |
-| 1100 | External Service (ICRC Ledger)|
-| 1200 | External Service (Canister)   |
-| 2000 | Swap (Service)                |
-| 2001 | Swap (KongSwap)               |
-| 2002 | Swap (ICPSwap)                |
-| 2101 | Liquidity (KongSwap)          |
-| 2102 | Liquidity (ICPSwap)           |
-| 3000 | Service (Vault)               |
-| 3100 | Strategies (Vault)            |
-| 4000 | Service (PoolStats)           |
+| Code | Module                         |
+|------|--------------------------------|
+| 1001 | External Service (KongSwap)    |
+| 1002 | External Service (ICPSwap)     |
+| 1100 | External Service (ICRC Ledger) |
+| 1200 | External Service (Canister)    |
+| 2000 | Swap (Service)                 |
+| 2001 | Swap (KongSwap)                |
+| 2002 | Swap (ICPSwap)                 |
+| 2101 | Liquidity (KongSwap)           |
+| 2102 | Liquidity (ICPSwap)            |
+| 2200 | Validation                     |
+| 3000 | Service (Vault)                |
+| 3100 | Strategies (Vault)             |
+| 4000 | Service (PoolStats)            |
+| 4100 | PoolMetrics (PoolStats)        |
 
 ### Error Kind (KK)
 | Code | Kind            |
@@ -231,6 +233,11 @@ Where:
 **2102 03 05** - Token order does not match pool metadata in ICPSwapLiquidityClient::withdraw_liquidity_from_pool (Business Logic)  
 
 
+## 2200 - Validation
+
+**2200 02 01** - Field validation failed in FieldValidator::validate (Validation)
+
+
 ## 3000 - Service (Vault)
 
 **3000 01 01** - Strategy not found in service::deposit (NotFound) 
@@ -259,7 +266,11 @@ Where:
 **4000 01 02** - Pool not found in service::get_pool_by_id (NotFound)  
 
 **4000 01 03** - Pool not found in service::add_liquidity_to_pool (NotFound) 
-**4000 01 04** - Pool already has liquidity in service::add_liquidity_to_pool (BusinessLogic) 
+**4000 03 04** - Pool already has liquidity in service::add_liquidity_to_pool (BusinessLogic) 
 
 **4000 01 05** - Pool not found in service::withdraw_liquidity_from_pool (NotFound)  
-**4000 01 06** - Pool has no liquidity in service::withdraw_liquidity_from_pool (BusinessLogic) 
+**4000 03 06** - Pool has no liquidity in service::withdraw_liquidity_from_pool (BusinessLogic) 
+
+## 4100 - PoolMetrics (PoolStats)
+
+**4100 03 01** – Pool has no position_id in pool_snapshot_service::create_pool_snapshot (BusinessLogic)

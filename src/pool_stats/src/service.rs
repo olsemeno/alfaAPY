@@ -108,7 +108,7 @@ pub async fn add_liquidity_to_pool(
 
     if pool.position_id.is_some() {
         let error = InternalError::business_logic(
-            build_error_code(4000, 3, 4), // 4000 01 04
+            build_error_code(4000, 3, 4), // 4000 03 04
             "service::add_liquidity_to_pool".to_string(),
             "Pool already has liquidity".to_string(),
             Some(HashMap::from([
@@ -158,7 +158,7 @@ pub async fn withdraw_liquidity_from_pool(
 
     if pool.position_id.is_none() {
         let error = InternalError::business_logic(
-            build_error_code(4000, 3, 6), // 4000 01 06
+            build_error_code(4000, 3, 6), // 4000 03 06
             "service::withdraw_liquidity_from_pool".to_string(),
             "Pool has no liquidity".to_string(),
             Some(HashMap::from([
