@@ -99,6 +99,16 @@ async fn test_update_strategy_stats() {
     strategy_stats_service::update_all_strategy_liquidity().await;
 }
 
+// TODO: Test function. Remove after testing.
+#[update]
+async fn rebalance_strategy(strategy_id: u16) -> StrategyRebalanceResult {
+    let mut strategy = strategies_repo::get_strategy_by_id(strategy_id).unwrap();
+    let result = strategy.rebalance().await
+        .map_err(|error| ResponseError::from_internal_error(error));
+
+    StrategyRebalanceResult(result)
+}
+
 // =============== Events ===============
 
 #[update]

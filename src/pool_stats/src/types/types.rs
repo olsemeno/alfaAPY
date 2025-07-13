@@ -36,3 +36,4 @@ pub struct GetPoolsSnapshotsResult(pub HashMap<String, Vec<PoolSnapshot>>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct GetEventRecordsResult(pub Result<Vec<EventRecord>, ResponseError>);
+

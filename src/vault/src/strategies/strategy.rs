@@ -350,11 +350,25 @@ pub trait IStrategy: Send + Sync + BasicStrategy {
             });
         }
 
-        let max_apy_pool = max_apy_pool.unwrap();
+
+        // TODO: Change this after testing
+        // let max_apy_pool = max_apy_pool.unwrap();
+        let max_apy_pool = current_pool.clone().unwrap();
 
         if let Some(current_pool) = &current_pool {
-             // If current pool is the same as max APY pool, return
             if current_pool.is_same_pool(&max_apy_pool) {
+
+                // Event: Strategy rebalance completed
+                event_record_service::create_event_record(
+                    Event::strategy_rebalance_completed(
+                        strategy_id,
+                        Some(current_pool.get_id()),
+                        Some(max_apy_pool.get_id()),
+                    ),
+                    context.correlation_id,
+                    None,
+                );
+
                 return Ok(StrategyRebalanceResponse {
                     previous_pool: current_pool.clone(),
                     current_pool: current_pool.clone(),

@@ -85,7 +85,6 @@ type InternalErrorKind = variant {
   Validation;
 };
 
-
 type ListItemsPaginationRequest = record {
   page_size : nat64;
   page : nat64;
@@ -274,6 +273,17 @@ type WithdrawLiquidityFromPoolStarted = record {
   pool_id : text;
 };
 
+type StrategyRebalanceResponse = record {
+  previous_pool : Pool;
+  current_pool : Pool;
+  is_rebalanced : bool;
+};
+
+type StrategyRebalanceResult = variant {
+  Ok : StrategyRebalanceResponse;
+  Err : ResponseError;
+};
+
 service : (opt Conf) -> {
   deposit : (StrategyDepositArgs) -> (StrategyDepositResult);
   get_config : () -> (Conf) query;
@@ -286,4 +296,5 @@ service : (opt Conf) -> {
   user_strategies : (principal) -> (vec UserStrategyResponse);
   withdraw : (StrategyWithdrawArgs) -> (StrategyWithdrawResult);
   test_update_strategy_stats : () -> ();
+  rebalance_strategy : (nat16) -> (StrategyRebalanceResult);
 };

@@ -94,6 +94,9 @@ pub struct StrategyWithdrawResult(pub Result<StrategyWithdrawResponse, ResponseE
 pub struct GetEventRecordsResult(pub Result<EventRecordsPaginationResponse, ResponseError>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+pub struct StrategyRebalanceResult(pub Result<StrategyRebalanceResponse, ResponseError>);
+
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
 pub struct EventRecordsPaginationResponse(pub ListItemsPaginationResponse<EventRecord>);
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
