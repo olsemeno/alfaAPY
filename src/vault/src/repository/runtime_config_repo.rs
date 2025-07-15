@@ -45,32 +45,96 @@ pub fn set_current_env(environment: Environment) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::utils::environment::Environment;
 
-    #[test]
-    fn test_current_env() {
-        // Should start with Production environment by default
-        assert_eq!(get_current_env(), Environment::Production);
+    mod get_current_env {
+        use super::*;
 
-        // Should be able to change to Test environment
-        set_current_env(Environment::Test);
-        assert_eq!(get_current_env(), Environment::Test);
+        #[test]
+        fn returns_production_by_default() {
+            // Default environment is Production
+            assert_eq!(get_current_env(), Environment::Production);
+        }
 
-        // Should be able to change back to Production
-        set_current_env(Environment::Production);
-        assert_eq!(get_current_env(), Environment::Production);
+        #[test]
+        fn returns_updated_value_after_set_current_env() {
+            let original = get_current_env();
+            set_current_env(Environment::Test);
+            assert_eq!(get_current_env(), Environment::Test);
+            set_current_env(original);
+        }
     }
 
-    #[test]
-    fn test_runtime_config() {
-        // Should start with default config
-        let config = get_runtime_config();
-        assert_eq!(config.environment, Environment::Production);
+    mod set_current_env {
+        use super::*;
 
-        // Should be able to set new config
-        let new_config = RuntimeConfig {
-            environment: Environment::Test,
-        };
-        set_runtime_config(new_config.clone());
-        assert_eq!(get_runtime_config().environment, Environment::Test);
+        #[test]
+        fn sets_to_test_and_restores_back() {
+            let original = get_current_env();
+            set_current_env(Environment::Test);
+            assert_eq!(get_current_env(), Environment::Test);
+            set_current_env(original);
+        }
+
+        #[test]
+        fn sets_back_to_production() {
+            set_current_env(Environment::Production);
+            assert_eq!(get_current_env(), Environment::Production);
+        }
+    }
+
+    mod get_runtime_config {
+        use super::*;
+
+        #[test]
+        fn returns_default_production_config() {
+            let config = get_runtime_config();
+            assert_eq!(config.environment, Environment::Production);
+        }
+
+        #[test]
+        fn reflects_updated_config_after_set_runtime_config() {
+            let original = get_runtime_config();
+
+            let new_config = RuntimeConfig {
+                environment: Environment::Test,
+            };
+            set_runtime_config(new_config.clone());
+
+            let updated = get_runtime_config();
+            assert_eq!(updated.environment, Environment::Test);
+
+            set_runtime_config(original);
+        }
+    }
+
+    mod set_runtime_config {
+        use super::*;
+
+        #[test]
+        fn updates_runtime_config_environment() {
+            let original = get_runtime_config();
+
+            let test_config = RuntimeConfig {
+                environment: Environment::Test,
+            };
+            set_runtime_config(test_config.clone());
+
+            let result = get_runtime_config();
+            assert_eq!(result.environment, Environment::Test);
+
+            set_runtime_config(original);
+        }
+
+        #[test]
+        fn can_set_back_to_production() {
+            let production_config = RuntimeConfig {
+                environment: Environment::Production,
+            };
+            set_runtime_config(production_config.clone());
+
+            let result = get_runtime_config();
+            assert_eq!(result.environment, Environment::Production);
+        }
     }
 }
