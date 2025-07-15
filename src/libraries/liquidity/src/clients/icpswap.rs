@@ -3,10 +3,12 @@ use candid::{Nat, Int, Principal};
 use std::ops::{Div, Mul};
 use num_traits::ToPrimitive;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use utils::util::{nat_to_u64, int_to_nat};
 use types::CanisterId;
-use providers::{icpswap as icpswap_provider};
+use providers::providers_factory::ProviderImpls;
+use providers::icpswap::ICPSwapProvider;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMetadataValue;
 use icpswap_swap_pool_canister::metadata::Metadata;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
@@ -19,8 +21,7 @@ use icpswap_swap_calculator_canister::getTokenAmountByLiquidity::GetTokenAmountB
 use icpswap_node_index_canister::getAllTokens::TokenData;
 use icpswap_tvl_storage_canister::getPoolChartTvl::PoolChartTvl;
 use swap::token_swaps::icpswap::SLIPPAGE_TOLERANCE;
-use errors::internal_error::error::InternalError;
-use errors::internal_error::error::build_error_code;
+use errors::internal_error::error::{InternalError, build_error_code};
 use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 use icrc_ledger_client;
 use types::liquidity::{
@@ -38,6 +39,7 @@ const TICK_LOWER: i32 = -887220;
 const TICK_UPPER: i32 = 887220;
 
 pub struct ICPSwapLiquidityClient {
+    provider_impls: ProviderImpls,
     canister_id: Option<CanisterId>,
     token0: CanisterId, // token0 may be token1 in the pool and vice versa
     token1: CanisterId, // token1 may be token0 in the pool and vice versa
@@ -45,8 +47,13 @@ pub struct ICPSwapLiquidityClient {
 }
 
 impl ICPSwapLiquidityClient {
-    pub fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapLiquidityClient {
+    pub fn new(
+        provider_impls: ProviderImpls,
+        token0: CanisterId,
+        token1: CanisterId,
+    ) -> ICPSwapLiquidityClient {
         ICPSwapLiquidityClient {
+            provider_impls,
             canister_id: None,
             token0,
             token1,
@@ -55,12 +62,16 @@ impl ICPSwapLiquidityClient {
     }
 
     pub async fn with_pool(mut self) -> Result<Self, InternalError> {
-        let pool = Self::get_pool(self.token0.clone(), self.token1.clone()).await?;
+        let pool = self.get_pool(self.token0.clone(), self.token1.clone()).await?;
 
         self.pool = Some(pool.clone());
         self.canister_id = Some(pool.canisterId);
 
         Ok(self)
+    }
+
+    fn icpswap_provider(&self) -> &Arc<dyn ICPSwapProvider + Send + Sync> {
+        &self.provider_impls.icpswap
     }
 
     fn extract_token_decimals(&self, meta: &Vec<(String, TokenMetadataValue)>) -> Option<u128> {
@@ -130,8 +141,8 @@ impl ICPSwapLiquidityClient {
         }
     }
 
-    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
-        let pool = icpswap_provider::get_pool(token0, token1).await?;
+    async fn get_pool(&self, token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
+        let pool =  self.icpswap_provider().get_pool(token0, token1).await?;
 
         Ok(pool)
     }
@@ -139,7 +150,7 @@ impl ICPSwapLiquidityClient {
     async fn get_token_meta(&self) -> Result<TokenMeta, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let token_meta = icpswap_provider::get_token_meta(canister_id.clone()).await?;
+        let token_meta = self.icpswap_provider().get_token_meta(canister_id.clone()).await?;
 
         Ok(token_meta)
     }
@@ -147,7 +158,7 @@ impl ICPSwapLiquidityClient {
     async fn deposit_from(&self, token: CanisterId, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let deposited_amount = icpswap_provider::deposit_from(
+        let deposited_amount = self.icpswap_provider().deposit_from(
             canister_id.clone(),
             token.clone(),
             amount.clone(),
@@ -160,7 +171,7 @@ impl ICPSwapLiquidityClient {
     async fn metadata(&self) -> Result<Metadata, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let metadata = icpswap_provider::metadata(canister_id.clone()).await?;
+        let metadata = self.icpswap_provider().metadata(canister_id.clone()).await?;
 
         Ok(metadata)
     }
@@ -171,7 +182,7 @@ impl ICPSwapLiquidityClient {
         token_0_decimals: Nat,
         token_1_decimals: Nat
     ) -> Result<f64, InternalError> {
-        let price = icpswap_provider::get_price(
+        let price = self.icpswap_provider().get_price(
             sqrt_price_x96.clone(),
             token_0_decimals.clone(),
             token_1_decimals.clone()
@@ -188,7 +199,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let amount_out = icpswap_provider::quote(
+        let amount_out = self.icpswap_provider().quote(
             canister_id.clone(),
             amount_in,
             zero_for_one,
@@ -210,7 +221,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let minted_amount = icpswap_provider::mint(
+        let minted_amount = self.icpswap_provider().mint(
             canister_id.clone(),
             token0.clone(),
             token1.clone(),
@@ -232,7 +243,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let amount_out_nat = icpswap_provider::swap(
+        let amount_out_nat = self.icpswap_provider().swap(
             canister_id.clone(),
             token_in.clone(),
             zero_for_one,
@@ -250,7 +261,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let amount_out_nat = icpswap_provider::increase_liquidity(
+        let amount_out_nat = self.icpswap_provider().increase_liquidity(
             canister_id.clone(),
             position_id.clone(),
             amount0_desired.clone(),
@@ -267,7 +278,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<DecreaseLiquidityResponse, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let amount_out_nat = icpswap_provider::decrease_liquidity(
+        let amount_out_nat = self.icpswap_provider().decrease_liquidity(
             canister_id.clone(),
             position_id.clone(),
             liquidity.clone()
@@ -284,7 +295,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let amount_out_nat = icpswap_provider::withdraw(
+        let amount_out_nat = self.icpswap_provider().withdraw(
             canister_id.clone(),
             token_out.clone(),
             amount.clone(),
@@ -300,7 +311,7 @@ impl ICPSwapLiquidityClient {
     ) -> Result<ClaimResponse, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let claim_response = icpswap_provider::claim(
+        let claim_response = self.icpswap_provider().claim(
             canister_id.clone(),
             position_id.clone()
         ).await?;
@@ -312,7 +323,7 @@ impl ICPSwapLiquidityClient {
         let canister_id = self.canister_id.as_ref().unwrap();
         let principal = ic_cdk::api::id();
 
-        let position_ids = icpswap_provider::get_user_position_ids_by_principal(
+        let position_ids = self.icpswap_provider().get_user_position_ids_by_principal(
             canister_id.clone(),
             principal
         ).await?;
@@ -324,7 +335,7 @@ impl ICPSwapLiquidityClient {
         let canister_id = self.canister_id.as_ref().unwrap();
         let principal = ic_cdk::api::id();
 
-        let user_positions = icpswap_provider::get_user_positions_by_principal(
+        let user_positions = self.icpswap_provider().get_user_positions_by_principal(
             canister_id.clone(),
             principal
         ).await?;
@@ -335,7 +346,7 @@ impl ICPSwapLiquidityClient {
     async fn get_user_position(&self, position_id: Nat) -> Result<UserPosition, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        let user_position = icpswap_provider::get_user_position(
+        let user_position = self.icpswap_provider().get_user_position(
             canister_id.clone(),
             position_id.clone()
         ).await?;
@@ -350,7 +361,7 @@ impl ICPSwapLiquidityClient {
         tick_upper: Int,
         liquidity: Nat
     ) -> Result<GetTokenAmountByLiquidityResponse, InternalError> {
-        let token_amount = icpswap_provider::get_token_amount_by_liquidity(
+        let token_amount = self.icpswap_provider().get_token_amount_by_liquidity(
             sqrt_price_x96.clone(),
             tick_lower.clone(),
             tick_upper.clone(),
@@ -361,14 +372,14 @@ impl ICPSwapLiquidityClient {
     }
 
     async fn get_all_tokens(&self) -> Result<Vec<TokenData>, InternalError> {
-        let tokens = icpswap_provider::get_all_tokens()
+        let tokens = self.icpswap_provider().get_all_tokens()
             .await?;
 
         Ok(tokens)
     }
 
     async fn get_tvl_storage_canister(&self) -> Result<String, InternalError> {
-        let tvl_storage_canister_response = icpswap_provider::get_tvl_storage_canister().await?;
+        let tvl_storage_canister_response = self.icpswap_provider().get_tvl_storage_canister().await?;
 
         Ok(tvl_storage_canister_response[0].clone())
     }
@@ -378,7 +389,7 @@ impl ICPSwapLiquidityClient {
         let offset = Nat::from(0u128);
         let limit = Nat::from(0u128);
 
-        let pool_chart_tvl = icpswap_provider::get_pool_chart_tvl(
+        let pool_chart_tvl = self.icpswap_provider().get_pool_chart_tvl(
             tvl_storage_canister_id.clone(),
             canister_id.to_string(),
             offset.clone(),

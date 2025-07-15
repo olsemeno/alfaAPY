@@ -10,7 +10,7 @@ pub struct Args {
 
 pub type Response = ICPSwapSwapPoolResult<ClaimResponse>;
 
-#[derive(CandidType, Serialize, Deserialize, Debug)]
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct ClaimResponse {
     pub amount0: Nat,
     pub amount1: Nat,

@@ -5,7 +5,7 @@ pub type Args = (String, Nat, Nat);
 
 pub type Response = (Vec<PoolChartTvl>,);
 
-#[derive(CandidType, Deserialize, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Serialize, Debug, Clone)]
 pub struct PoolChartTvl {
     pub id: Nat,
     pub tvlUSD: f64,

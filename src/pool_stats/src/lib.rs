@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::cell::RefCell;
 use ic_cdk::{call, id, trap, update, caller};
 use ic_cdk::api::call::CallResult;
-use candid::export_service;
+use candid::{candid_method, export_service};
 
 use ::types::exchange_id::ExchangeId;
 use ::types::context::Context;
@@ -12,6 +12,7 @@ use ::types::pool::PoolTrait;
 use errors::response_error::error::ResponseError;
 use errors::internal_error::error::InternalError;
 use errors::internal_error::error::build_error_code;
+use ic_cdk_macros::{init, post_upgrade, pre_upgrade};
 
 use crate::pool_snapshots::pool_snapshot::PoolSnapshot;
 use crate::pool_snapshots::pool_snapshot_service;
@@ -19,6 +20,7 @@ use crate::pools::pool::Pool;
 use crate::repository::pools_repo;
 use crate::repository::stable_state;
 use crate::pools::pool_service;
+use crate::repository::runtime_config_repo::{self, RuntimeConfig};
 use crate::types::types::{
     AddLiquidityResult,
     WithdrawLiquidityResult,
@@ -39,6 +41,7 @@ pub mod pool_metrics;
 pub mod event_records;
 pub mod types;
 pub mod service;
+pub mod utils;
 
 // const SNAPSHOTS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 const SNAPSHOTS_FETCHING_INTERVAL: u64 = 604_800; // 1 week
@@ -255,20 +258,23 @@ pub fn get_event_records(offset: u64, limit: u64) -> GetEventRecordsResult {
 }
 
 // ========================== Vault management ==========================
+#[init]
+#[candid_method(init)]
+async fn init(runtime_config: Option<RuntimeConfig>) {
+    let runtime_config = runtime_config.unwrap_or_default();
+    runtime_config_repo::set_runtime_config(runtime_config);
 
-#[ic_cdk::init]
-async fn init() {
     pool_service::init_pools();
     pool_snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);
 }
 
-#[ic_cdk::pre_upgrade]
+#[pre_upgrade]
 fn pre_upgrade() {
     stable_state::stable_save();
     pool_snapshot_service::stop_pool_snapshots_timer();
 }
 
-#[ic_cdk::post_upgrade]
+#[post_upgrade]
 fn post_upgrade() {
     stable_state::stable_restore();
     pool_snapshot_service::start_pool_snapshots_timer(SNAPSHOTS_FETCHING_INTERVAL);

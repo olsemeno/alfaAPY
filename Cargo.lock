@@ -928,6 +928,7 @@ dependencies = [
 name = "providers"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "candid",
  "errors",
  "ic-cdk 0.17.2",
@@ -950,6 +951,7 @@ dependencies = [
  "icrc_ledger_client",
  "kongswap_canister",
  "kongswap_canister_c2c_client",
+ "serde",
  "types",
  "utils",
 ]
@@ -1289,6 +1291,7 @@ dependencies = [
  "icrc_ledger_canister_c2c_client",
  "num-bigint",
  "once_cell",
+ "serde",
  "serde_json",
  "types",
 ]

@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 use candid::Nat;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use types::CanisterId;
-use providers::{icpswap as icpswap_provider};
+use providers::icpswap::ICPSwapProvider;
 use icpswap_swap_factory_canister::ICPSwapPool;
 use icpswap_swap_pool_canister::getTokenMeta::TokenMeta;
 use types::liquidity::TokensFee;
@@ -17,6 +18,7 @@ use crate::token_swaps::swap_client::{SwapClient, SwapSuccess, QuoteSuccess};
 pub const SLIPPAGE_TOLERANCE: u128 = 50; // 50 slippage tolerance points == 5%
 
 pub struct ICPSwapSwapClient {
+    provider_impl: Arc<dyn ICPSwapProvider + Send + Sync>,
     canister_id: Option<CanisterId>,
     token0: CanisterId,
     token1: CanisterId,
@@ -29,8 +31,9 @@ pub struct DepositFromSuccess {
 }
 
 impl ICPSwapSwapClient {
-    pub fn new(token0: CanisterId, token1: CanisterId) -> ICPSwapSwapClient {
-        ICPSwapSwapClient {
+    pub fn new(provider_impl: Arc<dyn ICPSwapProvider + Send + Sync>, token0: CanisterId, token1: CanisterId) -> Self {
+        Self {
+            provider_impl,
             canister_id: None,
             token0, // token0 may be token1 in the pool and vice versa
             token1, // token1 may be token0 in the pool and vice versa
@@ -39,7 +42,7 @@ impl ICPSwapSwapClient {
     }
 
     pub async fn with_pool(mut self) -> Result<Self, InternalError> {
-        let pool = Self::get_pool(self.token0.clone(), self.token1.clone()).await?;
+        let pool = self.provider_impl.get_pool(self.token0.clone(), self.token1.clone()).await?;
 
         self.pool = Some(pool.clone());
         self.canister_id = Some(pool.canisterId);
@@ -99,20 +102,20 @@ impl ICPSwapSwapClient {
         }
     }
 
-    async fn get_pool(token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
-        icpswap_provider::get_pool(token0.clone(), token1.clone()).await
+    async fn get_pool(&self, token0: CanisterId, token1: CanisterId) -> Result<ICPSwapPool, InternalError> {
+        self.provider_impl.get_pool(token0.clone(), token1.clone()).await
     }
 
     async fn get_token_meta(&self) -> Result<TokenMeta, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        icpswap_provider::get_token_meta(canister_id.clone()).await
+        self.provider_impl.get_token_meta(canister_id.clone()).await
     }
     
     async fn deposit_from(&self, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        icpswap_provider::deposit_from(
+        self.provider_impl.deposit_from(
             canister_id.clone(),
             self.token0.clone(),
             amount.clone(),
@@ -123,7 +126,7 @@ impl ICPSwapSwapClient {
     async fn withdraw(&self, amount: Nat, token_fee: Nat) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        icpswap_provider::withdraw(
+        self.provider_impl.withdraw(
             canister_id.clone(),
             self.token1.clone(),
             amount.clone(),
@@ -131,11 +134,11 @@ impl ICPSwapSwapClient {
         ).await
     }
 
-    async fn quote(&self, amount: Nat) -> Result<Nat, InternalError> {
+    async fn quote_internal(&self, amount: Nat) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
         let is_zero_for_one_swap_direction = self.is_zero_for_one_swap_direction()?;
 
-        icpswap_provider::quote(
+        self.provider_impl.quote(
             canister_id.clone(),
             amount.clone(),
             is_zero_for_one_swap_direction,
@@ -143,10 +146,10 @@ impl ICPSwapSwapClient {
         ).await
     }
 
-    async fn swap(&self, amount_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, InternalError> {
+    async fn swap_internal(&self, amount_in: Nat, zero_for_one: bool, amount_out_minimum: Nat) -> Result<Nat, InternalError> {
         let canister_id = self.canister_id.as_ref().unwrap();
 
-        icpswap_provider::swap(
+        self.provider_impl.swap(
             canister_id.clone(),
             amount_in.clone(),
             zero_for_one,
@@ -180,14 +183,14 @@ impl SwapClient for ICPSwapSwapClient {
         ).await?;
 
         // 3. Quote
-        let expected_out = self.quote(deposited_amount.clone()).await?;
+        let expected_out = self.quote_internal(deposited_amount.clone()).await?;
 
         // 4. Swap
         let expected_out_u128 = nat_to_u128(&expected_out);
         // Сonsider slippage tolerance
         let amount_out_minimum = Nat::from(expected_out_u128 * (1000 - SLIPPAGE_TOLERANCE) / 1000u128);
 
-        let amount_out = self.swap(
+        let amount_out = self.swap_internal(
             deposited_amount.clone(),
             self.is_zero_for_one_swap_direction()?,
             amount_out_minimum.clone(),
@@ -203,7 +206,7 @@ impl SwapClient for ICPSwapSwapClient {
     }
 
     async fn quote(&self, amount: Nat) -> Result<QuoteSuccess, InternalError> {
-        let quote_amount = self.quote(amount.clone()).await?;
+        let quote_amount = self.quote_internal(amount.clone()).await?;
 
         Ok(QuoteSuccess {
             amount_out: nat_to_u128(&quote_amount),

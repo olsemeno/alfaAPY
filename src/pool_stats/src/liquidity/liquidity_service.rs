@@ -9,6 +9,8 @@ use types::context::Context;
 use crate::pools::pool::Pool;
 use crate::event_records::event_record_service;
 use crate::event_records::event_record::Event;
+use crate::utils::provider_impls::get_environment_provider_impls;
+
 
 pub async fn add_liquidity_to_pool(
     context: Context,
@@ -103,6 +105,7 @@ pub async fn withdraw_liquidity_from_pool(context: Context, pool: Pool) -> Resul
 
 async fn liquidity_client(pool: Pool) -> Box<dyn LiquidityClient> {
     get_liquidity_client(
+        get_environment_provider_impls(),
         pool.token0.clone(),
         pool.token1.clone(),
         pool.provider.clone()

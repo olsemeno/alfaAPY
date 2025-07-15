@@ -11,7 +11,7 @@ pub struct Args {
 
 pub type Response = ICPSwapSwapPoolResult<DecreaseLiquidityResponse>;
 
-#[derive(CandidType, Serialize, Deserialize, Debug)]
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct DecreaseLiquidityResponse {
     pub amount0: Nat,
     pub amount1: Nat,

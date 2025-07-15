@@ -6,7 +6,7 @@ use types::liquidity::{AddLiquidityResponse, WithdrawLiquidityResponse, GetPosit
 use errors::internal_error::error::InternalError;
 
 #[async_trait]
-pub trait LiquidityClient: Send + Sync {
+pub trait LiquidityClient: Send + Sync + 'static {
     fn canister_id(&self) -> CanisterId;
     async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, InternalError>;
     async fn withdraw_liquidity_from_pool(&self, total_shares: Nat, shares: Nat) -> Result<WithdrawLiquidityResponse, InternalError>;

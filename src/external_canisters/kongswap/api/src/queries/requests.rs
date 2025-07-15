@@ -1,7 +1,9 @@
-use crate::add_liquidity::{TransferIdReply, TxId};
-pub use crate::PoolsReply;
 use candid::{CandidType, Deserialize, Nat};
 use serde::Serialize;
+
+use crate::add_liquidity::{TransferIdReply, TxId};
+
+pub use crate::PoolsReply;
 
 #[derive(CandidType, Debug, Clone, Serialize, Deserialize)]
 pub struct Args {

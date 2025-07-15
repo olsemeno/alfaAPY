@@ -27,6 +27,8 @@ Where:
 | 2101 | Liquidity (KongSwap)           |
 | 2102 | Liquidity (ICPSwap)            |
 | 2200 | Validation                     |
+| 2301 | Mock Provider (KongSwap)       |
+| 2302 | Mock Provider (ICPSwap)       |
 | 3000 | Service (Vault)                |
 | 3100 | Strategies (Vault)             |
 | 4000 | Service (PoolStats)            |
@@ -237,6 +239,65 @@ Where:
 
 **2200 02 01** - Field validation failed in FieldValidator::validate (Validation)
 
+
+## 2301 - Mock Provider (KongSwap)
+
+**2301 01 01** - Mock response not set for swap_amounts in MockKongSwapProvider::swap_amounts (NotFound) 
+
+**2301 01 02** - Mock response not set for swap in MockKongSwapProvider::swap (NotFound)  
+
+**2301 01 03** - Mock response not set for add_liquidity_amounts in MockKongSwapProvider::add_liquidity_amounts (NotFound)  
+
+**2301 01 04** - Mock response not set for add_liquidity in MockKongSwapProvider::add_liquidity (NotFound)  
+
+**2301 01 05** - Mock response not set for user_balances in MockKongSwapProvider::user_balances (NotFound)  
+
+**2301 01 06** - Mock response not set for remove_liquidity_amounts in MockKongSwapProvider::remove_liquidity_amounts (NotFound)  
+
+**2301 01 07** - Mock response not set for remove_liquidity in MockKongSwapProvider::remove_liquidity (NotFound)  
+
+
+## 2302 - Mock Provider (ICPSwap)
+
+**2302 01 01** - Mock response not set for get_all_tokens in MockICPSwapProvider::get_all_tokens (NotFound)  
+
+**2302 01 02** - Mock response not set for get_tvl_storage_canister in MockICPSwapProvider::get_tvl_storage_canister (NotFound)  
+
+**2302 01 03** - Mock response not set for get_pool in MockICPSwapProvider::get_pool (NotFound)  
+
+**2302 01 04** - Mock response not set for quote in MockICPSwapProvider::quote (NotFound)  
+
+**2302 01 05** - Mock response not set for swap in MockICPSwapProvider::swap (NotFound)  
+
+**2302 01 06** - Mock response not set for get_token_meta in MockICPSwapProvider::get_token_meta (NotFound)  
+
+**2302 01 07** - Mock response not set for deposit_from in MockICPSwapProvider::deposit_from (NotFound)  
+
+**2302 01 08** - Mock response not set for withdraw in MockICPSwapProvider::withdraw (NotFound)  
+
+**2302 01 09** - Mock response not set for metadata in MockICPSwapProvider::metadata (NotFound)  
+
+**2302 01 10** - Mock response not set for mint in MockICPSwapProvider::mint (NotFound)  
+
+**2302 01 11** - Mock response not set for get_user_position_ids_by_principal in MockICPSwapProvider::get_user_position_ids_by_principal (NotFound)  
+
+**2302 01 12** - Mock response not set for get_user_positions_by_principal in MockICPSwapProvider::get_user_positions_by_principal (NotFound)  
+
+**2302 01 13** - Mock response not set for get_user_unused_balance in MockICPSwapProvider::get_user_unused_balance (NotFound)  
+
+**2302 01 14** - Mock response not set for increase_liquidity in MockICPSwapProvider::increase_liquidity (NotFound)  
+
+**2302 01 15** - Mock response not set for decrease_liquidity in MockICPSwapProvider::decrease_liquidity (NotFound)  
+
+**2302 01 16** - Mock response not set for get_user_position in MockICPSwapProvider::get_user_position (NotFound)  
+
+**2302 01 17** - Mock response not set for claim in MockICPSwapProvider::claim (NotFound)  
+
+**2302 01 18** - Mock response not set for get_price in MockICPSwapProvider::get_price (NotFound)  
+
+**2302 01 19** - Mock response not set for get_token_amount_by_liquidity in MockICPSwapProvider::get_token_amount_by_liquidity (NotFound)  
+
+**2302 01 20** - Mock response not set for get_pool_chart_tvl in MockICPSwapProvider::get_pool_chart_tvl (NotFound)
 
 ## 3000 - Service (Vault)
 

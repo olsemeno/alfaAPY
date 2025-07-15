@@ -16,7 +16,7 @@ pub struct Args {
 
 pub type Response = Result<SwapReply, String>;
 
-#[derive(CandidType, Serialize, Deserialize, Debug)]
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct SwapReply {
     pub tx_id: u64,
     pub request_id: u64,

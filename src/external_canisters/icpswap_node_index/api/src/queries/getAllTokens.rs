@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub type Response = Vec<TokenData>;
 
-#[derive(CandidType, Deserialize, Serialize, Debug)]
+#[derive(CandidType, Deserialize, Serialize, Debug, Clone)]
 pub struct TokenData {
     pub id: Nat,
     pub volumeUSD1d: f64,

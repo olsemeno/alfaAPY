@@ -2,9 +2,12 @@ use async_trait::async_trait;
 use candid::Nat;
 use std::ops::{Div, Mul};   
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use types::CanisterId;
-use providers::kongswap as kongswap_provider;
+use providers::providers_factory::ProviderImpls;
+use providers::kongswap::KongSwapProvider;
+use providers::icpswap::ICPSwapProvider;
 use kongswap_canister::user_balances::UserBalancesReply;
 use utils::util::nat_to_f64;
 use swap::swap_service;
@@ -17,8 +20,8 @@ use utils::constants::CKUSDT_TOKEN_CANISTER_ID;
 use crate::liquidity_client::LiquidityClient;
 use crate::liquidity_calculator::LiquidityCalculator;
 
-
 pub struct KongSwapLiquidityClient {
+    provider_impls: ProviderImpls,
     canister_id: CanisterId,
     // TODO: change to Pool
     token0: CanisterId,
@@ -26,8 +29,14 @@ pub struct KongSwapLiquidityClient {
 }
 
 impl KongSwapLiquidityClient {
-    pub fn new(canister_id: CanisterId, token0: CanisterId, token1: CanisterId) -> KongSwapLiquidityClient {
+    pub fn new(
+        provider_impls: ProviderImpls,
+        canister_id: CanisterId,
+        token0: CanisterId,
+        token1: CanisterId,
+    ) -> KongSwapLiquidityClient {
         KongSwapLiquidityClient {
+            provider_impls,
             canister_id,
             token0,
             token1,
@@ -36,6 +45,14 @@ impl KongSwapLiquidityClient {
 
     fn token_kongswap_format(&self, token: CanisterId) -> String {
         format!("IC.{}", token.to_text())
+    }
+
+    fn kongswap_provider(&self) -> &Arc<dyn KongSwapProvider + Send + Sync> {
+        &self.provider_impls.kongswap
+    }
+
+    fn icpswap_provider(&self) -> &Arc<dyn ICPSwapProvider + Send + Sync> {
+        &self.provider_impls.icpswap
     }
 }
 
@@ -46,8 +63,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
     }
 
     async fn add_liquidity_to_pool(&self, amount: Nat) -> Result<AddLiquidityResponse, InternalError> {
-        // Get liquidity amounts for pool
-        let add_liq_amounts_reply = kongswap_provider::add_liquidity_amounts(
+        let add_liq_amounts_reply = self.kongswap_provider().add_liquidity_amounts(
             self.token_kongswap_format(self.token0.clone()),
             amount.clone(),
             self.token_kongswap_format(self.token1.clone()),
@@ -58,6 +74,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
 
         // Get quote for token swap
         let quote_result = swap_service::quote_swap_icrc2_optimal(
+            self.provider_impls.clone(),
             self.token0.clone(),
             self.token1.clone(),
             amount.clone(),
@@ -83,6 +100,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
 
         // Swap token0 for token1 with the best exchange provider
         let swap_response = swap_service::swap_icrc2(
+            self.provider_impls.clone(),
             self.token0.clone(),
             self.token1.clone(),
             Nat::from(token_0_for_swap_amount as u128),
@@ -92,7 +110,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let token_1_for_pool_amount = swap_response.amount_out;
 
         // Add token0 and token1 liquidity to pool
-        let response = kongswap_provider::add_liquidity(
+        let response = self.kongswap_provider().add_liquidity(
             self.token_kongswap_format(self.token0.clone()),
             Nat::from(token_0_for_pool_amount as u128),
             self.token_kongswap_format(self.token1.clone()),
@@ -114,7 +132,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let canister_id = ic_cdk::id();
 
         // Fetch LP positions in pool
-        let user_balances_response = kongswap_provider::user_balances(
+        let user_balances_response = self.kongswap_provider().user_balances(
             canister_id.to_string()
         ).await?;
 
@@ -148,7 +166,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let lp_tokens_to_withdraw: f64 = balance.mul(nat_to_f64(&shares)).div(nat_to_f64(&total_shares)).mul(100000000.0);
 
         // Remove liquidity from pool
-        let remove_liquidity_response = kongswap_provider::remove_liquidity(
+        let remove_liquidity_response = self.kongswap_provider().remove_liquidity(
             self.token_kongswap_format(self.token0.clone()),
             self.token_kongswap_format(self.token1.clone()),
             Nat::from(lp_tokens_to_withdraw.round() as u128),
@@ -164,7 +182,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let canister_id = ic_cdk::id();
 
         // Fetch user positions in pool
-        let user_balances_response = kongswap_provider::user_balances(
+        let user_balances_response = self.kongswap_provider().user_balances(
             canister_id.to_string()
         ).await?;
 
@@ -217,7 +235,7 @@ impl LiquidityClient for KongSwapLiquidityClient {
     }
 
     async fn get_pool_data(&self) -> Result<GetPoolDataResponse, InternalError> {
-        let pools = kongswap_provider::pools().await?;
+        let pools = self.kongswap_provider().pools().await?;
 
         let pool_data = pools
             .iter()
@@ -252,14 +270,14 @@ impl LiquidityClient for KongSwapLiquidityClient {
         let token1_base_unit_multiplied = token1_base_unit.clone().mul(multiplier.clone());
 
         // Get quote for token0 swap to USDT
-        let swap_amount0_reply = kongswap_provider::swap_amounts(
+        let swap_amount0_reply = self.kongswap_provider().swap_amounts(
             self.token0.clone(),
             token0_base_unit_multiplied.clone(),
             *CKUSDT_TOKEN_CANISTER_ID
         ).await?;
 
         // Get quote for token1 swap to USDT
-        let swap_amount1_reply = kongswap_provider::swap_amounts(
+        let swap_amount1_reply = self.kongswap_provider().swap_amounts(
             self.token1,
             token1_base_unit_multiplied.clone(),
             *CKUSDT_TOKEN_CANISTER_ID

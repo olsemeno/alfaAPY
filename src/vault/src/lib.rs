@@ -7,42 +7,31 @@ mod event_records;
 mod pools;
 mod pool_stats;
 mod service;
+mod utils;
 
-use serde::Serialize;
+
 use std::cell::RefCell;
-use candid::{candid_method, export_service, CandidType, Deserialize, Nat, Principal};
+use candid::{candid_method, export_service, Nat, Principal};
 use ic_cdk::caller;
 use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 
-use providers::{icpswap as icpswap_provider};
 use errors::response_error::error::ResponseError;
 use ::types::CanisterId;
 use ::types::context::Context;
 
 use crate::repository::stable_state;
 use crate::repository::strategies_repo;
+use crate::repository::runtime_config_repo::{self, RuntimeConfig};
+use crate::repository::config_repo::{self, Conf};
 use crate::strategies::strategy_service;
 use crate::types::types::*;
 use crate::strategies::stats::strategy_stats_service;
+use crate::utils::provider_impls::get_environment_provider_impls;
 
 const STRATEGY_STATS_FETCHING_INTERVAL: u64 = 3600; // 1 hour
 
 thread_local! {
-    pub static CONF: RefCell<Conf> = RefCell::new(Conf::default());
     pub static HEARTBEAT: RefCell<u64> = RefCell::new(0);
-}
-
-#[derive(CandidType, Deserialize, Clone, Debug, Hash, PartialEq, Serialize)]
-pub struct Conf {
-    pub controllers: Option<Vec<Principal>>,
-}
-
-impl Default for Conf {
-    fn default() -> Self {
-        Conf {
-            controllers: Default::default()
-        }
-    }
 }
 
 /// The heartbeat function is called periodically to perform maintenance tasks.
@@ -75,8 +64,10 @@ fn heartbeat() {
 #[update]
 async fn test_icpswap_withdraw(token_out: CanisterId, amount: Nat, token_fee: Nat) -> Nat {
     let canister_id = Principal::from_text("5fq4w-lyaaa-aaaag-qjqta-cai").unwrap();
+    let provider_impls = get_environment_provider_impls();
+    let icpswap_provider = provider_impls.icpswap.clone();
 
-    let icpswap_quote_result = icpswap_provider::withdraw(
+    let icpswap_quote_result = icpswap_provider.withdraw(
         canister_id,
         token_out,
         amount,
@@ -196,7 +187,7 @@ fn get_strategies() -> Vec<StrategyResponse> {
 /// A `Conf` struct containing the current configuration.
 #[query]
 fn get_config() -> Conf {
-    CONF.with(|c| c.borrow().clone())
+    config_repo::get_config()
 }
 
 
@@ -237,6 +228,11 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 
 // =============== Vault management ===============
 
+#[query]
+fn get_runtime_config() -> RuntimeConfig {
+    runtime_config_repo::get_runtime_config()
+}
+
 /// Initializes the canister with the given configuration.
 ///
 /// # Arguments
@@ -250,13 +246,13 @@ fn icrc28_trusted_origins() -> Icrc28TrustedOriginsResponse {
 /// initializes the strategies by calling ` strategy_service::init_strategies()`.
 #[init]
 #[candid_method(init)]
-fn init(conf: Option<Conf>) {
-    match conf {
-        None => {}
-        Some(conf) => {
-            CONF.with(|c| c.replace(conf));
-        }
-    };
+fn init(conf: Option<Conf>, runtime_config: Option<RuntimeConfig>) {
+    let conf = conf.unwrap_or_default();
+    config_repo::set_config(conf);
+
+    let runtime_config = runtime_config.unwrap_or_default();
+    runtime_config_repo::set_runtime_config(runtime_config);
+
     strategy_service::init_strategies();
     strategy_stats_service::start_strategy_stats_update_timer(STRATEGY_STATS_FETCHING_INTERVAL);
 }
