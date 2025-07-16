@@ -1,4 +1,4 @@
-use candid::{CandidType, Deserialize, Nat};
+use candid::{CandidType, Deserialize};
 use serde::Serialize;
 
 use errors::internal_error::error::InternalError;
